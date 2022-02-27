@@ -1,11 +1,11 @@
 use rocket::http::Status;
-use rocket::local::blocking::Client;
 
-use go::server;
+mod helpers;
+use helpers::*;
 
 #[test]
 fn server_is_running() {
-    let client = Client::tracked(server()).expect("valid rocket instance");
+    let client = launch_empty();
     let response = client.get("/").dispatch();
 
     assert_eq!(response.status(), Status::Ok);

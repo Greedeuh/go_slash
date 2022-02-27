@@ -1,8 +1,10 @@
 #[macro_use]
 extern crate rocket;
-use go::server;
+use std::collections::HashMap;
+
+use go::{server, Entries};
 
 #[launch]
 fn run() -> _ {
-    server()
+    server(Entries::new(HashMap::new()))
 }
