@@ -5,6 +5,6 @@ use std::collections::HashMap;
 use go::{server, Entries};
 
 #[launch]
-fn run() -> _ {
+fn rocket() -> _ {
     server(Entries::new(HashMap::new()))
 }
