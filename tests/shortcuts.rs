@@ -1,5 +1,6 @@
 #![feature(async_closure)]
 use rocket::futures::FutureExt;
+use rocket::http::ContentType;
 use rocket::{async_test, http::Status};
 mod helpers;
 use helpers::*;
@@ -85,4 +86,54 @@ async fn undefined_shortcut_return_a_form_to_create_a_shortcut() {
         .boxed()
     })
     .await;
+}
+
+#[async_test]
+async fn create_a_shortcut_with_invalid_url() {
+    in_browser(|driver: &WebDriver| {
+        async {
+            // create shortcut
+            driver
+                .get("http://localhost:8000/newShortcut/boom")
+                .await
+                .unwrap();
+
+            let form = driver.find_element(By::Tag("form")).await.unwrap();
+            let input = form
+                .find_element(By::Css("input[type=text]"))
+                .await
+                .unwrap();
+
+            let submit = form
+                .find_element(By::Css("input[type=submit]"))
+                .await
+                .unwrap();
+
+            input.send_keys("not_a_valid_url").await.unwrap();
+
+            submit.click().await.unwrap();
+
+            // assert shortcut created and working
+            let alert = driver.find_element(By::Css("[role=alert]")).await.unwrap();
+            // ne cause the html validator should stop us
+            assert_ne!(
+                alert.text().await.unwrap(),
+                "Wrong format for provided URL."
+            );
+        }
+        .boxed()
+    })
+    .await;
+}
+
+#[test]
+fn create_a_shortcut_with_invalid_url_return_400() {
+    let client = launch_with("");
+    let response = client
+        .post("/myShortCut/hop")
+        .header(ContentType::Form)
+        .body("url=not_url")
+        .dispatch();
+
+    assert_eq!(response.status(), Status::BadRequest);
 }

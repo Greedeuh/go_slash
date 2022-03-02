@@ -1,10 +1,17 @@
+use lazy_static::lazy_static;
 use log::error;
+use regex::Regex;
 use rocket::{form::Form, http::Status, response::Redirect, State};
 use rocket_dyn_templates::Template;
 use serde_json::json;
 use std::path::PathBuf;
 
 use crate::Entries;
+
+lazy_static! {
+    static ref URL_REGEX: Regex =
+        Regex::new(r#"https?://(www\.)?[-a-zA-Z0-9()@:%_\+.~#?&//=]{1,256}"#,).unwrap();
+}
 
 #[derive(Responder)]
 #[allow(clippy::large_enum_variant)]
@@ -39,26 +46,40 @@ pub struct Url {
     url: String,
 }
 
-#[post("/<shortcut..>", data = "<form>")]
+#[post("/<shortcut..>", data = "<url>")]
 pub fn post_shortcuts(
     shortcut: PathBuf,
     entries: &State<Entries>,
-    form: Form<Url>,
+    url: Form<Url>,
 ) -> Result<(Status, Template), Status> {
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
-    let url = form.into_inner().url;
+    let url = url.into_inner().url;
+    if !URL_REGEX.is_match(&url) {
+        return Ok((
+            Status::BadRequest,
+            Template::render(
+                "shortcut",
+                json!({
+                    "shortcut":shortcut,
+                    "wrong_url": true,
+                }),
+            ),
+        ));
+    }
+
     entries.put(shortcut, url);
 
-    let template = Template::render(
-        "shortcut",
-        json!({
-            "shortcut":shortcut,
-            "saved": true,
-        }),
-    );
-
-    Ok((Status::Created, template))
+    Ok((
+        Status::Created,
+        Template::render(
+            "shortcut",
+            json!({
+                "shortcut":shortcut,
+                "saved": true,
+            }),
+        ),
+    ))
 }
 
 fn parse_shortcut_path_buff(shortcut: &'_ PathBuf) -> Result<&'_ str, Status> {
