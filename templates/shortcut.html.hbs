@@ -1,0 +1,7 @@
+{{#if not_found}} <div role="alert" class="alert alert-error">Shortcut "{{shortcut}}" does not exist yet.</div> {{/if}}
+{{#if saved}} <div role="alert" class="alert alert-success">Shortcut "{{shortcut}}" successfully saved !</div> {{/if}}
+
+<form action="/{{shortcut}}" method="POST">
+    <input type="text" name="url" placeholder="https://my-favorite-tool" value="{{ url }}"/>
+    <input type="submit" value="Add short cut">
+</form>

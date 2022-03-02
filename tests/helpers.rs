@@ -4,8 +4,11 @@ use rocket::{
     local::blocking::Client,
     tokio::spawn,
 };
-use std::{collections::HashMap, panic::AssertUnwindSafe};
-use thirtyfour::{prelude::WebDriverResult, DesiredCapabilities, WebDriver};
+use std::{
+    collections::HashMap,
+    panic::{resume_unwind, AssertUnwindSafe},
+};
+use thirtyfour::{DesiredCapabilities, WebDriver};
 
 pub fn launch_empty() -> Client {
     Client::tracked(server(Entries::new(HashMap::new()))).expect("valid rocket instance")
@@ -46,22 +49,45 @@ pub fn entries(shortcuts: &str) -> Entries {
 #[allow(dead_code)]
 pub async fn in_browser<F>(f: F)
 where
-    F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, WebDriverResult<()>>,
+    F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
+{
+    in_browser_with(f, true).await;
+}
+
+#[allow(dead_code)]
+/// Same but launch browser
+pub async fn in_browserr<F>(f: F)
+where
+    F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
+{
+    in_browser_with(f, false).await;
+}
+
+async fn in_browser_with<F>(f: F, headless: bool)
+where
+    F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
 {
     spawn(async move { server(Entries::new(HashMap::new())).launch().await });
 
-    let caps = DesiredCapabilities::firefox();
+    let mut caps = DesiredCapabilities::firefox();
+    if headless {
+        caps.set_headless().expect("Headless conf failed");
+    }
+
     let driver = WebDriver::new("http://localhost:4444", &caps)
         .await
         .expect("Driver build failed");
 
-    let may_panic = AssertUnwindSafe(async { f(&driver).await.unwrap() });
+    let may_panic = AssertUnwindSafe(async { f(&driver).await });
 
-    let panics = may_panic.catch_unwind().await;
+    let maybe_panicked = may_panic.catch_unwind().await;
 
     // Always explicitly close the browser. There are no async destructors.
-    // .quit() consume self
-    driver.quit().await.expect("Driver quit failed");
+    if headless {
+        driver.quit().await.expect("Driver quit failed");
+    }
 
-    panics.unwrap()
+    if let Err(panic) = maybe_panicked {
+        resume_unwind(panic)
+    }
 }

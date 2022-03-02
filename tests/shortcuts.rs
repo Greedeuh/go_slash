@@ -1,6 +1,6 @@
 #![feature(async_closure)]
+use rocket::futures::FutureExt;
 use rocket::{async_test, http::Status};
-
 mod helpers;
 use helpers::*;
 use thirtyfour::prelude::*;
@@ -28,26 +28,61 @@ fn shortcut_redirect_to_target() {
 #[async_test]
 async fn undefined_shortcut_return_a_form_to_create_a_shortcut() {
     in_browser(|driver: &WebDriver| {
-        Box::pin(async {
-            driver.get("http://localhost:8000/newShortcut").await?;
+        async {
+            // create shortcut
+            driver
+                .get("http://localhost:8000/newShortcut")
+                .await
+                .unwrap();
 
-            let p = driver.find_element(By::Tag("p")).await?;
+            let alert = driver.find_element(By::Css("[role=alert]")).await.unwrap();
             assert_eq!(
-                p.text().await?,
+                alert.text().await.unwrap(),
                 "Shortcut \"newShortcut\" does not exist yet."
             );
 
-            let form = driver.find_element(By::Tag("form")).await?;
-            let input = form.find_element(By::Css("input[type=text]")).await?;
+            let form = driver.find_element(By::Tag("form")).await.unwrap();
+            let input = form
+                .find_element(By::Css("input[type=text]"))
+                .await
+                .unwrap();
             assert_eq!(
-                input.get_attribute("placeholder").await?,
-                Some("https://myFavoriteTool.com".to_owned())
+                input.get_attribute("placeholder").await.unwrap(),
+                Some("https://my-favorite-tool".to_owned())
             );
-            let btn = form.find_element(By::Tag("form")).await?;
-            assert_eq!(btn.text().await?, "Add short cut");
+            let submit = form
+                .find_element(By::Css("input[type=submit]"))
+                .await
+                .unwrap();
+            assert_eq!(
+                submit.value().await.unwrap(),
+                Some("Add short cut".to_owned())
+            );
 
-            Ok(())
-        })
+            input
+                .send_keys("http://localhost:8000/looped")
+                .await
+                .unwrap();
+
+            submit.click().await.unwrap();
+
+            // assert shortcut created and working
+            let alert = driver.find_element(By::Css("[role=alert]")).await.unwrap();
+            assert_eq!(
+                alert.text().await.unwrap(),
+                "Shortcut \"newShortcut\" successfully saved !"
+            );
+
+            driver
+                .get("http://localhost:8000/newShortcut")
+                .await
+                .unwrap();
+            assert_eq!(
+                driver.current_url().await.unwrap(),
+                "http://localhost:8000/looped"
+            );
+        }
+        .boxed()
     })
     .await;
 }
