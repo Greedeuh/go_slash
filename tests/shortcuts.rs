@@ -137,3 +137,27 @@ fn create_a_shortcut_with_invalid_url_return_400() {
 
     assert_eq!(response.status(), Status::BadRequest);
 }
+
+#[test]
+fn create_a_shortcut_return_201() {
+    let client = launch_with("");
+    let response = client
+        .post("/myShortCut/hop")
+        .header(ContentType::Form)
+        .body("url=http%3A%2F%2Flocalhost%3A11")
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Created);
+}
+
+#[test]
+fn replace_a_shortcut_return_201() {
+    let client = launch_with("/myShortCut/hop: http://azdazd.dz");
+    let response = client
+        .post("/myShortCut/hop")
+        .header(ContentType::Form)
+        .body("url=http%3A%2F%2Flocalhost%3A11")
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Created);
+}
