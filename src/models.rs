@@ -32,6 +32,16 @@ impl Entries {
 
         map.insert(key.to_owned(), url);
     }
+
+    pub fn delete(&self, key: &str) {
+        let map = Arc::clone(&self.map);
+        let mut map = match map.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+
+        map.remove(key);
+    }
 }
 
 pub type ShortcutUrl = String;

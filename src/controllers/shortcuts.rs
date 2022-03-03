@@ -27,17 +27,13 @@ pub fn shortcuts(shortcut: PathBuf, entries: &State<Entries>) -> Result<Shortcut
 
     Ok(match entries.find(shortcut) {
         Some(url) => ShortcutRes::Redirect(Redirect::permanent(url)),
-        None => {
-            let template = Template::render(
-                "shortcut",
-                json!({
-                    "shortcut":shortcut,
-                    "not_found":true
-                }),
-            );
-
-            ShortcutRes::Template(template)
-        }
+        None => ShortcutRes::Template(Template::render(
+            "shortcut",
+            json!({
+                "shortcut":shortcut,
+                "not_found":true
+            }),
+        )),
     })
 }
 
@@ -79,6 +75,21 @@ pub fn post_shortcuts(
                 "saved": true,
             }),
         ),
+    ))
+}
+
+#[delete("/<shortcut..>")]
+pub fn delete_shortcut(shortcut: PathBuf, entries: &State<Entries>) -> Result<Template, Status> {
+    let shortcut = parse_shortcut_path_buff(&shortcut)?;
+
+    entries.delete(shortcut);
+
+    Ok(Template::render(
+        "shortcut",
+        json!({
+            "shortcut":shortcut,
+            "deleted":true
+        }),
     ))
 }
 

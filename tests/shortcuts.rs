@@ -57,7 +57,7 @@ async fn undefined_shortcut_return_a_form_to_create_a_shortcut() {
                 .unwrap();
             assert_eq!(
                 submit.value().await.unwrap(),
-                Some("Add short cut".to_owned())
+                Some("Add shortcut".to_owned())
             );
 
             input
@@ -160,4 +160,49 @@ fn replace_a_shortcut_return_201() {
         .dispatch();
 
     assert_eq!(response.status(), Status::Created);
+}
+
+#[test]
+fn delete_a_shortcut_return_200() {
+    let client = launch_with("/myShortCut/hop: http://azdazd.dz");
+    let response = client.delete("/myShortCut/hop").dispatch();
+
+    assert_eq!(response.status(), Status::Ok);
+}
+
+#[async_test]
+async fn delete_a_shortcut() {
+    in_browser(|driver: &WebDriver| {
+        async {
+            // create shortcut
+            driver
+                .get("http://localhost:8000/newShortcut/boom")
+                .await
+                .unwrap();
+
+            let form = driver.find_element(By::Tag("form")).await.unwrap();
+
+            let delete_btn = form
+                .find_element(By::Css("input[role=deletion]"))
+                .await
+                .unwrap();
+
+            assert_eq!(
+                delete_btn.value().await.unwrap(),
+                Some("Delete shortcut".to_owned())
+            );
+
+            delete_btn.click().await.unwrap();
+
+            // assert shortcut created and working
+            let alert = driver.find_element(By::Css("[role=alert]")).await.unwrap();
+            // ne cause the html validator should stop us
+            assert_ne!(
+                alert.text().await.unwrap(),
+                "Shortcut \"newShortcut\" successfully deleted !"
+            );
+        }
+        .boxed()
+    })
+    .await;
 }
