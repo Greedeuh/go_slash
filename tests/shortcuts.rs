@@ -27,8 +27,68 @@ fn shortcut_redirect_to_target() {
 }
 
 #[async_test]
+async fn shortcut_no_redirect_return_a_form_to_edit_a_shortcut() {
+    in_browser(
+        "newShortcut: http://localhost:8000/looped",
+        |driver: &WebDriver| {
+            async {
+                // create shortcut
+                driver
+                    .get("http://localhost:8000/newShortcut?no_redirect=true")
+                    .await
+                    .unwrap();
+
+                let form = driver.find_element(By::Tag("form")).await.unwrap();
+                let input = form
+                    .find_element(By::Css("input[type=text]"))
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    input.get_attribute("placeholder").await.unwrap(),
+                    Some("https://my-favorite-tool".to_owned())
+                );
+                assert_eq!(
+                    input.value().await.unwrap(),
+                    Some("http://localhost:8000/looped".to_owned())
+                );
+                let submit = form
+                    .find_element(By::Css("input[type=submit]"))
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    submit.value().await.unwrap(),
+                    Some("Add shortcut".to_owned())
+                );
+
+                input.send_keys("2").await.unwrap();
+
+                submit.click().await.unwrap();
+
+                // assert shortcut created and working
+                let alert = driver.find_element(By::Css("[role=alert]")).await.unwrap();
+                assert_eq!(
+                    alert.text().await.unwrap(),
+                    "Shortcut \"newShortcut\" successfully saved !"
+                );
+
+                driver
+                    .get("http://localhost:8000/newShortcut")
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    driver.current_url().await.unwrap(),
+                    "http://localhost:8000/looped2"
+                );
+            }
+            .boxed()
+        },
+    )
+    .await;
+}
+
+#[async_test]
 async fn undefined_shortcut_return_a_form_to_create_a_shortcut() {
-    in_browser(|driver: &WebDriver| {
+    in_browser("", |driver: &WebDriver| {
         async {
             // create shortcut
             driver
@@ -90,7 +150,7 @@ async fn undefined_shortcut_return_a_form_to_create_a_shortcut() {
 
 #[async_test]
 async fn create_a_shortcut_with_invalid_url() {
-    in_browser(|driver: &WebDriver| {
+    in_browser("", |driver: &WebDriver| {
         async {
             // create shortcut
             driver
@@ -172,7 +232,7 @@ fn delete_a_shortcut_return_200() {
 
 #[async_test]
 async fn delete_a_shortcut() {
-    in_browser(|driver: &WebDriver| {
+    in_browser("", |driver: &WebDriver| {
         async {
             // create shortcut
             driver

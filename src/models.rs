@@ -14,6 +14,12 @@ impl Entries {
         }
     }
 
+    pub fn empty() -> Self {
+        Self {
+            map: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+
     pub fn find(&self, key: &str) -> Option<ShortcutUrl> {
         match Arc::clone(&self.map).lock() {
             Ok(guard) => guard,
@@ -41,6 +47,23 @@ impl Entries {
         };
 
         map.remove(key);
+    }
+}
+
+impl<'a> From<&'a str> for Entries {
+    fn from(shortcuts: &'a str) -> Self {
+        let shortcuts = shortcuts
+            .lines()
+            .map(|line| {
+                let line = line.replace(' ', "");
+                let (key, value) = line
+                    .split_once(':')
+                    .expect("launch_with shortcuts failed parsing");
+                (key.to_owned(), value.to_owned())
+            })
+            .collect();
+
+        Self::new(shortcuts)
     }
 }
 

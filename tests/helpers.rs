@@ -16,18 +16,7 @@ pub fn launch_empty() -> Client {
 
 #[allow(dead_code)]
 pub fn launch_with(shortcuts: &str) -> Client {
-    let shortcuts = shortcuts
-        .lines()
-        .map(|line| {
-            let line = line.replace(' ', "");
-            let (key, value) = line
-                .split_once(':')
-                .expect("launch_with shortcuts failed parsing");
-            (key.to_owned(), value.to_owned())
-        })
-        .collect();
-
-    Client::tracked(server(Entries::new(shortcuts))).expect("valid rocket instance")
+    Client::tracked(server(Entries::from(shortcuts))).expect("valid rocket instance")
 }
 
 #[allow(dead_code)]
@@ -47,27 +36,28 @@ pub fn entries(shortcuts: &str) -> Entries {
 }
 
 #[allow(dead_code)]
-pub async fn in_browser<F>(f: F)
+pub async fn in_browser<F>(shortcuts: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(f, true).await;
+    in_browser_with(shortcuts, f, true).await;
 }
 
 #[allow(dead_code)]
 /// Same but launch browser
-pub async fn in_browserr<F>(f: F)
+pub async fn in_browserr<F>(shortcuts: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(f, false).await;
+    in_browser_with(shortcuts, f, false).await;
 }
 
-async fn in_browser_with<F>(f: F, headless: bool)
+async fn in_browser_with<'b, F>(shortcuts: &str, f: F, headless: bool)
 where
     F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
 {
-    spawn(async move { server(Entries::new(HashMap::new())).launch().await });
+    let entries = Entries::from(shortcuts);
+    spawn(async move { server(entries).launch().await });
 
     let mut caps = DesiredCapabilities::firefox();
     if headless {

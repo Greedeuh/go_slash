@@ -18,16 +18,33 @@ lazy_static! {
 pub enum ShortcutRes {
     Redirect(Redirect),
     #[response(status = 404)]
-    Template(Template),
+    NotFound(Template),
+    Ok(Template),
 }
 
-#[get("/<shortcut..>")]
-pub fn shortcuts(shortcut: PathBuf, entries: &State<Entries>) -> Result<ShortcutRes, Status> {
+#[get("/<shortcut..>?<no_redirect>")]
+pub fn shortcuts(
+    shortcut: PathBuf,
+    no_redirect: Option<bool>,
+    entries: &State<Entries>,
+) -> Result<ShortcutRes, Status> {
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
     Ok(match entries.find(shortcut) {
-        Some(url) => ShortcutRes::Redirect(Redirect::permanent(url)),
-        None => ShortcutRes::Template(Template::render(
+        Some(url) => {
+            if let Some(true) = no_redirect {
+                ShortcutRes::Ok(Template::render(
+                    "shortcut",
+                    json!({
+                        "shortcut":shortcut,
+                        "url": url
+                    }),
+                ))
+            } else {
+                ShortcutRes::Redirect(Redirect::permanent(url))
+            }
+        }
+        None => ShortcutRes::NotFound(Template::render(
             "shortcut",
             json!({
                 "shortcut":shortcut,
