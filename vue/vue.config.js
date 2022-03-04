@@ -3,7 +3,7 @@ module.exports = {
   assetsDir: "../../public/vue",
   pages: {
     search: {
-      entry: "src/pages/search/main.js",
+      entry: "src/partials/search/main.ts",
       template: "public/search.html",
       filename: "search.html.hbs",
     },

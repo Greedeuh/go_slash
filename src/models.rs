@@ -4,7 +4,7 @@ use std::{
 };
 
 pub struct Entries {
-    map: Arc<Mutex<HashMap<String, Shortcut>>>,
+    map: Arc<Mutex<HashMap<Shortcut, ShortcutUrl>>>,
 }
 
 impl Entries {
@@ -18,6 +18,16 @@ impl Entries {
         Self {
             map: Arc::new(Mutex::new(HashMap::new())),
         }
+    }
+
+    pub fn all(&self) -> HashMap<String, String> {
+        let map = Arc::clone(&self.map);
+        let map = match map.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+
+        map.clone()
     }
 
     pub fn find(&self, key: &str) -> Option<ShortcutUrl> {
