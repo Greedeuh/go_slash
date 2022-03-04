@@ -21,7 +21,7 @@ pub fn server(entries: Entries) -> rocket::Rocket<rocket::Build> {
             "/",
             routes![index, shortcuts, post_shortcuts, delete_shortcut],
         )
+        .mount("/public", FileServer::from(relative!("public")))
         .manage(entries)
-        .mount("/", FileServer::from(relative!("js")))
         .attach(Template::fairing())
 }

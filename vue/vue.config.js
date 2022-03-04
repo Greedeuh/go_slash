@@ -1,12 +1,11 @@
 module.exports = {
+  outputDir: "../templates/vue_dist",
+  assetsDir: "../../public/vue",
   pages: {
     search: {
-      // entry for the page
       entry: "src/pages/search/main.js",
-      // the source template
       template: "public/search.html",
-      // output as dist/index.html
-      filename: "search.html",
+      filename: "search.html.hbs",
     },
   },
 };
