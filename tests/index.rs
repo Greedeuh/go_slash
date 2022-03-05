@@ -108,7 +108,7 @@ async fn index_user_as_sugestions_when_typing() {
 async fn index_user_can_search() {
     in_browser(
         "newShortcut: http://localhost:8000/newShortcut
-    jeanLuc: http://localhost:8000/aShortcut
+    jeanLuc: http://localhost:8000/aShortcut1
     tadadam: http://localhost:8000/ssshortcut",
         |driver: &WebDriver| {
             async {
@@ -128,7 +128,7 @@ async fn index_user_can_search() {
                 // down arrow select first
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "jeanLuc http://localhost:8000/aShortcut"
+                    "jeanLuc http://localhost:8000/aShortcut1"
                 );
                 assert!(articles[0]
                     .class_name()
@@ -147,7 +147,7 @@ async fn index_user_can_search() {
                 // down arrow again select snd & unselect first
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "jeanLuc http://localhost:8000/aShortcut"
+                    "jeanLuc http://localhost:8000/aShortcut1"
                 );
                 assert!(!articles[0]
                     .class_name()
@@ -171,11 +171,7 @@ async fn index_user_can_search() {
                 // up arrow select first & unselect first
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "jeanLuc http://localhost:8000/aShortcut"
-                );
-                assert_eq!(
-                    articles[0].text().await.unwrap(),
-                    "jeanLuc http://localhost:8000/aShortcut"
+                    "jeanLuc http://localhost:8000/aShortcut1"
                 );
                 assert!(articles[0]
                     .class_name()
@@ -194,12 +190,38 @@ async fn index_user_can_search() {
                     .unwrap()
                     .contains("active"));
 
-                // Tab take first
                 search_bar.send_keys(Keys::Tab).await.unwrap();
 
+                // Tab take first
                 assert_eq!(
                     search_bar.get_property("value").await.unwrap(),
                     Some("jeanLuc".to_owned())
+                );
+
+                search_bar.send_keys(Keys::Enter).await.unwrap();
+                sleep();
+
+                // Enter launch search
+                assert_eq!(
+                    driver.current_url().await.unwrap(),
+                    "http://localhost:8000/aShortcut1"
+                );
+
+                driver.get("http://localhost:8000").await.unwrap();
+                // arow down then enter go to the first line shortcut
+
+                let search_bar = driver
+                    .find_element(By::Css("input[type='search']"))
+                    .await
+                    .unwrap();
+                search_bar.send_keys(Keys::Down).await.unwrap();
+                search_bar.send_keys(Keys::Enter).await.unwrap();
+
+                sleep();
+
+                assert_eq!(
+                    driver.current_url().await.unwrap(),
+                    "http://localhost:8000/aShortcut1"
                 );
             }
             .boxed()

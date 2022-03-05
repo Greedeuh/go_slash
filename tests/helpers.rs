@@ -8,6 +8,7 @@ use std::{
     collections::HashMap,
     env,
     panic::{resume_unwind, AssertUnwindSafe},
+    time::Duration,
 };
 use thirtyfour::{DesiredCapabilities, WebDriver};
 
@@ -101,4 +102,9 @@ where
     if let Err(panic) = maybe_panicked {
         resume_unwind(panic)
     }
+}
+
+#[allow(dead_code)]
+pub fn sleep() {
+    std::thread::sleep(Duration::from_millis(100));
 }
