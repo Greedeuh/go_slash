@@ -1,31 +1,22 @@
 <template>
   <div>
-    <div class="input-group mb-3 input-group-lg">
-      <span class="input-group-text">GO /</span>
-      <input
-        v-model="search"
-        type="text"
-        placeholder="Search"
-        @keydown="reset_index_if_letter"
-        class="form-control"
-      />
-    </div>
-    <div>
-      <ol class="list-group">
-        <li
-          v-for="(shortcut, i) in fuzzed_or_all"
-          :key="i"
-          :class="{ active: i == selected_index }"
-          class="list-group-item d-flex justify-content-between align-items-start"
-        >
-          <div class="ms-2 me-auto">
-            <span class="fw-bold">
-              {{ shortcut.shortcut }}
-            </span>
-            {{ shortcut.url }}
-          </div>
-        </li>
-      </ol>
+    <SearchBar v-model="search" @keydown="reset_index_if_letter" />
+    <div class="list-group">
+      <a
+        href="#"
+        v-for="(shortcut, i) in fuzzed_or_all"
+        :key="i"
+        :class="{ active: i == selected_index }"
+        class="list-group-item d-flex justify-content-between align-items-start"
+        @click="take_selected(i)"
+      >
+        <div class="ms-2 me-auto">
+          <span class="fw-bold">
+            {{ shortcut.shortcut }}
+          </span>
+          {{ shortcut.url }}
+        </div>
+      </a>
     </div>
   </div>
 </template>
@@ -33,6 +24,8 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import { useVueFuse } from "vue-fuse";
+
+import SearchBar from "./Search.vue";
 
 interface Window {
   shortcuts: Shortcut[];
@@ -49,7 +42,8 @@ const SHORTCUTS = (window as unknown as Window).shortcuts;
 let key_press: (e: KeyboardEvent) => void;
 
 export default defineComponent({
-  name: "App",
+  name: "Partial",
+  components: { SearchBar },
   setup() {
     const { search, results, noResults } = useVueFuse(SHORTCUTS, {
       keys: [
@@ -77,7 +71,6 @@ export default defineComponent({
   created() {
     key_press = (e: KeyboardEvent) => {
       let key = e.key;
-      console.log(key);
       if (CONTROL_KEYS.includes(key)) {
         e.preventDefault();
 
@@ -113,19 +106,15 @@ export default defineComponent({
       this.selected_index = -1;
     },
     go_selected(selected_index: number) {
-      this.fuzzed_or_all[selected_index];
-      window.location.href = "/" + this.fuzzed_or_all[selected_index].shortcut;
+      if (selected_index === -1) {
+        window.location.href = "/" + this.search;
+      } else {
+        window.location.href =
+          "/" + this.fuzzed_or_all[selected_index].shortcut;
+      }
     },
   },
 });
 </script>
 
-<style>
-ul {
-  list-style: none;
-}
-
-.selected::before {
-  content: "🚀";
-}
-</style>
+<style></style>

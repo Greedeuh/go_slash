@@ -1,4 +1,4 @@
 import { createApp } from "vue";
-import App from "./App.vue";
+import Partial from "./Partial.vue";
 
-createApp(App).mount("#vue-search-partial");
+createApp(Partial).mount("#vue-search-partial");
