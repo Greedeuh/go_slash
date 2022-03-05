@@ -4,7 +4,7 @@
     <input
       :value="modelValue"
       @input="update_value($event.target.value)"
-      type="text"
+      type="search"
       placeholder="type then Tab or Enter"
       @keydown="keydown"
       ref="search_bar"

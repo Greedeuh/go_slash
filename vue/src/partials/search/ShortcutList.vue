@@ -1,9 +1,10 @@
 <template>
-  <div class="list-group">
+  <div role="list" class="list-group">
     <a
       v-for="(shortcut, i) in shortcuts"
       :href="shortcut.url"
       :key="i"
+      role="listitem"
       :class="{ active: i == selected_index }"
       class="list-group-item d-flex justify-content-between align-items-start"
       @click="click_shortcut_index(i)"
