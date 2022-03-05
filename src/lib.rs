@@ -16,11 +16,19 @@ pub use models::*;
 
 #[get("/")]
 fn index(entries: &State<Entries>) -> Template {
-    let all_shortcuts = entries
+    let mut all_shortcuts = entries
         .all()
+        .into_iter()
+        .map(|(shortcut, url)| (shortcut, url))
+        .collect::<Vec<_>>();
+
+    all_shortcuts.sort_by(|(shortcut_1, _), (shortcut_2, _)| shortcut_1.cmp(shortcut_2));
+
+    let all_shortcuts = all_shortcuts
         .iter()
         .map(|(shortcut, url)| json!({"shortcut": shortcut, "url": url}))
         .collect::<Vec<_>>();
+
     let all_shortcuts: String = json!(all_shortcuts).to_string();
 
     Template::render("index", json!({ "shortcuts": all_shortcuts }))
