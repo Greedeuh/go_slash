@@ -1,23 +1,7 @@
 <template>
   <div>
     <SearchBar v-model="search" @keydown="reset_index_if_letter" />
-    <div class="list-group">
-      <a
-        href="#"
-        v-for="(shortcut, i) in fuzzed_or_all"
-        :key="i"
-        :class="{ active: i == selected_index }"
-        class="list-group-item d-flex justify-content-between align-items-start"
-        @click="take_selected(i)"
-      >
-        <div class="ms-2 me-auto">
-          <span class="fw-bold">
-            {{ shortcut.shortcut }}
-          </span>
-          {{ shortcut.url }}
-        </div>
-      </a>
-    </div>
+    <ShortcutList :shortcuts="fuzzed_or_all" :selected_index="selected_index" />
   </div>
 </template>
 
@@ -26,12 +10,13 @@ import { defineComponent } from "vue";
 import { useVueFuse } from "vue-fuse";
 
 import SearchBar from "./Search.vue";
+import ShortcutList from "./ShortcutList.vue";
 
 interface Window {
   shortcuts: Shortcut[];
 }
 
-interface Shortcut {
+export interface Shortcut {
   shortcut: string;
   url: string;
 }
@@ -43,7 +28,7 @@ let key_press: (e: KeyboardEvent) => void;
 
 export default defineComponent({
   name: "Partial",
-  components: { SearchBar },
+  components: { SearchBar, ShortcutList },
   setup() {
     const { search, results, noResults } = useVueFuse(SHORTCUTS, {
       keys: [
