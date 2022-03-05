@@ -106,7 +106,7 @@ async fn index_user_as_sugestions_when_typing() {
 
 #[async_test]
 async fn index_user_can_search() {
-    in_browserr(
+    in_browser(
         "newShortcut: http://localhost:8000/newShortcut
     jeanLuc: http://localhost:8000/aShortcut
     tadadam: http://localhost:8000/ssshortcut",
