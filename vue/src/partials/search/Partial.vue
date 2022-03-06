@@ -6,6 +6,7 @@
       :administer="administer"
       @on-administer="set_administer"
     />
+    <ShortcutInput v-if="administer" @save="add" />
     <ShortcutList
       :shortcuts="fuzzed_or_all"
       :selected_index="selected_index"
@@ -19,9 +20,11 @@
 import { defineComponent } from "vue";
 import Fuse from "fuse.js";
 import axios from "axios";
+import qs from "qs";
 
 import SearchBar from "./Search.vue";
 import ShortcutList from "./ShortcutList.vue";
+import ShortcutInput from "./ShortcutInput.vue";
 
 interface Window {
   shortcuts: Shortcut[];
@@ -48,7 +51,7 @@ let key_press: (e: KeyboardEvent) => void;
 
 export default defineComponent({
   name: "Partial",
-  components: { SearchBar, ShortcutList },
+  components: { SearchBar, ShortcutList, ShortcutInput },
   data() {
     return {
       selected_index: -1,
@@ -121,6 +124,23 @@ export default defineComponent({
             (s) => s.shortcut !== shortcut
           );
           this.fuse.setCollection(this.shortcuts);
+        }
+      });
+    },
+    add({
+      shortcut,
+      url,
+      on_success,
+    }: {
+      shortcut: string;
+      url: string;
+      on_success: () => void;
+    }) {
+      axios.post("/" + shortcut, qs.stringify({ url })).then((res) => {
+        if (res.status === 201) {
+          this.shortcuts.unshift({ shortcut, url });
+          this.fuse.setCollection(this.shortcuts);
+          on_success();
         }
       });
     },

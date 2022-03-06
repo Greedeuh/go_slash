@@ -21,15 +21,12 @@
         role="group"
         aria-label="Basic mixed styles example"
       >
-        <button class="btn btn-primary">
-          <i class="icon-pencil"></i>
-        </button>
         <button
           id="btn-delete"
           @click.prevent="delete_shortcut(shortcut.shortcut)"
           class="btn btn-danger"
         >
-          <i class="icon-remove"></i>
+          <i class="icon-trash"></i>
         </button>
       </div>
     </a>

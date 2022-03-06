@@ -284,3 +284,75 @@ async fn index_user_can_delete_shortcuts() {
     )
     .await;
 }
+
+#[async_test]
+async fn index_user_can_add_shortcuts() {
+    in_browserr("", |driver: &WebDriver| {
+        async {
+            driver.get("http://localhost:8000").await.unwrap();
+
+            let administer_btn = driver.find_element(By::Id("btn-administer")).await.unwrap();
+            assert_eq!(
+                administer_btn.class_name().await.unwrap(),
+                Some("btn-light btn".to_owned())
+            );
+            administer_btn.click().await.unwrap();
+
+            driver
+                .find_element(By::Css("[name='shortcut']"))
+                .await
+                .unwrap()
+                .send_keys("jeanLuc")
+                .await
+                .unwrap();
+            driver
+                .find_element(By::Css("[name='url']"))
+                .await
+                .unwrap()
+                .send_keys("http://localhost:8000/aShortcut")
+                .await
+                .unwrap();
+            driver
+                .find_element(By::Id("btn-add"))
+                .await
+                .unwrap()
+                .click()
+                .await
+                .unwrap();
+
+            sleep();
+
+            let article = driver
+                .find_element(By::Css("[role='listitem']"))
+                .await
+                .unwrap();
+            assert_eq!(
+                article.text().await.unwrap(),
+                "jeanLuc http://localhost:8000/aShortcut"
+            );
+
+            assert_eq!(
+                driver
+                    .find_element(By::Css("[name='shortcut']"))
+                    .await
+                    .unwrap()
+                    .get_property("value")
+                    .await
+                    .unwrap(),
+                Some("".to_owned())
+            );
+            assert_eq!(
+                driver
+                    .find_element(By::Css("[name='url']"))
+                    .await
+                    .unwrap()
+                    .get_property("value")
+                    .await
+                    .unwrap(),
+                Some("".to_owned())
+            );
+        }
+        .boxed()
+    })
+    .await;
+}
