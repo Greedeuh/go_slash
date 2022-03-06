@@ -229,3 +229,58 @@ async fn index_user_can_search() {
     )
     .await;
 }
+
+#[async_test]
+async fn index_user_can_delete_shortcuts() {
+    in_browser(
+        "newShortcut: http://localhost:8000/newShortcut",
+        |driver: &WebDriver| {
+            async {
+                driver.get("http://localhost:8000").await.unwrap();
+
+                let administer_btn = driver.find_element(By::Id("btn-administer")).await.unwrap();
+                assert_eq!(
+                    administer_btn.class_name().await.unwrap(),
+                    Some("btn-light btn".to_owned())
+                );
+                administer_btn.click().await.unwrap();
+
+                driver
+                    .find_element(By::Id("btn-delete"))
+                    .await
+                    .unwrap()
+                    .click()
+                    .await
+                    .unwrap();
+
+                sleep();
+
+                let articles = driver
+                    .find_elements(By::Css("[role='listitem']"))
+                    .await
+                    .unwrap();
+                assert_eq!(articles.len(), 0);
+
+                let search_bar = driver
+                    .find_element(By::Css("input[type='search']"))
+                    .await
+                    .unwrap();
+                search_bar.send_keys("newShortcut").await.unwrap();
+                let articles = driver
+                    .find_elements(By::Css("[role='listitem']"))
+                    .await
+                    .unwrap();
+                assert_eq!(articles.len(), 0);
+
+                driver.get("http://localhost:8000").await.unwrap();
+                let articles = driver
+                    .find_elements(By::Css("[role='listitem']"))
+                    .await
+                    .unwrap();
+                assert_eq!(articles.len(), 0);
+            }
+            .boxed()
+        },
+    )
+    .await;
+}

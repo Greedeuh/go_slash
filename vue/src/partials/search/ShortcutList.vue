@@ -15,6 +15,23 @@
         </span>
         {{ shortcut.url }}
       </div>
+      <div
+        v-if="administer"
+        class="btn-group"
+        role="group"
+        aria-label="Basic mixed styles example"
+      >
+        <button class="btn btn-primary">
+          <i class="icon-pencil"></i>
+        </button>
+        <button
+          id="btn-delete"
+          @click.prevent="delete_shortcut(shortcut.shortcut)"
+          class="btn btn-danger"
+        >
+          <i class="icon-remove"></i>
+        </button>
+      </div>
     </a>
   </div>
 </template>
@@ -27,14 +44,22 @@ export default defineComponent({
   props: {
     shortcuts: Array,
     selected_index: Number,
+    administer: Boolean,
   },
-  emits: ["click_shortcut_index"],
+  emits: ["click_shortcut_index", "delete_shortcut"],
   methods: {
     click_shortcut_index(index: number) {
       this.$emit("click_shortcut_index", index);
+    },
+    delete_shortcut(shortcut: string) {
+      this.$emit("delete_shortcut", shortcut);
     },
   },
 });
 </script>
 
-<style></style>
+<style>
+.list-group {
+  justify-content: space-between;
+}
+</style>
