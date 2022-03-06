@@ -332,6 +332,10 @@ async fn index_user_can_add_shortcuts() {
                 article.text().await.unwrap(),
                 "jeanLuc http://localhost:8000/aShortcut NEW"
             );
+            assert_eq!(
+                article.get_property("href").await.unwrap(),
+                Some("http://localhost:8000/aShortcut?no_redirect".to_owned())
+            );
 
             assert_eq!(
                 driver
