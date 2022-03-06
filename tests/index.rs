@@ -245,13 +245,15 @@ async fn index_user_can_delete_shortcuts() {
                 );
                 administer_btn.click().await.unwrap();
 
-                driver
-                    .find_element(By::Id("btn-delete"))
-                    .await
-                    .unwrap()
-                    .click()
-                    .await
-                    .unwrap();
+                let delete_btn = driver.find_element(By::Id("btn-delete")).await.unwrap();
+
+                // Escape should quit the admin mode
+                administer_btn.send_keys(Keys::Escape).await.unwrap();
+                assert!(!delete_btn.is_present().await.unwrap());
+
+                administer_btn.click().await.unwrap();
+                let delete_btn = driver.find_element(By::Id("btn-delete")).await.unwrap();
+                delete_btn.click().await.unwrap();
 
                 sleep();
 

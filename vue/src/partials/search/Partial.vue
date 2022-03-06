@@ -48,7 +48,7 @@ function setup_fuse(shortcuts: Shortcut[]) {
 }
 
 let win = window as unknown as Window;
-const CONTROL_KEYS = ["ArrowUp", "ArrowDown", "Enter", "Tab"];
+const CONTROL_KEYS = ["ArrowUp", "ArrowDown", "Enter", "Tab", "Escape"];
 const SHORTCUTS = win.shortcuts;
 const SHORTCUT = win.shortcut;
 
@@ -78,12 +78,15 @@ export default defineComponent({
   created() {
     key_press = (e: KeyboardEvent) => {
       let key = e.key;
+      console.log(key);
       if (CONTROL_KEYS.includes(key)) {
         e.preventDefault();
 
-        if (key === "ArrowUp" && this.selected_index >= 0) {
+        if (key === "Escape") this.administer = false;
+
+        if (key === "ArrowUp" && this.selected_index >= 0)
           this.selected_index -= 1;
-        }
+
         if (
           key === "ArrowDown" &&
           this.selected_index + 1 < this.fuzzed_or_all.length
@@ -91,12 +94,9 @@ export default defineComponent({
           this.selected_index += 1;
         }
 
-        if (key === "Tab") {
+        if (key === "Tab")
           this.take_selected(this.selected_index < 0 ? 0 : this.selected_index);
-        }
-        if (key === "Enter") {
-          this.go_selected(this.selected_index);
-        }
+        if (key === "Enter") this.go_selected(this.selected_index);
       }
     };
     window.addEventListener("keydown", key_press);
