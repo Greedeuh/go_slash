@@ -7,7 +7,12 @@
       @on-administer="set_administer"
       @enter="go_selected(-1)"
     />
-    <ShortcutInput v-if="shortcut" @save="add" :value="shortcut" />
+    <ShortcutInput
+      v-if="shortcut"
+      @save="add"
+      :initial_shortcut="shortcut"
+      :initial_url="url"
+    />
     <ShortcutInput v-if="administer" @save="add" />
     <ShortcutList
       :shortcuts="fuzzed_or_all"
@@ -28,7 +33,8 @@ import ShortcutList from "./ShortcutList.vue";
 import ShortcutInput from "./ShortcutInput.vue";
 
 interface Window {
-  shortcut: string | undefined;
+  shortcut?: string;
+  url?: string;
   shortcuts: Shortcut[];
 }
 
@@ -51,6 +57,7 @@ let win = window as unknown as Window;
 const CONTROL_KEYS = ["ArrowUp", "ArrowDown", "Enter", "Tab", "Escape"];
 const SHORTCUTS = win.shortcuts;
 const SHORTCUT = win.shortcut;
+const URL = win.url;
 
 let key_press: (e: KeyboardEvent) => void;
 
@@ -65,6 +72,7 @@ export default defineComponent({
       fuse: setup_fuse(SHORTCUTS),
       search: SHORTCUT ? SHORTCUT : "",
       shortcut: SHORTCUT,
+      url: URL,
     };
   },
   computed: {

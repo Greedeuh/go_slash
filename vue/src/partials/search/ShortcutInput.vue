@@ -4,7 +4,7 @@
       <span class="input-group-text">Bind</span>
       <input
         v-model="shortcut"
-        :disabled="value"
+        :disabled="initial_shortcut"
         minlength="1"
         required
         type="text"
@@ -37,16 +37,17 @@ import { defineComponent } from "vue";
 export default defineComponent({
   name: "ShortcutInput",
   props: {
-    value: String,
+    initial_shortcut: String,
+    initial_url: String,
   },
   data() {
-    return { shortcut: this.value, url: "" };
+    return { shortcut: this.initial_shortcut, url: this.initial_url };
   },
   emits: ["save"],
   methods: {
     save() {
       let on_success;
-      if (this.value) {
+      if (this.initial_shortcut) {
         on_success = () => {}; // eslint-disable-line
       } else {
         on_success = () => {

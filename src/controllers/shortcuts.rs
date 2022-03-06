@@ -39,6 +39,7 @@ pub fn shortcuts(
                     "index",
                     json!({
                         "shortcut": shortcut,
+                        "url": url,
                         "shortcuts": json!(entries.sorted()?
                             .iter()
                             .map(|(shortcut, url)| json!({"shortcut": shortcut, "url": url}))

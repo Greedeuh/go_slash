@@ -4,6 +4,7 @@
 <script>
 window.shortcuts = {{{shortcuts}}}
 {{#if (or not_found no_redirect) }} window.shortcut = "{{{shortcut}}}" {{/if}}
+{{#if no_redirect }} window.url = "{{{url}}}" {{/if}}
 </script>
 {{> vue_dist/search }}
 {{/inline}}

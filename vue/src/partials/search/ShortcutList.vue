@@ -2,7 +2,7 @@
   <div role="list" class="list-group">
     <a
       v-for="(shortcut, i) in shortcuts"
-      :href="shortcut.url + (administer ? '?no_redirect' : '')"
+      :href="administer ? shortcut.shortcut + '?no_redirect' : shortcut.url"
       :key="i"
       role="listitem"
       :class="{ active: i == selected_index }"
