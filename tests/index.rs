@@ -287,7 +287,7 @@ async fn index_user_can_delete_shortcuts() {
 
 #[async_test]
 async fn index_user_can_add_shortcuts() {
-    in_browserr("", |driver: &WebDriver| {
+    in_browser("", |driver: &WebDriver| {
         async {
             driver.get("http://localhost:8000").await.unwrap();
 
@@ -354,5 +354,155 @@ async fn index_user_can_add_shortcuts() {
         }
         .boxed()
     })
+    .await;
+}
+
+#[async_test]
+async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
+    in_browser(
+        "newShortcut: http://localhost:8000/looped
+        newShortcut2: http://localhost:8000/claude",
+        |driver: &WebDriver| {
+            async {
+                // create shortcut
+                driver
+                    .get("http://localhost:8000/newShortcut?no_redirect=true")
+                    .await
+                    .unwrap();
+
+                let search_bar = driver
+                    .find_element(By::Css("input[type='search']"))
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    search_bar.get_property("value").await.unwrap(),
+                    Some("newShortcut".to_owned())
+                );
+
+                let articles = driver
+                    .find_elements(By::Css("[role='listitem']"))
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    articles[0].text().await.unwrap(),
+                    "newShortcut http://localhost:8000/looped"
+                );
+                assert_eq!(articles.len(), 2);
+
+                let shortcut_edit = driver
+                    .find_element(By::Css("input[name='shortcut']"))
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    shortcut_edit.get_property("value").await.unwrap(),
+                    Some("newShortcut".to_owned())
+                );
+                assert_eq!(
+                    shortcut_edit.get_property("disabled").await.unwrap(),
+                    Some("true".to_owned())
+                );
+
+                driver
+                    .find_element(By::Css("input[name='url']"))
+                    .await
+                    .unwrap()
+                    .send_keys("http://localhost:8000/ring")
+                    .await
+                    .unwrap();
+                driver
+                    .find_element(By::Id("btn-add"))
+                    .await
+                    .unwrap()
+                    .click()
+                    .await
+                    .unwrap();
+
+                let articles = driver
+                    .find_elements(By::Css("[role='listitem']"))
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    articles[0].text().await.unwrap(),
+                    "newShortcut http://localhost:8000/ring"
+                );
+            }
+            .boxed()
+        },
+    )
+    .await;
+}
+
+#[async_test]
+async fn undefined_shortcut_return_search_filled_and_edit_form() {
+    in_browser(
+        "newShortcut1: http://localhost:8000/looped
+        newShortcut2: http://localhost:8000/claude",
+        |driver: &WebDriver| {
+            async {
+                // create shortcut
+                driver
+                    .get("http://localhost:8000/newShortcut")
+                    .await
+                    .unwrap();
+
+                let search_bar = driver
+                    .find_element(By::Css("input[type='search']"))
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    search_bar.get_property("value").await.unwrap(),
+                    Some("newShortcut".to_owned())
+                );
+
+                let articles = driver
+                    .find_elements(By::Css("[role='listitem']"))
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    articles[0].text().await.unwrap(),
+                    "newShortcut1 http://localhost:8000/looped"
+                );
+                assert_eq!(articles.len(), 2);
+
+                let shortcut_edit = driver
+                    .find_element(By::Css("input[name='shortcut']"))
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    shortcut_edit.get_property("value").await.unwrap(),
+                    Some("newShortcut".to_owned())
+                );
+                assert_eq!(
+                    shortcut_edit.get_property("disabled").await.unwrap(),
+                    Some("true".to_owned())
+                );
+
+                driver
+                    .find_element(By::Css("input[name='url']"))
+                    .await
+                    .unwrap()
+                    .send_keys("http://localhost:8000/ring")
+                    .await
+                    .unwrap();
+                driver
+                    .find_element(By::Id("btn-add"))
+                    .await
+                    .unwrap()
+                    .click()
+                    .await
+                    .unwrap();
+
+                let articles = driver
+                    .find_elements(By::Css("[role='listitem']"))
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    articles[0].text().await.unwrap(),
+                    "newShortcut http://localhost:8000/ring"
+                );
+            }
+            .boxed()
+        },
+    )
     .await;
 }

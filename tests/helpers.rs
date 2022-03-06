@@ -48,6 +48,7 @@ where
 
 #[allow(dead_code)]
 /// Same but launch browser
+#[deprecated(note = "Should only be used in local")]
 pub async fn in_browserr<F>(shortcuts: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
@@ -57,6 +58,7 @@ where
 
 #[allow(dead_code)]
 /// Same but launch browser and do not kill it
+#[deprecated(note = "Should only be used in local")]
 pub async fn in_browserrr<F>(shortcuts: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,

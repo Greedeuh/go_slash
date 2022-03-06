@@ -1,9 +1,10 @@
 use lazy_static::lazy_static;
 use log::error;
 use regex::Regex;
-use rocket::{form::Form, http::Status, response::Redirect, State};
+use rocket::serde::{json::Json, Deserialize};
+use rocket::{http::Status, response::Redirect, State};
 use rocket_dyn_templates::Template;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::path::PathBuf;
 
 use crate::Entries;
@@ -28,17 +29,23 @@ pub fn shortcuts(
     shortcut: PathBuf,
     no_redirect: Option<bool>,
     entries: &State<Entries>,
-) -> Result<ShortcutRes, Status> {
+) -> Result<ShortcutRes, (Status, Value)> {
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
     Ok(match entries.find(shortcut) {
         Some(url) => {
             if let Some(true) = no_redirect {
                 ShortcutRes::Ok(Template::render(
-                    "shortcut",
+                    "index",
                     json!({
-                        "shortcut":shortcut,
-                        "url": url
+                        "shortcut": shortcut,
+                        "shortcuts": json!(entries.sorted()
+                            .iter()
+                            .map(|(shortcut, url)| json!({"shortcut": shortcut, "url": url}))
+                            .collect::<Vec<_>>())
+                            .to_string(),
+                        "url": url,
+                        "no_redirect": true
                     }),
                 ))
             } else {
@@ -46,64 +53,54 @@ pub fn shortcuts(
             }
         }
         None => ShortcutRes::NotFound(Template::render(
-            "shortcut",
+            "index",
             json!({
-                "shortcut":shortcut,
-                "not_found":true
+                "shortcut": shortcut,
+                "shortcuts": json!(entries.sorted()
+                                    .iter()
+                                    .map(|(shortcut, url)| json!({"shortcut": shortcut, "url": url}))
+                                    .collect::<Vec<_>>())
+                                    .to_string(),
+                "not_found": true
             }),
         )),
     })
 }
 
-#[derive(FromForm)]
+#[derive(Deserialize)]
 pub struct Url {
     url: String,
 }
 
-#[post("/<shortcut..>", data = "<url>")]
-pub fn post_shortcuts(
+#[put("/<shortcut..>", data = "<url>")]
+pub fn put_shortcut(
     shortcut: PathBuf,
     entries: &State<Entries>,
-    url: Form<Url>,
-) -> Result<(Status, Template), Status> {
+    url: Json<Url>,
+) -> Result<Status, (Status, Value)> {
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
     let url = url.into_inner().url;
     if !URL_REGEX.is_match(&url) {
-        return Ok((
-            Status::BadRequest,
-            Template::render(
-                "shortcut",
-                json!({
-                    "shortcut":shortcut,
-                    "wrong_url": true,
-                }),
-            ),
-        ));
+        return Err((Status::BadRequest, json!({"error": "Wrong URL format."})));
     }
 
     entries.put(shortcut, url);
 
-    Ok((
-        Status::Created,
-        Template::render(
-            "shortcut",
-            json!({
-                "shortcut":shortcut,
-                "saved": true,
-            }),
-        ),
-    ))
+    Ok(Status::Ok)
 }
 
 #[delete("/<shortcut..>")]
-pub fn delete_shortcut(shortcut: PathBuf, entries: &State<Entries>) -> Result<Template, Status> {
+pub fn delete_shortcut(
+    shortcut: PathBuf,
+    entries: &State<Entries>,
+) -> Result<Template, (Status, Value)> {
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
     entries.delete(shortcut);
 
     Ok(Template::render(
-        "shortcut",
+        "index",
         json!({
             "shortcut":shortcut,
             "deleted":true
@@ -111,12 +108,15 @@ pub fn delete_shortcut(shortcut: PathBuf, entries: &State<Entries>) -> Result<Te
     ))
 }
 
-fn parse_shortcut_path_buff(shortcut: &'_ PathBuf) -> Result<&'_ str, Status> {
+fn parse_shortcut_path_buff(shortcut: &'_ PathBuf) -> Result<&'_ str, (Status, Value)> {
     match shortcut.to_str() {
         Some(shortcut) => Ok(shortcut),
         None => {
             error!("GET <shortcut..> failed parsing: {:?}", shortcut);
-            Err(Status::BadRequest)
+            Err((
+                Status::BadRequest,
+                json!({"error": "Wrong shortcut format."}),
+            ))
         }
     }
 }

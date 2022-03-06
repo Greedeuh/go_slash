@@ -1,25 +1,33 @@
 <template>
-  <div class="input-group mb-3 input-group-lg">
-    <span class="input-group-text">GO /</span>
-    <input
-      :value="modelValue"
-      @input="update_value($event.target.value)"
-      type="search"
-      placeholder="type then Up/Down then Tab/Enter"
-      @keydown="keydown"
-      ref="search_bar"
-      class="form-control"
-    />
-    <span class="input-group-text"
-      ><button
-        @click="emit_administer"
-        id="btn-administer"
-        :class="{ 'btn-light': !administer, 'btn-secondary': administer }"
-        class="btn"
-      >
-        <i class="icon-wrench"></i></button
-    ></span>
-  </div>
+  <form @submit.prevent="enter">
+    <div class="input-group mb-3 input-group-lg">
+      <span class="input-group-text">GO /</span>
+      <input
+        :value="modelValue"
+        @input="update_value($event.target.value)"
+        type="search"
+        placeholder="type then Up/Down then Tab/Enter"
+        @keydown="keydown"
+        ref="search_bar"
+        class="form-control"
+      />
+      <span class="input-group-text">
+        <div class="btn-group">
+          <button id="btn-enter" class="btn btn-primary" type="submit">
+            <i class="icon-search"></i></button
+          ><button
+            @click="emit_administer"
+            id="btn-administer"
+            :class="{ 'btn-light': !administer, 'btn-secondary': administer }"
+            class="btn"
+            type="button"
+          >
+            <i class="icon-wrench"></i>
+          </button>
+        </div>
+      </span>
+    </div>
+  </form>
 </template>
 
 <script lang="ts">
@@ -31,7 +39,13 @@ export default defineComponent({
     modelValue: String,
     administer: Boolean,
   },
-  emits: ["update:modelValue", "keydown", "administrate", "on-administer"],
+  emits: [
+    "update:modelValue",
+    "keydown",
+    "administrate",
+    "on-administer",
+    "enter",
+  ],
   methods: {
     update_value(value: string) {
       this.$emit("update:modelValue", value);
@@ -41,6 +55,9 @@ export default defineComponent({
     },
     emit_administer() {
       this.$emit("on-administer");
+    },
+    enter() {
+      this.$emit("enter");
     },
   },
   mounted() {

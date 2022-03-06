@@ -10,19 +10,13 @@ use rocket_dyn_templates::Template;
 use serde_json::json;
 
 mod controllers;
-use controllers::shortcuts::{delete_shortcut, post_shortcuts, shortcuts};
+use controllers::shortcuts::{delete_shortcut, put_shortcut, shortcuts};
 mod models;
 pub use models::*;
 
 #[get("/")]
 fn index(entries: &State<Entries>) -> Template {
-    let mut all_shortcuts = entries
-        .all()
-        .into_iter()
-        .map(|(shortcut, url)| (shortcut, url))
-        .collect::<Vec<_>>();
-
-    all_shortcuts.sort_by(|(shortcut_1, _), (shortcut_2, _)| shortcut_1.cmp(shortcut_2));
+    let all_shortcuts = entries.sorted();
 
     let all_shortcuts = all_shortcuts
         .iter()
@@ -38,7 +32,7 @@ pub fn server(entries: Entries) -> rocket::Rocket<rocket::Build> {
     rocket::build()
         .mount(
             "/",
-            routes![index, shortcuts, post_shortcuts, delete_shortcut],
+            routes![index, shortcuts, put_shortcut, delete_shortcut],
         )
         .mount("/public", FileServer::from(relative!("public")))
         .manage(entries)

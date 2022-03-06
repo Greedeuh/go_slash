@@ -5,7 +5,9 @@
       @keydown="reset_index_if_letter"
       :administer="administer"
       @on-administer="set_administer"
+      @enter="go_selected(-1)"
     />
+    <ShortcutInput v-if="shortcut" @save="add" :value="shortcut" />
     <ShortcutInput v-if="administer" @save="add" />
     <ShortcutList
       :shortcuts="fuzzed_or_all"
@@ -20,13 +22,13 @@
 import { defineComponent } from "vue";
 import Fuse from "fuse.js";
 import axios from "axios";
-import qs from "qs";
 
 import SearchBar from "./Search.vue";
 import ShortcutList from "./ShortcutList.vue";
 import ShortcutInput from "./ShortcutInput.vue";
 
 interface Window {
+  shortcut: string | undefined;
   shortcuts: Shortcut[];
 }
 
@@ -44,8 +46,10 @@ function setup_fuse(shortcuts: Shortcut[]) {
   });
 }
 
+let win = window as unknown as Window;
 const CONTROL_KEYS = ["ArrowUp", "ArrowDown", "Enter", "Tab"];
-const SHORTCUTS = (window as unknown as Window).shortcuts;
+const SHORTCUTS = win.shortcuts;
+const SHORTCUT = win.shortcut;
 
 let key_press: (e: KeyboardEvent) => void;
 
@@ -58,7 +62,8 @@ export default defineComponent({
       shortcuts: SHORTCUTS,
       administer: false,
       fuse: setup_fuse(SHORTCUTS),
-      search: "",
+      search: SHORTCUT ? SHORTCUT : "",
+      shortcut: SHORTCUT,
     };
   },
   computed: {
@@ -108,7 +113,7 @@ export default defineComponent({
     },
     go_selected(selected_index: number) {
       if (selected_index === -1) {
-        window.location.href = "/" + this.search;
+        window.location.href = "/" + encodeURI(this.search);
       } else {
         window.location.href =
           "/" + this.fuzzed_or_all[selected_index].shortcut;
@@ -136,8 +141,8 @@ export default defineComponent({
       url: string;
       on_success: () => void;
     }) {
-      axios.post("/" + shortcut, qs.stringify({ url })).then((res) => {
-        if (res.status === 201) {
+      axios.put("/" + shortcut, { url }).then((res) => {
+        if (res.status === 200) {
           this.shortcuts.unshift({ shortcut, url });
           this.fuse.setCollection(this.shortcuts);
           on_success();

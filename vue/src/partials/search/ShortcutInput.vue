@@ -4,6 +4,7 @@
       <span class="input-group-text">Bind</span>
       <input
         v-model="shortcut"
+        :disabled="value"
         minlength="1"
         required
         type="text"
@@ -21,8 +22,9 @@
         name="url"
         class="form-control"
         placeholder="https://my-favorite-tool"
+        @keydown.enter.prevent=""
       />
-      <button id="btn-add" class="btn btn-primary" type="submit" required>
+      <button id="btn-add" class="btn btn-primary" type="submit">
         Save <i class="icon-save"></i>
       </button>
     </div>
@@ -34,16 +36,25 @@ import { defineComponent } from "vue";
 
 export default defineComponent({
   name: "ShortcutInput",
+  props: {
+    value: String,
+  },
   data() {
-    return { shortcut: "", url: "" };
+    return { shortcut: this.value, url: "" };
   },
   emits: ["save"],
   methods: {
     save() {
-      let on_success = () => {
-        this.shortcut = "";
-        this.url = "";
-      };
+      let on_success;
+      if (this.value) {
+        on_success = () => {}; // eslint-disable-line
+      } else {
+        on_success = () => {
+          this.shortcut = "";
+          this.url = "";
+        };
+      }
+
       this.$emit("save", {
         shortcut: this.shortcut,
         url: this.url,

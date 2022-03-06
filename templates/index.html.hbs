@@ -1,6 +1,9 @@
 {{#*inline "page"}}
+{{#if not_found}} <div role="alert" class="alert alert-warning">Shortcut "{{shortcut}}" does not exist yet.</div> {{/if}}
+
 <script>
 window.shortcuts = {{{shortcuts}}}
+{{#if (or not_found no_redirect) }} window.shortcut = "{{{shortcut}}}" {{/if}}
 </script>
 {{> vue_dist/search }}
 {{/inline}}

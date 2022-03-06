@@ -30,6 +30,18 @@ impl Entries {
         map.clone()
     }
 
+    pub fn sorted(&self) -> Vec<(String, String)> {
+        let mut all_shortcuts = self
+            .all()
+            .into_iter()
+            .map(|(shortcut, url)| (shortcut, url))
+            .collect::<Vec<_>>();
+
+        all_shortcuts.sort_by(|(shortcut_1, _), (shortcut_2, _)| shortcut_1.cmp(shortcut_2));
+
+        all_shortcuts
+    }
+
     pub fn find(&self, key: &str) -> Option<ShortcutUrl> {
         match Arc::clone(&self.map).lock() {
             Ok(guard) => guard,
