@@ -1,3 +1,4 @@
 /target
 templates/vue_dist
 public/vue
+test_dir

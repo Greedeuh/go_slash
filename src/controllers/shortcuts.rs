@@ -7,7 +7,7 @@ use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
-use crate::Entries;
+use crate::{AppError, Entries};
 
 lazy_static! {
     static ref URL_REGEX: Regex =
@@ -32,14 +32,14 @@ pub fn shortcuts(
 ) -> Result<ShortcutRes, (Status, Value)> {
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
-    Ok(match entries.find(shortcut) {
+    Ok(match entries.find(shortcut)? {
         Some(url) => {
             if let Some(true) = no_redirect {
                 ShortcutRes::Ok(Template::render(
                     "index",
                     json!({
                         "shortcut": shortcut,
-                        "shortcuts": json!(entries.sorted()
+                        "shortcuts": json!(entries.sorted()?
                             .iter()
                             .map(|(shortcut, url)| json!({"shortcut": shortcut, "url": url}))
                             .collect::<Vec<_>>())
@@ -56,7 +56,7 @@ pub fn shortcuts(
             "index",
             json!({
                 "shortcut": shortcut,
-                "shortcuts": json!(entries.sorted()
+                "shortcuts": json!(entries.sorted()?
                                     .iter()
                                     .map(|(shortcut, url)| json!({"shortcut": shortcut, "url": url}))
                                     .collect::<Vec<_>>())
@@ -85,7 +85,7 @@ pub fn put_shortcut(
         return Err((Status::BadRequest, json!({"error": "Wrong URL format."})));
     }
 
-    entries.put(shortcut, url);
+    if entries.put(shortcut, url).is_ok() {};
 
     Ok(Status::Ok)
 }
@@ -97,7 +97,7 @@ pub fn delete_shortcut(
 ) -> Result<Template, (Status, Value)> {
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
-    entries.delete(shortcut);
+    if entries.delete(shortcut).is_ok() {};
 
     Ok(Template::render(
         "index",
@@ -117,6 +117,17 @@ fn parse_shortcut_path_buff(shortcut: &'_ PathBuf) -> Result<&'_ str, (Status, V
                 Status::BadRequest,
                 json!({"error": "Wrong shortcut format."}),
             ))
+        }
+    }
+}
+
+impl From<AppError> for (Status, Value) {
+    fn from(e: AppError) -> Self {
+        match e {
+            AppError::Db => (
+                Status::InternalServerError,
+                json!({"error": "Probably a database issue :/"}),
+            ),
         }
     }
 }

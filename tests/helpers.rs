@@ -5,37 +5,42 @@ use rocket::{
     tokio::spawn,
 };
 use std::{
-    collections::HashMap,
     env,
+    fs::{create_dir, remove_dir_all, write},
     panic::{resume_unwind, AssertUnwindSafe},
     time::Duration,
 };
 use thirtyfour::{DesiredCapabilities, WebDriver};
+use uuid::Uuid;
+
+fn gen_file_path(shortcuts: &str) -> String {
+    if let Err(e) = remove_dir_all("test_dir") {
+        println!("{:?}", e);
+    };
+
+    create_dir("test_dir").unwrap();
+
+    let path = format!("test_dir/filename_{}.yml", Uuid::new_v4());
+    if !shortcuts.is_empty() {
+        write(&path, shortcuts).unwrap();
+    }
+    path
+}
 
 #[allow(dead_code)]
 pub fn launch_empty() -> Client {
-    Client::tracked(server(Entries::new(HashMap::new()))).expect("valid rocket instance")
+    Client::tracked(server(Entries::from_path(&gen_file_path("")))).expect("valid rocket instance")
 }
 
 #[allow(dead_code)]
 pub fn launch_with(shortcuts: &str) -> Client {
-    Client::tracked(server(Entries::from(shortcuts))).expect("valid rocket instance")
+    Client::tracked(server(Entries::from_path(&gen_file_path(shortcuts))))
+        .expect("valid rocket instance")
 }
 
 #[allow(dead_code)]
 pub fn entries(shortcuts: &str) -> Entries {
-    Entries::new(
-        shortcuts
-            .lines()
-            .map(|line| {
-                let line = line.replace(' ', "");
-                let (key, value) = line
-                    .split_once(':')
-                    .expect("launch_with shortcuts failed parsing");
-                (key.to_owned(), value.to_owned())
-            })
-            .collect(),
-    )
+    Entries::from_path(&gen_file_path(shortcuts))
 }
 
 #[allow(dead_code)]
@@ -81,7 +86,7 @@ where
         _ => do_not_close_browser || !headless,
     };
 
-    let entries = Entries::from(shortcuts);
+    let entries = Entries::from_path(&gen_file_path(shortcuts));
     spawn(async move { server(entries).launch().await });
 
     let mut caps = DesiredCapabilities::firefox();

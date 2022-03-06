@@ -4,10 +4,11 @@ extern crate rocket;
 extern crate rocket_dyn_templates;
 use rocket::{
     fs::{relative, FileServer},
-    State,
+    http::Status,
+    Build, Rocket, State,
 };
 use rocket_dyn_templates::Template;
-use serde_json::json;
+use serde_json::{json, Value};
 
 mod controllers;
 use controllers::shortcuts::{delete_shortcut, put_shortcut, shortcuts};
@@ -15,8 +16,8 @@ mod models;
 pub use models::*;
 
 #[get("/")]
-fn index(entries: &State<Entries>) -> Template {
-    let all_shortcuts = entries.sorted();
+fn index(entries: &State<Entries>) -> Result<Template, (Status, Value)> {
+    let all_shortcuts = entries.sorted()?;
 
     let all_shortcuts = all_shortcuts
         .iter()
@@ -25,10 +26,13 @@ fn index(entries: &State<Entries>) -> Template {
 
     let all_shortcuts: String = json!(all_shortcuts).to_string();
 
-    Template::render("index", json!({ "shortcuts": all_shortcuts }))
+    Ok(Template::render(
+        "index",
+        json!({ "shortcuts": all_shortcuts }),
+    ))
 }
 
-pub fn server(entries: Entries) -> rocket::Rocket<rocket::Build> {
+pub fn server(entries: Entries) -> Rocket<Build> {
     rocket::build()
         .mount(
             "/",

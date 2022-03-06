@@ -1,91 +1,60 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use rustbreak::{deser::Yaml, PathDatabase, RustbreakError};
+use serde::Deserialize;
+use std::collections::HashMap;
+
+#[derive(Deserialize)]
+pub enum AppError {
+    Db,
+}
+
+impl From<RustbreakError> for AppError {
+    fn from(e: RustbreakError) -> Self {
+        error!("{:?}", e);
+        AppError::Db
+    }
+}
 
 pub struct Entries {
-    map: Arc<Mutex<HashMap<Shortcut, ShortcutUrl>>>,
+    db: PathDatabase<HashMap<Shortcut, ShortcutUrl>, Yaml>,
 }
 
 impl Entries {
-    pub fn new(map: HashMap<Shortcut, ShortcutUrl>) -> Self {
-        Self {
-            map: Arc::new(Mutex::new(map)),
-        }
+    pub fn from_path(path: &str) -> Self {
+        let db: PathDatabase<HashMap<Shortcut, ShortcutUrl>, Yaml> =
+            PathDatabase::load_from_path_or_else(path.into(), HashMap::new).unwrap();
+        Self { db }
     }
 
-    pub fn empty() -> Self {
-        Self {
-            map: Arc::new(Mutex::new(HashMap::new())),
-        }
+    pub fn all(&self) -> Result<HashMap<String, String>, AppError> {
+        Ok(self.db.borrow_data()?.clone())
     }
 
-    pub fn all(&self) -> HashMap<String, String> {
-        let map = Arc::clone(&self.map);
-        let map = match map.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
-
-        map.clone()
-    }
-
-    pub fn sorted(&self) -> Vec<(String, String)> {
+    pub fn sorted(&self) -> Result<Vec<(String, String)>, AppError> {
         let mut all_shortcuts = self
-            .all()
+            .all()?
             .into_iter()
             .map(|(shortcut, url)| (shortcut, url))
             .collect::<Vec<_>>();
 
         all_shortcuts.sort_by(|(shortcut_1, _), (shortcut_2, _)| shortcut_1.cmp(shortcut_2));
 
-        all_shortcuts
+        Ok(all_shortcuts)
     }
 
-    pub fn find(&self, key: &str) -> Option<ShortcutUrl> {
-        match Arc::clone(&self.map).lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        }
-        .get(key)
-        .cloned()
+    pub fn find(&self, key: &str) -> Result<Option<ShortcutUrl>, AppError> {
+        Ok(self.db.borrow_data()?.get(key).cloned())
     }
 
-    pub fn put(&self, key: &str, url: ShortcutUrl) {
-        let map = Arc::clone(&self.map);
-        let mut map = match map.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
-
-        map.insert(key.to_owned(), url);
+    pub fn put(&self, key: &str, url: ShortcutUrl) -> Result<(), AppError> {
+        let mut db = self.db.borrow_data_mut()?;
+        db.insert(key.to_owned(), url);
+        Ok(())
     }
 
-    pub fn delete(&self, key: &str) {
-        let map = Arc::clone(&self.map);
-        let mut map = match map.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
-
-        map.remove(key);
-    }
-}
-
-impl<'a> From<&'a str> for Entries {
-    fn from(shortcuts: &'a str) -> Self {
-        let shortcuts = shortcuts
-            .lines()
-            .map(|line| {
-                let line = line.replace(' ', "");
-                let (key, value) = line
-                    .split_once(':')
-                    .expect("launch_with shortcuts failed parsing");
-                (key.to_owned(), value.to_owned())
-            })
-            .collect();
-
-        Self::new(shortcuts)
+    pub fn delete(&self, key: &str) -> Result<(), AppError> {
+        let mut db = self.db.borrow_data_mut()?;
+        db.remove(key);
+        Ok(())
     }
 }
 

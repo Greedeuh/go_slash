@@ -9,8 +9,8 @@ use thirtyfour::prelude::*;
 async fn index_should_list_shortcuts() {
     in_browser(
         "newShortcut: http://localhost:8000/newShortcut
-    aShortcut: http://localhost:8000/aShortcut
-    ssshortcut: http://localhost:8000/ssshortcut",
+aShortcut: http://localhost:8000/aShortcut
+ssshortcut: http://localhost:8000/ssshortcut",
         |driver: &WebDriver| {
             async {
                 let texts_sorted = vec![
@@ -49,8 +49,8 @@ async fn index_should_list_shortcuts() {
 async fn index_user_as_sugestions_when_typing() {
     in_browser(
         "newShortcut: http://localhost:8000/newShortcut
-    jeanLuc: http://localhost:8000/aShortcut
-    tadadam: http://localhost:8000/ssshortcut",
+jeanLuc: http://localhost:8000/aShortcut
+tadadam: http://localhost:8000/ssshortcut",
         |driver: &WebDriver| {
             async {
                 driver.get("http://localhost:8000").await.unwrap();
@@ -108,8 +108,8 @@ async fn index_user_as_sugestions_when_typing() {
 async fn index_user_can_search() {
     in_browser(
         "newShortcut: http://localhost:8000/newShortcut
-    jeanLuc: http://localhost:8000/aShortcut1
-    tadadam: http://localhost:8000/ssshortcut",
+jeanLuc: http://localhost:8000/aShortcut1
+tadadam: http://localhost:8000/ssshortcut",
         |driver: &WebDriver| {
             async {
                 driver.get("http://localhost:8000").await.unwrap();
@@ -367,7 +367,7 @@ async fn index_user_can_add_shortcuts() {
 async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
     in_browser(
         "newShortcut: http://localhost:8000/looped
-        newShortcut2: http://localhost:8000/claude",
+newShortcut2: http://localhost:8000/claude",
         |driver: &WebDriver| {
             async {
                 // create shortcut
@@ -443,7 +443,7 @@ async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
 async fn undefined_shortcut_return_search_filled_and_edit_form() {
     in_browser(
         "newShortcut1: http://localhost:8000/looped
-        newShortcut2: http://localhost:8000/claude",
+newShortcut2: http://localhost:8000/claude",
         |driver: &WebDriver| {
             async {
                 // create shortcut
