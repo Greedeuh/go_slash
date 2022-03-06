@@ -14,6 +14,7 @@
           {{ shortcut.shortcut }}
         </span>
         {{ shortcut.url }}
+        <span v-if="shortcut.new" class="badge bg-success">NEW</span>
       </div>
       <div
         v-if="administer"

@@ -35,6 +35,7 @@ interface Window {
 export interface Shortcut {
   shortcut: string;
   url: string;
+  new: boolean;
 }
 
 function setup_fuse(shortcuts: Shortcut[]) {
@@ -143,7 +144,11 @@ export default defineComponent({
     }) {
       axios.put("/" + shortcut, { url }).then((res) => {
         if (res.status === 200) {
-          this.shortcuts.unshift({ shortcut, url });
+          const shortcuts = this.shortcuts.filter(
+            (s) => s.shortcut !== shortcut
+          );
+          shortcuts.unshift({ shortcut, url, new: true });
+          this.shortcuts = shortcuts;
           this.fuse.setCollection(this.shortcuts);
           on_success();
         }

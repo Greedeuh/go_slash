@@ -328,7 +328,7 @@ async fn index_user_can_add_shortcuts() {
                 .unwrap();
             assert_eq!(
                 article.text().await.unwrap(),
-                "jeanLuc http://localhost:8000/aShortcut"
+                "jeanLuc http://localhost:8000/aShortcut NEW"
             );
 
             assert_eq!(
@@ -423,8 +423,9 @@ async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
                     .unwrap();
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "newShortcut http://localhost:8000/ring"
+                    "newShortcut http://localhost:8000/ring NEW"
                 );
+                assert_eq!(articles.len(), 2);
             }
             .boxed()
         },
@@ -498,7 +499,7 @@ async fn undefined_shortcut_return_search_filled_and_edit_form() {
                     .unwrap();
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "newShortcut http://localhost:8000/ring"
+                    "newShortcut http://localhost:8000/ring NEW"
                 );
             }
             .boxed()
