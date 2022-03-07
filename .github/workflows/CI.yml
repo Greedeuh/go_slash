@@ -23,4 +23,4 @@ jobs:
         yarn global add @vue/cli
         yarn --cwd ./vue build
     - name: Run tests
-      run: cargo test -- --test-threads=1
+      run: GECKOWEBDRIVER & cargo test -- --test-threads=1
