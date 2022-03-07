@@ -18,8 +18,8 @@ jobs:
     - uses: actions/checkout@v2
     - name: Yarn build for test
       run: |
-        yarn add @vue/cli-service
-        ./node_modules/.bin/vue-cli-service build
+        yarn --cwd ./vue install
+        ./vue/node_modules/.bin/vue-cli-service build
     - name: Cargo check
       run: cargo check --verbose
     - name: Run tests
