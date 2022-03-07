@@ -19,7 +19,7 @@ jobs:
     - name: Yarn build for test
       run: |
         yarn add @vue/cli-service
-        yarn --cwd ./vue ./node_modules/.bin/vue-cli-service build
+        ./node_modules/.bin/vue-cli-service build
     - name: Cargo check
       run: cargo check --verbose
     - name: Run tests
