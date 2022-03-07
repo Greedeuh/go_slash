@@ -20,7 +20,8 @@ jobs:
       run: cargo check --verbose
     - name: Yarn build for test
       run: |
-        yarn global add @vue/cli
+        export PATH="$(yarn global bin):$PATH"
+        yarn global @vue/cli
         yarn --cwd ./vue build
     - name: Run tests
       run: GECKOWEBDRIVER & cargo test -- --test-threads=1
