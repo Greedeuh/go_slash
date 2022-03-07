@@ -1,4 +1,3 @@
-#![feature(async_closure)]
 use rocket::async_test;
 use rocket::futures::FutureExt;
 mod helpers;
