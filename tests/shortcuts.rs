@@ -1,4 +1,3 @@
-#![feature(async_closure)]
 use rocket::http::ContentType;
 use rocket::http::Status;
 mod helpers;
