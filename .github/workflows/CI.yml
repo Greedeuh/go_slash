@@ -16,12 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Cargo check
-        run: cargo check --verbose
-      - name: Cargo lint
-        run: cargo clippy -- -D warnings
+        run: |
+          cd web
+          cargo check --verbose
+          cargo clippy -- -D warnings
       - name: Yarn build for test
         run: |
-          cd vue
+          cd web/vue
           yarn install
           ./node_modules/.bin/vue-cli-service build
       - name: Run tests
