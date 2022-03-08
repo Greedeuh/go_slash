@@ -86,7 +86,7 @@ export default defineComponent({
   created() {
     key_press = (e: KeyboardEvent) => {
       let key = e.key;
-      console.log(key);
+
       if (CONTROL_KEYS.includes(key)) {
         e.preventDefault();
 
