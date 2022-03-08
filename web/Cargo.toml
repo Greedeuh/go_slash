@@ -1,5 +1,5 @@
 [package]
-name = "go"
+name = "go_web"
 version = "1.0.0"
 edition = "2021"
 
