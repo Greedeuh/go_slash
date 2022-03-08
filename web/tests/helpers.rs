@@ -1,4 +1,4 @@
-use go::{server, Entries};
+use go_web::{server, Entries};
 use rocket::{
     futures::{future::BoxFuture, FutureExt},
     local::blocking::Client,

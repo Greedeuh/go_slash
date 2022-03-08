@@ -2,7 +2,7 @@
 extern crate rocket;
 use std::env;
 
-use go::{server, Entries};
+use go_web::{server, Entries};
 
 #[launch]
 fn rocket() -> _ {
