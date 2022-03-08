@@ -331,9 +331,10 @@ async fn index_user_can_add_shortcuts() {
                 article.text().await.unwrap(),
                 "jeanLuc http://localhost:8000/aShortcut NEW"
             );
+
             assert_eq!(
                 article.get_property("href").await.unwrap(),
-                Some("http://localhost:8000/aShortcut?no_redirect".to_owned())
+                Some("http://localhost:8000/jeanLuc?no_redirect".to_owned())
             );
 
             assert_eq!(
@@ -355,6 +356,12 @@ async fn index_user_can_add_shortcuts() {
                     .await
                     .unwrap(),
                 Some("".to_owned())
+            );
+
+            administer_btn.click().await.unwrap();
+            assert_eq!(
+                article.get_property("href").await.unwrap(),
+                Some("http://localhost:8000/aShortcut".to_owned())
             );
         }
         .boxed()
@@ -411,7 +418,7 @@ newShortcut2: http://localhost:8000/claude",
                     .find_element(By::Css("input[name='url']"))
                     .await
                     .unwrap()
-                    .send_keys("http://localhost:8000/ring")
+                    .send_keys("2")
                     .await
                     .unwrap();
                 driver
@@ -428,7 +435,7 @@ newShortcut2: http://localhost:8000/claude",
                     .unwrap();
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "newShortcut http://localhost:8000/ring NEW"
+                    "newShortcut http://localhost:8000/looped2 NEW"
                 );
                 assert_eq!(articles.len(), 2);
             }
