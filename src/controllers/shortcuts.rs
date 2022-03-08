@@ -5,7 +5,7 @@ use rocket::serde::{json::Json, Deserialize};
 use rocket::{http::Status, response::Redirect, State};
 use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::{AppError, Entries};
 
@@ -109,7 +109,7 @@ pub fn delete_shortcut(
     ))
 }
 
-fn parse_shortcut_path_buff(shortcut: &'_ PathBuf) -> Result<&'_ str, (Status, Value)> {
+fn parse_shortcut_path_buff(shortcut: &'_ Path) -> Result<&'_ str, (Status, Value)> {
     match shortcut.to_str() {
         Some(shortcut) => Ok(shortcut),
         None => {
