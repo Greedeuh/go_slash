@@ -25,4 +25,4 @@ jobs:
           yarn install
           ./node_modules/.bin/vue-cli-service build
       - name: Run tests
-        run: GECKOWEBDRIVER --log error & cargo test -- --test-threads=1
+        run: /usr/local/share/gecko_driver --log error & cargo test -- --test-threads=1
