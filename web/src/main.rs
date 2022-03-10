@@ -2,7 +2,7 @@
 extern crate rocket;
 use std::env;
 
-use go_web::{server, Entries};
+use go_web::{server, Entries, GlobalFeatures};
 
 #[launch]
 fn rocket() -> _ {
@@ -12,5 +12,17 @@ fn rocket() -> _ {
         _ => Entries::from_path("shortcuts.yaml"),
     };
 
-    server(entries)
+    let file = env::var("FEATURE_FILE");
+    let features = match file {
+        Ok(file) => GlobalFeatures::from_path(&file),
+        _ => GlobalFeatures::from_path("features.yaml"),
+    };
+
+    let port = env::var("PORT");
+    let port = match port {
+        Ok(port) => port.parse().unwrap(),
+        _ => 8000,
+    };
+
+    server(port, entries, features)
 }

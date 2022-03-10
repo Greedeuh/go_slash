@@ -1,4 +1,4 @@
-use go_web::{server, Entries};
+use go_web::{server, Entries, GlobalFeatures};
 use rocket::{
     futures::{future::BoxFuture, FutureExt},
     local::blocking::Client,
@@ -13,7 +13,9 @@ use std::{
 use thirtyfour::{DesiredCapabilities, WebDriver};
 use uuid::Uuid;
 
-fn gen_file_path(shortcuts: &str) -> String {
+const PORT: u16 = 8001;
+
+fn gen_file_path(content: &str) -> String {
     if let Err(e) = remove_dir_all("test_dir") {
         println!("{:?}", e);
     };
@@ -21,21 +23,30 @@ fn gen_file_path(shortcuts: &str) -> String {
     create_dir("test_dir").unwrap();
 
     let path = format!("test_dir/filename_{}.yml", Uuid::new_v4());
-    if !shortcuts.is_empty() {
-        write(&path, shortcuts).unwrap();
+    if !content.is_empty() {
+        write(&path, content).unwrap();
     }
     path
 }
 
 #[allow(dead_code)]
 pub fn launch_empty() -> Client {
-    Client::tracked(server(Entries::from_path(&gen_file_path("")))).expect("valid rocket instance")
+    Client::tracked(server(
+        PORT,
+        Entries::from_path(&gen_file_path("")),
+        GlobalFeatures::from_path(&gen_file_path("")),
+    ))
+    .expect("valid rocket instance")
 }
 
 #[allow(dead_code)]
-pub fn launch_with(shortcuts: &str) -> Client {
-    Client::tracked(server(Entries::from_path(&gen_file_path(shortcuts))))
-        .expect("valid rocket instance")
+pub fn launch_with(shortcuts: &str, features: &str) -> Client {
+    Client::tracked(server(
+        PORT,
+        Entries::from_path(&gen_file_path(shortcuts)),
+        GlobalFeatures::from_path(&gen_file_path(features)),
+    ))
+    .expect("valid rocket instance")
 }
 
 #[allow(dead_code)]
@@ -44,35 +55,40 @@ pub fn entries(shortcuts: &str) -> Entries {
 }
 
 #[allow(dead_code)]
-pub async fn in_browser<F>(shortcuts: &str, f: F)
+pub async fn in_browser<F>(shortcuts: &str, features: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(shortcuts, f, true, true).await;
+    in_browser_with(shortcuts, features, f, true, true).await;
 }
 
 #[allow(dead_code)]
 /// Same but launch browser
 #[deprecated(note = "Should only be used in local")]
-pub async fn in_browserr<F>(shortcuts: &str, f: F)
+pub async fn in_browserr<F>(shortcuts: &str, features: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(shortcuts, f, false, true).await;
+    in_browser_with(shortcuts, features, f, false, true).await;
 }
 
 #[allow(dead_code)]
 /// Same but launch browser and do not kill it
 #[deprecated(note = "Should only be used in local")]
-pub async fn in_browserrr<F>(shortcuts: &str, f: F)
+pub async fn in_browserrr<F>(shortcuts: &str, features: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(shortcuts, f, false, false).await;
+    in_browser_with(shortcuts, features, f, false, false).await;
 }
 
-async fn in_browser_with<'b, F>(shortcuts: &str, f: F, headless: bool, close_browser: bool)
-where
+async fn in_browser_with<'b, F>(
+    shortcuts: &str,
+    features: &str,
+    f: F,
+    headless: bool,
+    close_browser: bool,
+) where
     F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
 {
     let do_not_close_browser = close_browser;
@@ -87,7 +103,8 @@ where
     };
 
     let entries = Entries::from_path(&gen_file_path(shortcuts));
-    spawn(async move { server(entries).launch().await });
+    let features = GlobalFeatures::from_path(&gen_file_path(features));
+    spawn(async move { server(PORT, entries, features).launch().await });
 
     let mut caps = DesiredCapabilities::firefox();
     if headless {

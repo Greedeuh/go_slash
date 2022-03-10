@@ -7,23 +7,24 @@ use thirtyfour::prelude::*;
 #[async_test]
 async fn index_should_list_shortcuts() {
     in_browser(
-        "newShortcut: http://localhost:8000/newShortcut
-aShortcut: http://localhost:8000/aShortcut
-ssshortcut: http://localhost:8000/ssshortcut",
+        "newShortcut: http://localhost:8001/newShortcut
+aShortcut: http://localhost:8001/aShortcut
+ssshortcut: http://localhost:8001/ssshortcut",
+        "",
         |driver: &WebDriver| {
             async {
                 let texts_sorted = vec![
-                    "aShortcut http://localhost:8000/aShortcut",
-                    "newShortcut http://localhost:8000/newShortcut",
-                    "ssshortcut http://localhost:8000/ssshortcut",
+                    "aShortcut http://localhost:8001/aShortcut",
+                    "newShortcut http://localhost:8001/newShortcut",
+                    "ssshortcut http://localhost:8001/ssshortcut",
                 ];
                 let href_sorted = vec![
-                    "http://localhost:8000/aShortcut",
-                    "http://localhost:8000/newShortcut",
-                    "http://localhost:8000/ssshortcut",
+                    "http://localhost:8001/aShortcut",
+                    "http://localhost:8001/newShortcut",
+                    "http://localhost:8001/ssshortcut",
                 ];
 
-                driver.get("http://localhost:8000").await.unwrap();
+                driver.get("http://localhost:8001").await.unwrap();
 
                 let articles = driver
                     .find_elements(By::Css("[role='listitem']"))
@@ -47,12 +48,13 @@ ssshortcut: http://localhost:8000/ssshortcut",
 #[async_test]
 async fn index_user_as_sugestions_when_typing() {
     in_browser(
-        "newShortcut: http://localhost:8000/newShortcut
-jeanLuc: http://localhost:8000/aShortcut
-tadadam: http://localhost:8000/ssshortcut",
+        "newShortcut: http://localhost:8001/newShortcut
+jeanLuc: http://localhost:8001/aShortcut
+tadadam: http://localhost:8001/ssshortcut",
+        "",
         |driver: &WebDriver| {
             async {
-                driver.get("http://localhost:8000").await.unwrap();
+                driver.get("http://localhost:8001").await.unwrap();
 
                 let articles = driver
                     .find_elements(By::Css("[role='listitem']"))
@@ -75,7 +77,7 @@ tadadam: http://localhost:8000/ssshortcut",
                 // type in t should suggest tadadam first
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "tadadam http://localhost:8000/ssshortcut"
+                    "tadadam http://localhost:8001/ssshortcut"
                 );
                 assert_eq!(articles.len(), 3);
 
@@ -89,11 +91,11 @@ tadadam: http://localhost:8000/ssshortcut",
                 // type in tuc should suggest jeanLuc and newShortcut but not tadam
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "jeanLuc http://localhost:8000/aShortcut"
+                    "jeanLuc http://localhost:8001/aShortcut"
                 );
                 assert_eq!(
                     articles[1].text().await.unwrap(),
-                    "newShortcut http://localhost:8000/newShortcut"
+                    "newShortcut http://localhost:8001/newShortcut"
                 );
                 assert_eq!(articles.len(), 2);
             }
@@ -106,12 +108,13 @@ tadadam: http://localhost:8000/ssshortcut",
 #[async_test]
 async fn index_user_can_search() {
     in_browser(
-        "newShortcut: http://localhost:8000/newShortcut
-jeanLuc: http://localhost:8000/aShortcut1
-tadadam: http://localhost:8000/ssshortcut",
+        "newShortcut: http://localhost:8001/newShortcut
+jeanLuc: http://localhost:8001/aShortcut1
+tadadam: http://localhost:8001/ssshortcut",
+        "",
         |driver: &WebDriver| {
             async {
-                driver.get("http://localhost:8000").await.unwrap();
+                driver.get("http://localhost:8001").await.unwrap();
 
                 let search_bar = driver
                     .find_element(By::Css("input[type='search']"))
@@ -127,7 +130,7 @@ tadadam: http://localhost:8000/ssshortcut",
                 // down arrow select first
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "jeanLuc http://localhost:8000/aShortcut1"
+                    "jeanLuc http://localhost:8001/aShortcut1"
                 );
                 assert!(articles[0]
                     .class_name()
@@ -146,7 +149,7 @@ tadadam: http://localhost:8000/ssshortcut",
                 // down arrow again select snd & unselect first
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "jeanLuc http://localhost:8000/aShortcut1"
+                    "jeanLuc http://localhost:8001/aShortcut1"
                 );
                 assert!(!articles[0]
                     .class_name()
@@ -156,7 +159,7 @@ tadadam: http://localhost:8000/ssshortcut",
                     .contains("active"));
                 assert_eq!(
                     articles[1].text().await.unwrap(),
-                    "newShortcut http://localhost:8000/newShortcut"
+                    "newShortcut http://localhost:8001/newShortcut"
                 );
                 assert!(articles[1]
                     .class_name()
@@ -170,7 +173,7 @@ tadadam: http://localhost:8000/ssshortcut",
                 // up arrow select first & unselect first
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "jeanLuc http://localhost:8000/aShortcut1"
+                    "jeanLuc http://localhost:8001/aShortcut1"
                 );
                 assert!(articles[0]
                     .class_name()
@@ -180,7 +183,7 @@ tadadam: http://localhost:8000/ssshortcut",
                     .contains("active"));
                 assert_eq!(
                     articles[1].text().await.unwrap(),
-                    "newShortcut http://localhost:8000/newShortcut"
+                    "newShortcut http://localhost:8001/newShortcut"
                 );
                 assert!(!articles[1]
                     .class_name()
@@ -203,10 +206,10 @@ tadadam: http://localhost:8000/ssshortcut",
                 // Enter launch search
                 assert_eq!(
                     driver.current_url().await.unwrap(),
-                    "http://localhost:8000/aShortcut1"
+                    "http://localhost:8001/aShortcut1"
                 );
 
-                driver.get("http://localhost:8000").await.unwrap();
+                driver.get("http://localhost:8001").await.unwrap();
                 // arow down then enter go to the first line shortcut
 
                 let search_bar = driver
@@ -220,7 +223,7 @@ tadadam: http://localhost:8000/ssshortcut",
 
                 assert_eq!(
                     driver.current_url().await.unwrap(),
-                    "http://localhost:8000/aShortcut1"
+                    "http://localhost:8001/aShortcut1"
                 );
             }
             .boxed()
@@ -232,10 +235,11 @@ tadadam: http://localhost:8000/ssshortcut",
 #[async_test]
 async fn index_user_can_delete_shortcuts() {
     in_browser(
-        "newShortcut: http://localhost:8000/newShortcut",
+        "newShortcut: http://localhost:8001/newShortcut",
+        "",
         |driver: &WebDriver| {
             async {
-                driver.get("http://localhost:8000").await.unwrap();
+                driver.get("http://localhost:8001").await.unwrap();
 
                 let administer_btn = driver.find_element(By::Id("btn-administer")).await.unwrap();
                 assert_eq!(
@@ -273,7 +277,7 @@ async fn index_user_can_delete_shortcuts() {
                     .unwrap();
                 assert_eq!(articles.len(), 0);
 
-                driver.get("http://localhost:8000").await.unwrap();
+                driver.get("http://localhost:8001").await.unwrap();
                 let articles = driver
                     .find_elements(By::Css("[role='listitem']"))
                     .await
@@ -288,9 +292,9 @@ async fn index_user_can_delete_shortcuts() {
 
 #[async_test]
 async fn index_user_can_add_shortcuts() {
-    in_browser("", |driver: &WebDriver| {
+    in_browser("", "", |driver: &WebDriver| {
         async {
-            driver.get("http://localhost:8000").await.unwrap();
+            driver.get("http://localhost:8001").await.unwrap();
 
             let administer_btn = driver.find_element(By::Id("btn-administer")).await.unwrap();
             assert_eq!(
@@ -310,7 +314,7 @@ async fn index_user_can_add_shortcuts() {
                 .find_element(By::Css("[name='url']"))
                 .await
                 .unwrap()
-                .send_keys("http://localhost:8000/aShortcut")
+                .send_keys("http://localhost:8001/aShortcut")
                 .await
                 .unwrap();
             driver
@@ -329,12 +333,12 @@ async fn index_user_can_add_shortcuts() {
                 .unwrap();
             assert_eq!(
                 article.text().await.unwrap(),
-                "jeanLuc http://localhost:8000/aShortcut NEW"
+                "jeanLuc http://localhost:8001/aShortcut NEW"
             );
 
             assert_eq!(
                 article.get_property("href").await.unwrap(),
-                Some("http://localhost:8000/jeanLuc?no_redirect".to_owned())
+                Some("http://localhost:8001/jeanLuc?no_redirect".to_owned())
             );
 
             assert_eq!(
@@ -361,7 +365,7 @@ async fn index_user_can_add_shortcuts() {
             administer_btn.click().await.unwrap();
             assert_eq!(
                 article.get_property("href").await.unwrap(),
-                Some("http://localhost:8000/aShortcut".to_owned())
+                Some("http://localhost:8001/aShortcut".to_owned())
             );
         }
         .boxed()
@@ -372,13 +376,14 @@ async fn index_user_can_add_shortcuts() {
 #[async_test]
 async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
     in_browser(
-        "newShortcut: http://localhost:8000/looped
-newShortcut2: http://localhost:8000/claude",
+        "newShortcut: http://localhost:8001/looped
+newShortcut2: http://localhost:8001/claude",
+        "",
         |driver: &WebDriver| {
             async {
                 // create shortcut
                 driver
-                    .get("http://localhost:8000/newShortcut?no_redirect=true")
+                    .get("http://localhost:8001/newShortcut?no_redirect=true")
                     .await
                     .unwrap();
 
@@ -397,7 +402,7 @@ newShortcut2: http://localhost:8000/claude",
                     .unwrap();
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "newShortcut http://localhost:8000/looped"
+                    "newShortcut http://localhost:8001/looped"
                 );
                 assert_eq!(articles.len(), 2);
 
@@ -435,7 +440,7 @@ newShortcut2: http://localhost:8000/claude",
                     .unwrap();
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "newShortcut http://localhost:8000/looped2 NEW"
+                    "newShortcut http://localhost:8001/looped2 NEW"
                 );
                 assert_eq!(articles.len(), 2);
             }
@@ -448,13 +453,14 @@ newShortcut2: http://localhost:8000/claude",
 #[async_test]
 async fn undefined_shortcut_return_search_filled_and_edit_form() {
     in_browser(
-        "newShortcut1: http://localhost:8000/looped
-newShortcut2: http://localhost:8000/claude",
+        "newShortcut1: http://localhost:8001/looped
+newShortcut2: http://localhost:8001/claude",
+        "",
         |driver: &WebDriver| {
             async {
                 // create shortcut
                 driver
-                    .get("http://localhost:8000/newShortcut")
+                    .get("http://localhost:8001/newShortcut")
                     .await
                     .unwrap();
 
@@ -473,7 +479,7 @@ newShortcut2: http://localhost:8000/claude",
                     .unwrap();
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "newShortcut1 http://localhost:8000/looped"
+                    "newShortcut1 http://localhost:8001/looped"
                 );
                 assert_eq!(articles.len(), 2);
 
@@ -494,7 +500,7 @@ newShortcut2: http://localhost:8000/claude",
                     .find_element(By::Css("input[name='url']"))
                     .await
                     .unwrap()
-                    .send_keys("http://localhost:8000/ring")
+                    .send_keys("http://localhost:8001/ring")
                     .await
                     .unwrap();
                 driver
@@ -511,7 +517,7 @@ newShortcut2: http://localhost:8000/claude",
                     .unwrap();
                 assert_eq!(
                     articles[0].text().await.unwrap(),
-                    "newShortcut http://localhost:8000/ring NEW"
+                    "newShortcut http://localhost:8001/ring NEW"
                 );
             }
             .boxed()

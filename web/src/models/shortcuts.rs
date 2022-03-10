@@ -1,18 +1,7 @@
-use rustbreak::{deser::Yaml, PathDatabase, RustbreakError};
-use serde::Deserialize;
+use rustbreak::{deser::Yaml, PathDatabase};
 use std::collections::HashMap;
 
-#[derive(Deserialize)]
-pub enum AppError {
-    Db,
-}
-
-impl From<RustbreakError> for AppError {
-    fn from(e: RustbreakError) -> Self {
-        error!("{:?}", e);
-        AppError::Db
-    }
-}
+use crate::models::AppError;
 
 pub struct Entries {
     db: PathDatabase<HashMap<Shortcut, ShortcutUrl>, Yaml>,

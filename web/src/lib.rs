@@ -5,15 +5,19 @@ extern crate rocket_dyn_templates;
 use rocket::{
     fs::{relative, FileServer},
     http::Status,
-    Build, Rocket, State,
+    Build, Config, Rocket, State,
 };
 use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 
 mod controllers;
-use controllers::shortcuts::{delete_shortcut, put_shortcut, shortcuts};
+use controllers::{
+    features::{features, put_feature},
+    shortcuts::{delete_shortcut, put_shortcut, shortcuts},
+    users::login,
+};
 mod models;
-pub use models::*;
+pub use models::{features::GlobalFeatures, shortcuts::Entries};
 
 #[get("/")]
 fn index(entries: &State<Entries>) -> Result<Template, (Status, Value)> {
@@ -32,13 +36,26 @@ fn index(entries: &State<Entries>) -> Result<Template, (Status, Value)> {
     ))
 }
 
-pub fn server(entries: Entries) -> Rocket<Build> {
+pub fn server(port: u16, entries: Entries, features: GlobalFeatures) -> Rocket<Build> {
     rocket::build()
+        .configure(Config {
+            port,
+            ..Config::debug_default()
+        })
         .mount(
             "/",
-            routes![index, shortcuts, put_shortcut, delete_shortcut],
+            routes![
+                index,
+                shortcuts,
+                put_shortcut,
+                delete_shortcut,
+                login,
+                features,
+                put_feature
+            ],
         )
         .mount("/public", FileServer::from(relative!("public")))
         .manage(entries)
+        .manage(features)
         .attach(Template::fairing())
 }

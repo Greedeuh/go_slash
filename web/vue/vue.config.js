@@ -4,8 +4,13 @@ module.exports = {
   pages: {
     search: {
       entry: "src/partials/search/main.ts",
-      template: "public/search.html",
+      template: "public/index.html",
       filename: "search.html.hbs",
+    },
+    features: {
+      entry: "src/partials/features/main.ts",
+      template: "public/index.html",
+      filename: "features.html.hbs",
     },
   },
 };

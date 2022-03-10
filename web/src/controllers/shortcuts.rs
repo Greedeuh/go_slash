@@ -7,7 +7,8 @@ use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
-use crate::{AppError, Entries};
+pub use crate::models::shortcuts::Entries;
+use crate::models::AppError;
 
 lazy_static! {
     static ref URL_REGEX: Regex =
