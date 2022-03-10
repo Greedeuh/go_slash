@@ -6,7 +6,7 @@ use thirtyfour::prelude::*;
 
 #[async_test]
 async fn features_should_list_editable_features() {
-    in_browser("", "[Login]", |driver: &WebDriver| {
+    in_browser("", "", |driver: &WebDriver| {
         async {
             driver
                 .get("http://localhost:8001/go/features")
@@ -14,26 +14,26 @@ async fn features_should_list_editable_features() {
                 .unwrap();
 
             let features = driver
-                .find_elements(By::Css("[role='listitem']"))
+                .find_elements(By::Css("[role='article']"))
                 .await
                 .unwrap();
 
             assert!(!features.is_empty());
 
             for feature in features {
-                assert_eq!(feature.text().await.unwrap(), "Login");
+                assert_eq!(feature.text().await.unwrap(), "simple");
                 let switch = feature
                     .find_element(By::Css("[role='switch']"))
                     .await
                     .unwrap();
                 assert_eq!(
                     switch.get_property("checked").await.unwrap(),
-                    Some("true".to_owned())
+                    Some("false".to_owned())
                 );
                 switch.click().await.unwrap();
                 assert_eq!(
                     switch.get_property("checked").await.unwrap(),
-                    Some("false".to_owned())
+                    Some("true".to_owned())
                 );
             }
 
@@ -43,21 +43,21 @@ async fn features_should_list_editable_features() {
                 .unwrap();
 
             let features = driver
-                .find_elements(By::Css("[role='listitem']"))
+                .find_elements(By::Css("[role='article']"))
                 .await
                 .unwrap();
 
             assert!(!features.is_empty());
 
             for feature in features {
-                assert_eq!(feature.text().await.unwrap(), "Login");
+                assert_eq!(feature.text().await.unwrap(), "simple");
                 let switch = feature
                     .find_element(By::Css("[role='switch']"))
                     .await
                     .unwrap();
                 assert_eq!(
                     switch.get_property("checked").await.unwrap(),
-                    Some("false".to_owned())
+                    Some("true".to_owned())
                 );
             }
         }

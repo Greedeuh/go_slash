@@ -12,7 +12,7 @@ use serde_json::{json, Value};
 
 mod controllers;
 use controllers::{
-    features::{features, put_feature},
+    features::{features, patch_feature},
     shortcuts::{delete_shortcut, put_shortcut, shortcuts},
     users::login,
 };
@@ -51,7 +51,7 @@ pub fn server(port: u16, entries: Entries, features: GlobalFeatures) -> Rocket<B
                 delete_shortcut,
                 login,
                 features,
-                put_feature
+                patch_feature
             ],
         )
         .mount("/public", FileServer::from(relative!("public")))

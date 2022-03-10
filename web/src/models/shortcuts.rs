@@ -35,14 +35,20 @@ impl Entries {
     }
 
     pub fn put(&self, key: &str, url: ShortcutUrl) -> Result<(), AppError> {
-        let mut db = self.db.borrow_data_mut()?;
-        db.insert(key.to_owned(), url);
+        {
+            let mut db = self.db.borrow_data_mut()?;
+            db.insert(key.to_owned(), url);
+        }
+        self.db.save()?;
         Ok(())
     }
 
     pub fn delete(&self, key: &str) -> Result<(), AppError> {
-        let mut db = self.db.borrow_data_mut()?;
-        db.remove(key);
+        {
+            let mut db = self.db.borrow_data_mut()?;
+            db.remove(key);
+        }
+        self.db.save()?;
         Ok(())
     }
 }

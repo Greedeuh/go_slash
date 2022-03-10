@@ -1,39 +1,27 @@
 <template>
-  <ul class="list-group" role="list">
-    <li
-      v-for="feature in features"
-      :key="feature.name"
-      class="list-group-item"
-      role="listitem"
-    >
-      <div class="form-check form-switch">
-        <input
-          class="form-check-input"
-          type="checkbox"
-          role="switch"
-          v-model="feature.active"
-          @change="(e) => toggle(feature)"
-          :disabled="disabled"
-        />
-        <label class="form-check-label" for="flexSwitchCheckDefault">{{
-          feature.name
-        }}</label>
-      </div>
-    </li>
-  </ul>
+  <div>
+    <SwitchGroup
+      v-for="(inside, name) in features"
+      :key="name"
+      :name="name"
+      :inside="inside"
+      @toggle="toggle"
+    />
+  </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
 import axios from "axios";
 
+import SwitchGroup from "./SwitchGroup.vue";
+
 interface Window {
-  features: Feature[];
+  features: Features;
 }
 
-interface Feature {
-  name: string;
-  active: boolean;
+interface Features {
+  login: { simple: boolean };
 }
 
 let win = window as unknown as Window;
@@ -41,6 +29,9 @@ const FEATURES = win.features;
 
 export default defineComponent({
   name: "Partial",
+  components: {
+    SwitchGroup,
+  },
   data() {
     return {
       features: FEATURES,
@@ -48,34 +39,42 @@ export default defineComponent({
     };
   },
   methods: {
-    toggle(feature: Feature) {
-      this.disabled = true;
+    toggle(e: {
+      name: string;
+      value: boolean;
+      success_cb: () => void;
+      rollback_cb: () => void;
+    }) {
+      const keys = e.name.split(".");
+      const features: any = {};
 
-      const rollback_state = () => {
-        const f = this.features.find((f) => f.name === feature.name);
-        if (f) f.active = !feature.active;
-      };
+      let last_key = features;
+      keys.forEach(function (key, i) {
+        if (i + 1 < keys.length) {
+          last_key[key] = {};
+          last_key = last_key[key];
+        } else {
+          last_key[key] = e.value;
+        }
+      });
 
+      console.log(features);
       axios
-        .put("/go/features", feature)
+        .patch("/go/features", features)
         .then((res) => {
           if (res.status !== 200) {
-            rollback_state();
+            e.rollback_cb();
+          } else {
+            e.success_cb();
           }
-          this.disabled = false;
         })
-        .catch((e) => {
-          console.log(e);
-          rollback_state();
-          this.disabled = false;
+        .catch((err) => {
+          console.log(err);
+          e.rollback_cb();
         });
     },
   },
 });
 </script>
 
-<style>
-.list-group {
-  justify-content: space-between;
-}
-</style>
+<style></style>
