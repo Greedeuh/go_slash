@@ -38,6 +38,8 @@ fn post_simple_login_token() {
         "---
     login:
       simple: true
+      read_private: false
+      write_private: false
     ",
         "---
     some_mail@mail.go:
@@ -67,6 +69,8 @@ fn post_simple_login_wrong_credentials() {
         "---
     login:
       simple: true
+      read_private: false
+      write_private: false
     ",
         "---
     some_mail@mail.go:
@@ -97,6 +101,8 @@ fn post_simple_login_not_a_mail() {
         "---
     login:
       simple: true
+      read_private: false
+      write_private: false
     ",
         "---
     some_mail@mail.go:
@@ -120,6 +126,8 @@ async fn simple_login() {
         "---
     login:
       simple: true
+      read_private: false
+      write_private: false
     ",
         "---
     some_mail@mail.go:

@@ -15,7 +15,11 @@ pub struct Features {
 impl Default for Features {
     fn default() -> Self {
         Features {
-            login: LoginFeature { simple: false },
+            login: LoginFeature {
+                simple: false,
+                read_private: false,
+                write_private: false,
+            },
         }
     }
 }
@@ -23,6 +27,8 @@ impl Default for Features {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct LoginFeature {
     pub simple: bool,
+    pub read_private: bool,
+    pub write_private: bool,
 }
 
 impl GlobalFeatures {
@@ -61,4 +67,6 @@ pub struct PatchableFeatures {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct PatchableLoginFeature {
     simple: Option<bool>,
+    read_private: Option<bool>,
+    write_private: Option<bool>,
 }

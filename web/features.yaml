@@ -1,3 +1,4 @@
 ---
 login:
   simple: false
+  private_by_default: false

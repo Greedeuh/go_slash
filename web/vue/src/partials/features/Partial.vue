@@ -17,11 +17,7 @@ import axios from "axios";
 import SwitchGroup from "./SwitchGroup.vue";
 
 interface Window {
-  features: Features;
-}
-
-interface Features {
-  login: { simple: boolean };
+  features: any; // eslint-disable-line
 }
 
 let win = window as unknown as Window;
@@ -58,7 +54,6 @@ export default defineComponent({
         }
       });
 
-      console.log(features);
       axios
         .patch("/go/features", features)
         .then((res) => {
