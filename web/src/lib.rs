@@ -10,14 +10,16 @@ use rocket::{
 use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 
-mod controllers;
+pub mod controllers;
 use controllers::{
     features::{features, patch_feature},
     shortcuts::{delete_shortcut, put_shortcut, shortcuts},
-    users::login,
+    users::{login, simple_login},
 };
 mod models;
-pub use models::{features::GlobalFeatures, shortcuts::Entries};
+pub use models::{features::GlobalFeatures, shortcuts::Entries, users::SimpleUsers};
+
+use crate::models::users::Sessions;
 
 #[get("/")]
 fn index(entries: &State<Entries>) -> Result<Template, (Status, Value)> {
@@ -36,7 +38,18 @@ fn index(entries: &State<Entries>) -> Result<Template, (Status, Value)> {
     ))
 }
 
-pub fn server(port: u16, entries: Entries, features: GlobalFeatures) -> Rocket<Build> {
+pub struct AppConfig {
+    pub simple_login_salt1: String,
+    pub simple_login_salt2: String,
+}
+
+pub fn server(
+    port: u16,
+    entries: Entries,
+    features: GlobalFeatures,
+    users: SimpleUsers,
+    config: AppConfig,
+) -> Rocket<Build> {
     rocket::build()
         .configure(Config {
             port,
@@ -51,11 +64,15 @@ pub fn server(port: u16, entries: Entries, features: GlobalFeatures) -> Rocket<B
                 delete_shortcut,
                 login,
                 features,
-                patch_feature
+                patch_feature,
+                simple_login
             ],
         )
         .mount("/public", FileServer::from(relative!("public")))
         .manage(entries)
         .manage(features)
+        .manage(users)
+        .manage(Sessions::default())
+        .manage(config)
         .attach(Template::fairing())
 }

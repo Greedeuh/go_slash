@@ -1,6 +1,12 @@
 {{#*inline "page"}}
-{{#if github}} <a href="{{ github }}">Github</div> {{/if}}
-{{#if google}} <a href="{{ google }}">Github</div> {{/if}}
+
+<script>
+{{#if simple_salt}}
+window.simple_salt = "{{ simple_salt }}"
+{{/if}}
+</script>
+
+{{> vue_dist/login }}
 
 {{/inline}}
 {{~> layout~}}

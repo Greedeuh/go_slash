@@ -6,7 +6,7 @@ use thirtyfour::prelude::*;
 
 #[async_test]
 async fn features_should_list_editable_features() {
-    in_browser("", "", |driver: &WebDriver| {
+    in_browser("", "", "", |driver: &WebDriver| {
         async {
             driver
                 .get("http://localhost:8001/go/features")

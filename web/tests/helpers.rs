@@ -1,4 +1,4 @@
-use go_web::{server, Entries, GlobalFeatures};
+use go_web::{server, AppConfig, Entries, GlobalFeatures, SimpleUsers};
 use rocket::{
     futures::{future::BoxFuture, FutureExt},
     local::blocking::Client,
@@ -35,16 +35,20 @@ pub fn launch_empty() -> Client {
         PORT,
         Entries::from_path(&gen_file_path("")),
         GlobalFeatures::from_path(&gen_file_path("")),
+        SimpleUsers::from_path(&gen_file_path("")),
+        conf(),
     ))
     .expect("valid rocket instance")
 }
 
 #[allow(dead_code)]
-pub fn launch_with(shortcuts: &str, features: &str) -> Client {
+pub fn launch_with(shortcuts: &str, features: &str, users: &str) -> Client {
     Client::tracked(server(
         PORT,
         Entries::from_path(&gen_file_path(shortcuts)),
         GlobalFeatures::from_path(&gen_file_path(features)),
+        SimpleUsers::from_path(&gen_file_path(users)),
+        conf(),
     ))
     .expect("valid rocket instance")
 }
@@ -54,37 +58,45 @@ pub fn entries(shortcuts: &str) -> Entries {
     Entries::from_path(&gen_file_path(shortcuts))
 }
 
+fn conf() -> AppConfig {
+    AppConfig {
+        simple_login_salt1: "salt1".to_owned(),
+        simple_login_salt2: "salt2".to_owned(),
+    }
+}
+
 #[allow(dead_code)]
-pub async fn in_browser<F>(shortcuts: &str, features: &str, f: F)
+pub async fn in_browser<F>(shortcuts: &str, features: &str, users: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(shortcuts, features, f, true, true).await;
+    in_browser_with(shortcuts, features, users, f, true, true).await;
 }
 
 #[allow(dead_code)]
 /// Same but launch browser
 #[deprecated(note = "Should only be used in local")]
-pub async fn in_browserr<F>(shortcuts: &str, features: &str, f: F)
+pub async fn in_browserr<F>(shortcuts: &str, features: &str, users: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(shortcuts, features, f, false, true).await;
+    in_browser_with(shortcuts, features, users, f, false, true).await;
 }
 
 #[allow(dead_code)]
 /// Same but launch browser and do not kill it
 #[deprecated(note = "Should only be used in local")]
-pub async fn in_browserrr<F>(shortcuts: &str, features: &str, f: F)
+pub async fn in_browserrr<F>(shortcuts: &str, features: &str, users: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(shortcuts, features, f, false, false).await;
+    in_browser_with(shortcuts, features, users, f, false, false).await;
 }
 
 async fn in_browser_with<'b, F>(
     shortcuts: &str,
     features: &str,
+    users: &str,
     f: F,
     headless: bool,
     close_browser: bool,
@@ -104,7 +116,12 @@ async fn in_browser_with<'b, F>(
 
     let entries = Entries::from_path(&gen_file_path(shortcuts));
     let features = GlobalFeatures::from_path(&gen_file_path(features));
-    spawn(async move { server(PORT, entries, features).launch().await });
+    let users = SimpleUsers::from_path(&gen_file_path(users));
+    spawn(async move {
+        server(PORT, entries, features, users, conf())
+            .launch()
+            .await
+    });
 
     let mut caps = DesiredCapabilities::firefox();
     if headless {

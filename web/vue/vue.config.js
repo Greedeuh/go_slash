@@ -12,5 +12,10 @@ module.exports = {
       template: "public/index.html",
       filename: "features.html.hbs",
     },
+    login: {
+      entry: "src/partials/login/main.ts",
+      template: "public/index.html",
+      filename: "login.html.hbs",
+    },
   },
 };

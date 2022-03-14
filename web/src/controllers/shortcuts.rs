@@ -8,7 +8,6 @@ use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
 pub use crate::models::shortcuts::Entries;
-use crate::models::AppError;
 
 lazy_static! {
     static ref URL_REGEX: Regex =
@@ -119,17 +118,6 @@ fn parse_shortcut_path_buff(shortcut: &'_ Path) -> Result<&'_ str, (Status, Valu
                 Status::BadRequest,
                 json!({"error": "Wrong shortcut format."}),
             ))
-        }
-    }
-}
-
-impl From<AppError> for (Status, Value) {
-    fn from(e: AppError) -> Self {
-        match e {
-            AppError::Db => (
-                Status::InternalServerError,
-                json!({"error": "Probably a database issue :/"}),
-            ),
         }
     }
 }

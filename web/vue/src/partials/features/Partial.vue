@@ -46,7 +46,7 @@ export default defineComponent({
       rollback_cb: () => void;
     }) {
       const keys = e.name.split(".");
-      const features: any = {};
+      const features: any = {}; // eslint-disable-line
 
       let last_key = features;
       keys.forEach(function (key, i) {

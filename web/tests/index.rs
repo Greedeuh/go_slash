@@ -11,6 +11,7 @@ async fn index_should_list_shortcuts() {
 aShortcut: http://localhost:8001/aShortcut
 ssshortcut: http://localhost:8001/ssshortcut",
         "",
+        "",
         |driver: &WebDriver| {
             async {
                 let texts_sorted = vec![
@@ -51,6 +52,7 @@ async fn index_user_as_sugestions_when_typing() {
         "newShortcut: http://localhost:8001/newShortcut
 jeanLuc: http://localhost:8001/aShortcut
 tadadam: http://localhost:8001/ssshortcut",
+        "",
         "",
         |driver: &WebDriver| {
             async {
@@ -111,6 +113,7 @@ async fn index_user_can_search() {
         "newShortcut: http://localhost:8001/newShortcut
 jeanLuc: http://localhost:8001/aShortcut1
 tadadam: http://localhost:8001/ssshortcut",
+        "",
         "",
         |driver: &WebDriver| {
             async {
@@ -237,6 +240,7 @@ async fn index_user_can_delete_shortcuts() {
     in_browser(
         "newShortcut: http://localhost:8001/newShortcut",
         "",
+        "",
         |driver: &WebDriver| {
             async {
                 driver.get("http://localhost:8001").await.unwrap();
@@ -292,7 +296,7 @@ async fn index_user_can_delete_shortcuts() {
 
 #[async_test]
 async fn index_user_can_add_shortcuts() {
-    in_browser("", "", |driver: &WebDriver| {
+    in_browser("", "", "", |driver: &WebDriver| {
         async {
             driver.get("http://localhost:8001").await.unwrap();
 
@@ -379,6 +383,7 @@ async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
         "newShortcut: http://localhost:8001/looped
 newShortcut2: http://localhost:8001/claude",
         "",
+        "",
         |driver: &WebDriver| {
             async {
                 // create shortcut
@@ -455,6 +460,7 @@ async fn undefined_shortcut_return_search_filled_and_edit_form() {
     in_browser(
         "newShortcut1: http://localhost:8001/looped
 newShortcut2: http://localhost:8001/claude",
+        "",
         "",
         |driver: &WebDriver| {
             async {
