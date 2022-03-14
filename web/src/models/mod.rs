@@ -9,6 +9,7 @@ pub mod users;
 pub enum AppError {
     Db,
     Disable,
+    Unauthorized,
 }
 
 impl From<RustbreakError> for AppError {

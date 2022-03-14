@@ -16,9 +16,9 @@ use controllers::{
     shortcuts::{delete_shortcut, put_shortcut, shortcuts},
     users::{login, simple_login},
 };
-mod models;
+pub mod models;
 pub use models::{features::GlobalFeatures, shortcuts::Entries, users::SimpleUsers};
-
+pub mod guards;
 use crate::models::users::Sessions;
 
 #[get("/")]
@@ -48,6 +48,7 @@ pub fn server(
     entries: Entries,
     features: GlobalFeatures,
     users: SimpleUsers,
+    sessions: Sessions,
     config: AppConfig,
 ) -> Rocket<Build> {
     rocket::build()
@@ -72,7 +73,7 @@ pub fn server(
         .manage(entries)
         .manage(features)
         .manage(users)
-        .manage(Sessions::default())
+        .manage(sessions)
         .manage(config)
         .attach(Template::fairing())
 }

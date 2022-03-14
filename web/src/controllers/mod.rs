@@ -16,6 +16,10 @@ impl From<AppError> for (Status, Value) {
                 json!({"error": "Probably a database issue :/"}),
             ),
             AppError::Disable => (Status::Conflict, json!({"error": "Feature disable"})),
+            AppError::Unauthorized => (
+                Status::Unauthorized,
+                json!({"error": "Should you really be there ?"}),
+            ),
         }
     }
 }
@@ -25,6 +29,7 @@ impl From<AppError> for (Status, Template) {
         match e {
             AppError::Db => (Status::InternalServerError, Template::render("error", "")),
             AppError::Disable => (Status::Conflict, Template::render("error", "")),
+            AppError::Unauthorized => (Status::Unauthorized, Template::render("error", "")),
         }
     }
 }

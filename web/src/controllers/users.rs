@@ -78,7 +78,7 @@ pub fn simple_login(
     };
 
     let token = Uuid::new_v4();
-    sessions.put(&credentials.mail, &token.to_simple().to_string());
+    sessions.put(&token.to_simple().to_string(), &credentials.mail);
 
     Ok(Json(LoginSuccessfull {
         token: token.to_simple().to_string(),

@@ -2,7 +2,7 @@
 extern crate rocket;
 use std::env;
 
-use go_web::{server, AppConfig, Entries, GlobalFeatures, SimpleUsers};
+use go_web::{models::users::Sessions, server, AppConfig, Entries, GlobalFeatures, SimpleUsers};
 
 #[launch]
 fn rocket() -> _ {
@@ -38,6 +38,7 @@ fn rocket() -> _ {
         entries,
         features,
         users,
+        Sessions::default(),
         AppConfig {
             simple_login_salt1,
             simple_login_salt2,

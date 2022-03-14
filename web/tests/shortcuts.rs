@@ -15,7 +15,7 @@ fn undefined_shortcut_return_a_404() {
 
 #[test]
 fn shortcut_redirect_to_target() {
-    let client = launch_with("myShortCut/hop: https://thetarget.test.go.com", "", "");
+    let client = launch_with("myShortCut/hop: https://thetarget.test.go.com", "", "", "");
     let response = client.get("/myShortCut/hop").dispatch();
 
     assert_eq!(response.status(), Status::PermanentRedirect);
@@ -27,7 +27,7 @@ fn shortcut_redirect_to_target() {
 
 #[test]
 fn create_a_shortcut_with_invalid_url_return_400() {
-    let client = launch_with("", "", "");
+    let client = launch_with("", "", "", "");
     let response = client
         .put("/myShortCut/hop")
         .header(ContentType::JSON)
@@ -43,7 +43,7 @@ fn create_a_shortcut_with_invalid_url_return_400() {
 
 #[test]
 fn create_a_shortcut_return_200() {
-    let client = launch_with("", "", "");
+    let client = launch_with("", "", "", "");
     let response = client
         .put("/myShortCut/hop")
         .header(ContentType::JSON)
@@ -55,7 +55,7 @@ fn create_a_shortcut_return_200() {
 
 #[test]
 fn replace_a_shortcut_return_200() {
-    let client = launch_with("/myShortCut/hop: http://azdazd.dz", "", "");
+    let client = launch_with("/myShortCut/hop: http://azdazd.dz", "", "", "");
     let response = client
         .put("/myShortCut/hop")
         .header(ContentType::JSON)
@@ -67,7 +67,7 @@ fn replace_a_shortcut_return_200() {
 
 #[test]
 fn delete_a_shortcut_return_200() {
-    let client = launch_with("/myShortCut/hop: http://azdazd.dz", "", "");
+    let client = launch_with("/myShortCut/hop: http://azdazd.dz", "", "", "");
     let response = client.delete("/myShortCut/hop").dispatch();
 
     assert_eq!(response.status(), Status::Ok);
