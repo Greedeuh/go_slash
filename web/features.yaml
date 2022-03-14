@@ -1,4 +1,5 @@
 ---
 login:
   simple: false
-  private_by_default: false
+  read_private: false
+  write_private: false
