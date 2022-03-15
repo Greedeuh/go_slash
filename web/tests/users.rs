@@ -177,7 +177,7 @@ async fn simple_login() {
                 );
 
                 driver
-                    .get("http://localhost:8001/go/login?from=allo")
+                    .get("http://localhost:8001/go/login?from=/allo")
                     .await
                     .unwrap();
 

@@ -6,9 +6,10 @@
       :administer="administer"
       @on-administer="set_administer"
       @enter="go_selected(-1)"
+      :editor="right === 'write'"
     />
     <ShortcutInput
-      v-if="shortcut"
+      v-if="shortcut && right === 'write'"
       @save="add"
       :initial_shortcut="shortcut"
       :initial_url="url"
@@ -36,6 +37,7 @@ interface Window {
   shortcut?: string;
   url?: string;
   shortcuts: Shortcut[];
+  right: string;
 }
 
 export interface Shortcut {
@@ -58,6 +60,7 @@ const CONTROL_KEYS = ["ArrowUp", "ArrowDown", "Enter", "Tab", "Escape"];
 const SHORTCUTS = win.shortcuts;
 const SHORTCUT = win.shortcut;
 const URL = win.url;
+const RIGHT = win.right;
 
 let key_press: (e: KeyboardEvent) => void;
 
@@ -73,6 +76,7 @@ export default defineComponent({
       search: SHORTCUT ? SHORTCUT : "",
       shortcut: SHORTCUT,
       url: URL,
+      right: RIGHT,
     };
   },
   computed: {

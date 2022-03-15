@@ -8,7 +8,7 @@ use rocket::{
     Build, Config, Rocket, State,
 };
 use rocket_dyn_templates::Template;
-use serde_json::{json, Value};
+use serde_json::json;
 
 pub mod controllers;
 use controllers::{
@@ -19,10 +19,20 @@ use controllers::{
 pub mod models;
 pub use models::{features::GlobalFeatures, shortcuts::Entries, users::SimpleUsers};
 pub mod guards;
-use crate::models::users::Sessions;
+use crate::{
+    guards::SessionId,
+    models::users::{read_or_write, should_be_logged_in_if_features, Right, Sessions},
+};
 
 #[get("/")]
-fn index(entries: &State<Entries>) -> Result<Template, (Status, Value)> {
+fn index(
+    entries: &State<Entries>,
+    session_id: Option<SessionId>,
+    sessions: &State<Sessions>,
+    features: &State<GlobalFeatures>,
+) -> Result<Template, (Status, Template)> {
+    let user_mail = should_be_logged_in_if_features(&Right::Read, &session_id, sessions, features)?;
+
     let all_shortcuts = entries.sorted()?;
 
     let all_shortcuts = all_shortcuts
@@ -32,9 +42,11 @@ fn index(entries: &State<Entries>) -> Result<Template, (Status, Value)> {
 
     let all_shortcuts: String = json!(all_shortcuts).to_string();
 
+    let right = read_or_write(features, &user_mail)?;
+
     Ok(Template::render(
         "index",
-        json!({ "shortcuts": all_shortcuts }),
+        json!({ "shortcuts": all_shortcuts, "right": right }),
     ))
 }
 

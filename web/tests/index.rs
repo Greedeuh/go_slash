@@ -1,3 +1,6 @@
+use std::thread;
+use std::time::Duration;
+
 use rocket::async_test;
 use rocket::futures::FutureExt;
 mod helpers;
@@ -530,6 +533,87 @@ newShortcut2: http://localhost:8001/claude",
                 assert_eq!(
                     articles[0].text().await.unwrap(),
                     "newShortcut http://localhost:8001/ring NEW"
+                );
+            }
+            .boxed()
+        },
+    )
+    .await;
+}
+
+#[async_test]
+async fn not_logged_in_should_redirect_to_login() {
+    in_browser(
+        "",
+        "---
+login:
+  simple: true
+  read_private: true
+  write_private: false
+",
+        "",
+        "some_session_id: some_mail@mail.com",
+        |driver: &WebDriver| {
+            async {
+                driver.get("http://localhost:8001").await.unwrap();
+                thread::sleep(Duration::from_secs_f32(0.6));
+                assert_eq!(
+                    driver.current_url().await.unwrap(),
+                    "http://localhost:8001/go/login"
+                );
+
+                driver.get("http://localhost:8001/shortcut").await.unwrap();
+                thread::sleep(Duration::from_secs_f32(0.6));
+                assert_eq!(
+                    driver.current_url().await.unwrap(),
+                    "http://localhost:8001/go/login?from=/shortcut"
+                );
+            }
+            .boxed()
+        },
+    )
+    .await;
+}
+
+#[async_test]
+async fn logged_in_without_write() {
+    in_browser(
+        "",
+        "---
+    login:
+      simple: true
+      read_private: false
+      write_private: true",
+        "",
+        "",
+        |driver: &WebDriver| {
+            async {
+                driver.get("http://localhost:8001").await.unwrap();
+                assert_eq!(
+                    0,
+                    driver
+                        .find_elements(By::Id("btn-administer"))
+                        .await
+                        .unwrap()
+                        .len()
+                );
+
+                driver.get("http://localhost:8001/shortcut").await.unwrap();
+                assert_eq!(
+                    0,
+                    driver
+                        .find_elements(By::Id("btn-administer"))
+                        .await
+                        .unwrap()
+                        .len()
+                );
+                assert_eq!(
+                    0,
+                    driver
+                        .find_elements(By::Id("btn-administer"))
+                        .await
+                        .unwrap()
+                        .len()
                 );
             }
             .boxed()

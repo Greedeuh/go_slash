@@ -20,6 +20,10 @@ impl From<AppError> for (Status, Value) {
                 Status::Unauthorized,
                 json!({"error": "Should you really be there ?"}),
             ),
+            AppError::BadRequest => (
+                Status::BadRequest,
+                json!({"error": "Wrong shortcut format."}),
+            ),
         }
     }
 }
@@ -29,7 +33,10 @@ impl From<AppError> for (Status, Template) {
         match e {
             AppError::Db => (Status::InternalServerError, Template::render("error", "")),
             AppError::Disable => (Status::Conflict, Template::render("error", "")),
-            AppError::Unauthorized => (Status::Unauthorized, Template::render("error", "")),
+            AppError::Unauthorized => {
+                (Status::Unauthorized, Template::render("redirect_login", ""))
+            }
+            AppError::BadRequest => (Status::InternalServerError, Template::render("error", "")),
         }
     }
 }

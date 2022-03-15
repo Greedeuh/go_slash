@@ -16,6 +16,7 @@
           <button id="btn-enter" class="btn btn-primary" type="submit">
             <i class="icon-search"></i></button
           ><button
+            v-if="editor"
             @click="emit_administer"
             id="btn-administer"
             :class="{ 'btn-light': !administer, 'btn-secondary': administer }"
@@ -38,6 +39,7 @@ export default defineComponent({
   props: {
     modelValue: String,
     administer: Boolean,
+    editor: Boolean,
   },
   emits: [
     "update:modelValue",

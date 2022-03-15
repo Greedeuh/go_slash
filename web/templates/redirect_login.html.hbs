@@ -1,0 +1,14 @@
+{{#*inline "page"}}
+
+You can't access this content. Redirected to login page ...
+<script>
+    setTimeout(()=>{
+        if ( window.location.pathname !== "/"){
+            window.location.href = "/go/login?from=" + window.location.pathname
+        } else {
+            window.location.href = "/go/login"
+        }
+    },500)
+</script>
+{{/inline}}
+{{~> layout~}}

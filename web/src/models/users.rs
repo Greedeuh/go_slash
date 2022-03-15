@@ -41,16 +41,16 @@ impl Sessions {
             Ok(s) => s,
             Err(s) => s.into_inner(),
         };
-        sessions.insert(mail.to_string(), session_id.to_string());
+        sessions.insert(session_id.to_string(), mail.to_string());
     }
 
-    pub fn is_logged_in(&self, session_id: &str) -> bool {
+    pub fn is_logged_in(&self, session_id: &str) -> Option<String> {
         let sessions = match self.sessions.lock() {
             Ok(s) => s,
             Err(s) => s.into_inner(),
         };
 
-        sessions.contains_key(session_id)
+        sessions.get(session_id).cloned()
     }
 }
 
@@ -76,33 +76,54 @@ pub fn should_be_logged_in_if_features(
     session_id: &Option<SessionId>,
     sessions: &State<Sessions>,
     features: &State<GlobalFeatures>,
-) -> Result<(), AppError> {
+) -> Result<Option<String>, AppError> {
     if features.get()?.login.simple {
         match right {
-            Right::Admin => should_be_logged_in(session_id, sessions)?,
+            Right::Admin => should_be_logged_in(session_id, sessions),
             Right::Read if features.get()?.login.read_private => {
-                should_be_logged_in(session_id, sessions)?
+                should_be_logged_in(session_id, sessions)
             }
             Right::Write if features.get()?.login.write_private => {
-                should_be_logged_in(session_id, sessions)?
+                should_be_logged_in(session_id, sessions)
             }
-            _ => (),
+            _ => match session_id {
+                Some(session_id) => Ok(sessions.is_logged_in(&session_id.0)),
+                None => Ok(None),
+            },
         }
+    } else {
+        Ok(None)
     }
-    Ok(())
 }
 
 fn should_be_logged_in(
     session_id: &Option<SessionId>,
     sessions: &State<Sessions>,
-) -> Result<(), AppError> {
+) -> Result<Option<String>, AppError> {
     if let Some(session_id) = session_id {
-        if !sessions.is_logged_in(&session_id.0) {
-            error!("Wrong session_id.");
-            return Err(AppError::Unauthorized);
+        match sessions.is_logged_in(&session_id.0) {
+            None => {
+                error!("Wrong session_id.");
+                Err(AppError::Unauthorized)
+            }
+            Some(mail) => Ok(Some(mail)),
         }
     } else {
-        return Err(AppError::Unauthorized);
+        Err(AppError::Unauthorized)
     }
-    Ok(())
+}
+
+pub fn read_or_write(
+    features: &State<GlobalFeatures>,
+    user_mail: &Option<String>,
+) -> Result<String, AppError> {
+    let features = features.get()?.login;
+
+    Ok(
+        if features.simple && features.write_private && user_mail.is_none() {
+            "read".to_string()
+        } else {
+            "write".to_string()
+        },
+    )
 }

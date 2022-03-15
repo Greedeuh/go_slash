@@ -1,5 +1,5 @@
 ---
 login:
-  simple: false
+  simple: true
   read_private: false
-  write_private: false
+  write_private: true

@@ -9,7 +9,8 @@ use std::path::{Path, PathBuf};
 
 use crate::guards::SessionId;
 pub use crate::models::shortcuts::Entries;
-use crate::models::users::{should_be_logged_in_if_features, Right, Sessions};
+use crate::models::users::{read_or_write, should_be_logged_in_if_features, Right, Sessions};
+use crate::models::AppError;
 use crate::GlobalFeatures;
 
 lazy_static! {
@@ -35,8 +36,9 @@ pub fn shortcuts(
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
     features: &State<GlobalFeatures>,
-) -> Result<ShortcutRes, (Status, Value)> {
-    should_be_logged_in_if_features(&Right::Read, &session_id, sessions, features)?;
+) -> Result<ShortcutRes, (Status, Template)> {
+    let user_mail = should_be_logged_in_if_features(&Right::Read, &session_id, sessions, features)?;
+    let right = read_or_write(features, &user_mail)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
@@ -54,7 +56,8 @@ pub fn shortcuts(
                             .collect::<Vec<_>>())
                             .to_string(),
                         "url": url,
-                        "no_redirect": true
+                        "no_redirect": true,
+                        "right": right
                     }),
                 ))
             } else {
@@ -70,7 +73,8 @@ pub fn shortcuts(
                                     .map(|(shortcut, url)| json!({"shortcut": shortcut, "url": url}))
                                     .collect::<Vec<_>>())
                                     .to_string(),
-                "not_found": true
+                "not_found": true,
+                "right": right
             }),
         )),
     })
@@ -127,15 +131,12 @@ pub fn delete_shortcut(
     ))
 }
 
-fn parse_shortcut_path_buff(shortcut: &'_ Path) -> Result<&'_ str, (Status, Value)> {
+fn parse_shortcut_path_buff(shortcut: &'_ Path) -> Result<&'_ str, AppError> {
     match shortcut.to_str() {
         Some(shortcut) => Ok(shortcut),
         None => {
             error!("GET <shortcut..> failed parsing: {:?}", shortcut);
-            Err((
-                Status::BadRequest,
-                json!({"error": "Wrong shortcut format."}),
-            ))
+            Err(AppError::BadRequest)
         }
     }
 }

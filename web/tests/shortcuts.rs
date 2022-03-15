@@ -197,7 +197,7 @@ fn delete_a_shortcut_with_auth_authorized() {
         login:
           simple: true
           read_private: false
-          write_private: false",
+          write_private: true",
         "",
         "some_session_id: some_mail@mail.com",
     );

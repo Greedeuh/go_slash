@@ -27,6 +27,8 @@ import { defineComponent } from "vue";
 import axios from "axios";
 import sha256 from "crypto-js/sha256";
 import hex from "crypto-js/enc-hex";
+import addMonths from "date-fns/addMonths";
+import formatISO from "date-fns/formatISO";
 
 interface Window {
   simple_salt: string;
@@ -62,15 +64,22 @@ export default defineComponent({
             this.success = true;
             this.error = false;
 
+            document.cookie =
+              "go_session_id=" +
+              res.data.token +
+              "; " +
+              formatISO(addMonths(new Date(), 1)) +
+              "; path=/";
+
             const params = new URLSearchParams(window.location.search);
 
             if (params.has("from")) {
               setTimeout(() => {
-                window.location.href = "/" + params.get("from");
+                window.location.href = params.get("from") as string;
               }, 500);
             } else {
               setTimeout(() => {
-                window.location.href = "/";
+                window.location.pathname = "";
               }, 500);
             }
           } else {

@@ -10,6 +10,7 @@ pub enum AppError {
     Db,
     Disable,
     Unauthorized,
+    BadRequest,
 }
 
 impl From<RustbreakError> for AppError {
