@@ -46,7 +46,7 @@ fn index(
 
     Ok(Template::render(
         "index",
-        json!({ "shortcuts": all_shortcuts, "right": right }),
+        json!({ "shortcuts": all_shortcuts, "right": right, "mail": user_mail }),
     ))
 }
 

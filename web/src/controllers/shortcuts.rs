@@ -74,7 +74,8 @@ pub fn shortcuts(
                                     .collect::<Vec<_>>())
                                     .to_string(),
                 "not_found": true,
-                "right": right
+                "right": right,
+                "mail": user_mail
             }),
         )),
     })

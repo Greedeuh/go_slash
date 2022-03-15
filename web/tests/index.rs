@@ -31,6 +31,13 @@ ssshortcut: http://localhost:8001/ssshortcut",
 
                 driver.get("http://localhost:8001").await.unwrap();
 
+                let login_link = driver.find_element(By::Css("a.nav-link")).await.unwrap();
+                assert_eq!(
+                    login_link.get_attribute("href").await.unwrap(),
+                    Some("/go/login".to_owned())
+                );
+                assert_eq!(login_link.text().await.unwrap(), "Login");
+
                 let articles = driver
                     .find_elements(By::Css("[role='listitem']"))
                     .await
@@ -399,6 +406,13 @@ newShortcut2: http://localhost:8001/claude",
                     .get("http://localhost:8001/newShortcut?no_redirect=true")
                     .await
                     .unwrap();
+
+                let login_link = driver.find_element(By::Css("a.nav-link")).await.unwrap();
+                assert_eq!(
+                    login_link.get_attribute("href").await.unwrap(),
+                    Some("/go/login".to_owned())
+                );
+                assert_eq!(login_link.text().await.unwrap(), "Login");
 
                 let search_bar = driver
                     .find_element(By::Css("input[type='search']"))
