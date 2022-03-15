@@ -7,7 +7,10 @@ use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
+use crate::guards::SessionId;
 pub use crate::models::shortcuts::Entries;
+use crate::models::users::{should_be_logged_in_if_features, Right, Sessions};
+use crate::GlobalFeatures;
 
 lazy_static! {
     static ref URL_REGEX: Regex =
@@ -29,7 +32,12 @@ pub fn shortcuts(
     shortcut: PathBuf,
     no_redirect: Option<bool>,
     entries: &State<Entries>,
+    session_id: Option<SessionId>,
+    sessions: &State<Sessions>,
+    features: &State<GlobalFeatures>,
 ) -> Result<ShortcutRes, (Status, Value)> {
+    should_be_logged_in_if_features(&Right::Read, &session_id, sessions, features)?;
+
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
     Ok(match entries.find(shortcut)? {
@@ -78,7 +86,12 @@ pub fn put_shortcut(
     shortcut: PathBuf,
     entries: &State<Entries>,
     url: Json<Url>,
+    session_id: Option<SessionId>,
+    sessions: &State<Sessions>,
+    features: &State<GlobalFeatures>,
 ) -> Result<Status, (Status, Value)> {
+    should_be_logged_in_if_features(&Right::Write, &session_id, sessions, features)?;
+
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
     let url = url.into_inner().url;
@@ -95,7 +108,12 @@ pub fn put_shortcut(
 pub fn delete_shortcut(
     shortcut: PathBuf,
     entries: &State<Entries>,
+    session_id: Option<SessionId>,
+    sessions: &State<Sessions>,
+    features: &State<GlobalFeatures>,
 ) -> Result<Template, (Status, Value)> {
+    should_be_logged_in_if_features(&Right::Write, &session_id, sessions, features)?;
+
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
     if entries.delete(shortcut).is_ok() {};

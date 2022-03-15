@@ -65,20 +65,44 @@ impl From<&str> for Sessions {
     }
 }
 
-pub fn should_be_logged_in(
-    session_id: Option<SessionId>,
+pub enum Right {
+    Admin,
+    Read,
+    Write,
+}
+
+pub fn should_be_logged_in_if_features(
+    right: &Right,
+    session_id: &Option<SessionId>,
     sessions: &State<Sessions>,
     features: &State<GlobalFeatures>,
 ) -> Result<(), AppError> {
     if features.get()?.login.simple {
-        if let Some(session_id) = session_id {
-            if !sessions.is_logged_in(&session_id.0) {
-                error!("Wrong session_id.");
-                return Err(AppError::Unauthorized);
+        match right {
+            Right::Admin => should_be_logged_in(session_id, sessions)?,
+            Right::Read if features.get()?.login.read_private => {
+                should_be_logged_in(session_id, sessions)?
             }
-        } else {
+            Right::Write if features.get()?.login.write_private => {
+                should_be_logged_in(session_id, sessions)?
+            }
+            _ => (),
+        }
+    }
+    Ok(())
+}
+
+fn should_be_logged_in(
+    session_id: &Option<SessionId>,
+    sessions: &State<Sessions>,
+) -> Result<(), AppError> {
+    if let Some(session_id) = session_id {
+        if !sessions.is_logged_in(&session_id.0) {
+            error!("Wrong session_id.");
             return Err(AppError::Unauthorized);
         }
+    } else {
+        return Err(AppError::Unauthorized);
     }
     Ok(())
 }

@@ -6,7 +6,7 @@ use crate::{
     guards::SessionId,
     models::{
         features::PatchableFeatures,
-        users::{should_be_logged_in, Sessions},
+        users::{should_be_logged_in_if_features, Right, Sessions},
     },
     GlobalFeatures,
 };
@@ -17,7 +17,7 @@ pub fn features(
     sessions: &State<Sessions>,
     features: &State<GlobalFeatures>,
 ) -> Result<Template, (Status, Template)> {
-    should_be_logged_in(session_id, sessions, features)?;
+    should_be_logged_in_if_features(&Right::Admin, &session_id, sessions, features)?;
 
     let features = features.get()?;
 
@@ -36,7 +36,7 @@ pub fn patch_feature(
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
 ) -> Result<Status, (Status, Value)> {
-    should_be_logged_in(session_id, sessions, features)?;
+    should_be_logged_in_if_features(&Right::Admin, &session_id, sessions, features)?;
 
     features.patch(&new_features)?;
     Ok(Status::Ok)

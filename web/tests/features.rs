@@ -98,7 +98,7 @@ fn should_be_logged_in_to_manage_features() {
 }
 
 #[test]
-fn should_be_logged_in_to_manage_features_ok_with_cookie() {
+fn should_be_logged_in_to_manage_features_ok_with_auth() {
     let client = launch_with(
         "",
         "---
@@ -115,6 +115,14 @@ fn should_be_logged_in_to_manage_features_ok_with_cookie() {
         client
             .get("/go/features")
             .cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
+            .dispatch()
+            .status(),
+        Status::Unauthorized
+    );
+    assert_ne!(
+        client
+            .get("/go/features")
+            .header(Header::new("Authorization", "some_session_id"))
             .dispatch()
             .status(),
         Status::Unauthorized
@@ -128,31 +136,6 @@ fn should_be_logged_in_to_manage_features_ok_with_cookie() {
             .status(),
         Status::Unauthorized
     );
-}
-
-#[test]
-fn should_be_logged_in_to_manage_features_is_ok_with_header() {
-    let client = launch_with(
-        "",
-        "---
-    login:
-      simple: true
-      read_private: false
-      write_private: false
-    ",
-        "",
-        "some_session_id: some_mail@mail.com",
-    );
-
-    assert_ne!(
-        client
-            .get("/go/features")
-            .header(Header::new("Authorization", "some_session_id"))
-            .dispatch()
-            .status(),
-        Status::Unauthorized
-    );
-
     assert_ne!(
         client
             .patch("/go/features")
