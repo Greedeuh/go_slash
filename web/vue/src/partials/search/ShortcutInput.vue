@@ -11,6 +11,8 @@
         name="shortcut"
         class="form-control"
         placeholder="shortcut"
+        @focus="global_focus(true)"
+        @blur="global_focus(false)"
       />
       <span class="input-group-text">to</span>
       <input
@@ -22,9 +24,16 @@
         name="url"
         class="form-control"
         placeholder="https://my-favorite-tool"
-        @keydown.enter.prevent=""
+        @focus="global_focus(true)"
+        @blur="global_focus(false)"
       />
-      <button id="btn-add" class="btn btn-primary" type="submit">
+      <button
+        id="btn-add"
+        class="btn btn-primary"
+        type="submit"
+        @focus="global_focus(true)"
+        @blur="global_focus(false)"
+      >
         Save <i class="icon-save"></i>
       </button>
     </div>
@@ -61,6 +70,10 @@ export default defineComponent({
         url: this.url,
         on_success,
       });
+    },
+    // lazy way to stop the global listning of partial on enter, tab ... while on our current form
+    global_focus(yes_or_no: boolean) {
+      (window as any).focus_flag = yes_or_no; // eslint-disable-line
     },
   },
 });

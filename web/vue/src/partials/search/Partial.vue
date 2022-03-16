@@ -91,7 +91,10 @@ export default defineComponent({
     key_press = (e: KeyboardEvent) => {
       let key = e.key;
 
-      if (CONTROL_KEYS.includes(key)) {
+      if (
+        CONTROL_KEYS.includes(key) &&
+        !(window as any).focus_flag // eslint-disable-line
+      ) {
         e.preventDefault();
 
         if (key === "Escape") this.administer = false;
