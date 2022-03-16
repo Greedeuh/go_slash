@@ -122,7 +122,7 @@ fn post_simple_login_not_a_mail() {
 #[async_test]
 async fn simple_login() {
     in_browser(
-        "",
+        "another: http://zadazd.com",
         "---
     login:
       simple: true
@@ -220,6 +220,19 @@ async fn simple_login() {
                     driver.current_url().await.unwrap(),
                     "http://localhost:8001/allo"
                 );
+                let login_link = driver.find_element(By::Css(".navbar-text")).await.unwrap();
+                assert_eq!(login_link.text().await.unwrap(), "some_mail@mail.go");
+
+                driver
+                    .get("http://localhost:8001/another?no_redirect")
+                    .await
+                    .unwrap();
+                let login_link = driver.find_element(By::Css(".navbar-text")).await.unwrap();
+                assert_eq!(login_link.text().await.unwrap(), "some_mail@mail.go");
+
+                driver.get("http://localhost:8001").await.unwrap();
+                let login_link = driver.find_element(By::Css(".navbar-text")).await.unwrap();
+                assert_eq!(login_link.text().await.unwrap(), "some_mail@mail.go");
             }
             .boxed()
         },

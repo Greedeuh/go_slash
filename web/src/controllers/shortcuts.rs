@@ -57,7 +57,8 @@ pub fn shortcuts(
                             .to_string(),
                         "url": url,
                         "no_redirect": true,
-                        "right": right
+                        "right": right,
+                        "mail": user_mail
                     }),
                 ))
             } else {
