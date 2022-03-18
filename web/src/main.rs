@@ -30,11 +30,18 @@ fn rocket() -> _ {
         _ => 8000,
     };
 
+    let addr = env::var("ADDR");
+    let addr = match addr {
+        Ok(addr) => addr,
+        _ => "127.0.0.1".to_owned(),
+    };
+
     let simple_login_salt1 = env::var("SALT1").expect("expect env var SALT1");
     let simple_login_salt2 = env::var("SALT2").expect("expect env var SALT2");
 
     server(
         port,
+        &addr,
         entries,
         features,
         users,

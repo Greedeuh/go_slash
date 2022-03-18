@@ -2,6 +2,7 @@
 extern crate rocket;
 #[macro_use]
 extern crate rocket_dyn_templates;
+
 use rocket::{
     fs::{relative, FileServer},
     http::Status,
@@ -57,6 +58,7 @@ pub struct AppConfig {
 
 pub fn server(
     port: u16,
+    address: &str,
     entries: Entries,
     features: GlobalFeatures,
     users: SimpleUsers,
@@ -66,6 +68,7 @@ pub fn server(
     rocket::build()
         .configure(Config {
             port,
+            address: address.parse().unwrap(),
             ..Config::debug_default()
         })
         .mount(

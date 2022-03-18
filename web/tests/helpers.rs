@@ -14,6 +14,7 @@ use thirtyfour::{DesiredCapabilities, WebDriver};
 use uuid::Uuid;
 
 const PORT: u16 = 8001;
+const ADDR: &str = "127.0.0.1";
 
 fn gen_file_path(content: &str) -> String {
     if let Err(e) = remove_dir_all("test_dir") {
@@ -33,6 +34,7 @@ fn gen_file_path(content: &str) -> String {
 pub fn launch_empty() -> Client {
     Client::tracked(server(
         PORT,
+        ADDR,
         Entries::from_path(&gen_file_path("")),
         GlobalFeatures::from_path(&gen_file_path("")),
         SimpleUsers::from_path(&gen_file_path("")),
@@ -46,6 +48,7 @@ pub fn launch_empty() -> Client {
 pub fn launch_with(shortcuts: &str, features: &str, users: &str, sessions: &str) -> Client {
     Client::tracked(server(
         PORT,
+        ADDR,
         Entries::from_path(&gen_file_path(shortcuts)),
         GlobalFeatures::from_path(&gen_file_path(features)),
         SimpleUsers::from_path(&gen_file_path(users)),
@@ -122,7 +125,7 @@ async fn in_browser_with<'b, F>(
     let users = SimpleUsers::from_path(&gen_file_path(users));
     let sessions = Sessions::from(sessions);
     spawn(async move {
-        server(PORT, entries, features, users, sessions, conf())
+        server(PORT, ADDR, entries, features, users, sessions, conf())
             .launch()
             .await
     });
