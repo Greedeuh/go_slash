@@ -6,5 +6,6 @@
     "background": {
         "service_worker": "proxy.js"
       },
-    "permissions": [ "tabs" ]
+    "permissions": [ "tabs", "storage" ],
+    "options_page": "config.html"
 }
