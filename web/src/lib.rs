@@ -11,6 +11,7 @@ use rocket_dyn_templates::Template;
 pub mod controllers;
 use controllers::{
     features::{features, patch_feature},
+    health_check,
     shortcuts::{delete_shortcut, index, put_shortcut, shortcuts},
     users::{login, simple_login},
 };
@@ -49,7 +50,8 @@ pub fn server(
                 login,
                 features,
                 patch_feature,
-                simple_login
+                simple_login,
+                health_check
             ],
         )
         .mount("/public", FileServer::from(relative!("public")))

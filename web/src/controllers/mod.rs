@@ -40,3 +40,8 @@ impl From<AppError> for (Status, Template) {
         }
     }
 }
+
+#[get("/go/health")]
+pub fn health_check() -> Status {
+    Status::Ok
+}
