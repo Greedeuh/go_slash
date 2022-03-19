@@ -1,0 +1,10 @@
+{
+    "name": "GO/",
+    "description": "GO/ extention",
+    "version": "1.0",
+    "manifest_version": 3,
+    "background": {
+        "service_worker": "proxy.js"
+      },
+    "permissions": [ "tabs" ]
+}
