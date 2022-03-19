@@ -18,6 +18,32 @@ lazy_static! {
         Regex::new(r#"https?://(www\.)?[-a-zA-Z0-9()@:%_\+.~#?&//=]{1,256}"#,).unwrap();
 }
 
+#[get("/")]
+pub fn index(
+    entries: &State<Entries>,
+    session_id: Option<SessionId>,
+    sessions: &State<Sessions>,
+    features: &State<GlobalFeatures>,
+) -> Result<Template, (Status, Template)> {
+    let user_mail = should_be_logged_in_if_features(&Right::Read, &session_id, sessions, features)?;
+
+    let all_shortcuts = entries.sorted()?;
+
+    let all_shortcuts = all_shortcuts
+        .iter()
+        .map(|(shortcut, url)| json!({"shortcut": shortcut, "url": url}))
+        .collect::<Vec<_>>();
+
+    let all_shortcuts: String = json!(all_shortcuts).to_string();
+
+    let right = read_or_write(features, &user_mail)?;
+
+    Ok(Template::render(
+        "index",
+        json!({ "shortcuts": all_shortcuts, "right": right, "mail": user_mail }),
+    ))
+}
+
 #[derive(Responder)]
 #[allow(clippy::large_enum_variant)]
 pub enum ShortcutRes {
