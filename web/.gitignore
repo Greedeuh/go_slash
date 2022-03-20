@@ -2,3 +2,5 @@
 templates/vue_dist
 public/vue
 test_dir
+go.db-shm
+go.db-wal

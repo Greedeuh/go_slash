@@ -1,11 +1,16 @@
+#[macro_use]
+extern crate diesel_migrations;
+
+use diesel::SqliteConnection;
+use go_web::controllers::users::LoginSuccessfull;
 use rocket::async_test;
 use rocket::futures::FutureExt;
-mod helpers;
-use go_web::controllers::users::LoginSuccessfull;
-use helpers::*;
+use rocket::tokio::sync::Mutex;
+mod utils;
 use rocket::http::Status;
 use serde_json::json;
 use thirtyfour::prelude::*;
+use utils::*;
 use uuid::Uuid;
 
 #[test]
@@ -134,7 +139,7 @@ async fn simple_login() {
         pwd: 4a4498acaf82759d929a7571b5bcea425c9275854d963e49333bf8056c673f60
         ",
         "",
-        |driver: &WebDriver| {
+        |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
             async {
                 driver
                     .get("http://localhost:8001/go/login?from=allo")

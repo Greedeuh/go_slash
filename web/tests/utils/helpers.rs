@@ -1,8 +1,9 @@
+use diesel::{Connection, SqliteConnection};
 use go_web::{models::users::Sessions, server, AppConfig, Entries, GlobalFeatures, SimpleUsers};
 use rocket::{
     futures::{future::BoxFuture, FutureExt},
     local::blocking::Client,
-    tokio::spawn,
+    tokio::{spawn, sync::Mutex},
 };
 use std::{
     env,
@@ -15,6 +16,7 @@ use uuid::Uuid;
 
 const PORT: u16 = 8001;
 const ADDR: &str = "127.0.0.1";
+embed_migrations!("migrations");
 
 fn gen_file_path(content: &str) -> String {
     if let Err(e) = remove_dir_all("test_dir") {
@@ -75,7 +77,7 @@ fn conf() -> AppConfig {
 #[allow(dead_code)]
 pub async fn in_browser<F>(shortcuts: &str, features: &str, users: &str, sessions: &str, f: F)
 where
-    F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
+    F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
 {
     in_browser_with(shortcuts, features, users, sessions, f, true, true).await;
 }
@@ -85,7 +87,7 @@ where
 #[deprecated(note = "Should only be used in local")]
 pub async fn in_browserr<F>(shortcuts: &str, features: &str, users: &str, sessions: &str, f: F)
 where
-    F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
+    F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
 {
     in_browser_with(shortcuts, features, users, sessions, f, false, true).await;
 }
@@ -95,7 +97,7 @@ where
 #[deprecated(note = "Should only be used in local")]
 pub async fn in_browserrr<F>(shortcuts: &str, features: &str, users: &str, sessions: &str, f: F)
 where
-    F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
+    F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
 {
     in_browser_with(shortcuts, features, users, sessions, f, false, false).await;
 }
@@ -109,7 +111,7 @@ async fn in_browser_with<'b, F>(
     headless: bool,
     close_browser: bool,
 ) where
-    F: for<'a> FnOnce(&'a WebDriver) -> BoxFuture<'a, ()>,
+    F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
 {
     let do_not_close_browser = close_browser;
     let do_not_close_browser = !match env::var("CLOSE_BROWSER") {
@@ -122,19 +124,31 @@ async fn in_browser_with<'b, F>(
         _ => do_not_close_browser || !headless,
     };
 
-    let db = gen_file_path("");
+    let db_path = gen_file_path("");
+    let srv_db_path = db_path.clone();
     let entries = Entries::from_path(&gen_file_path(shortcuts));
     let features = GlobalFeatures::from_path(&gen_file_path(features));
     let users = SimpleUsers::from_path(&gen_file_path(users));
     let sessions = Sessions::from(sessions);
-    spawn(async move {
-        server(PORT, ADDR, &db, entries, features, users, sessions, conf())
-            .launch()
-            .await
-            .unwrap()
-    });
 
-    std::thread::sleep(Duration::from_millis(400));
+    let db_conn = SqliteConnection::establish(&db_path).unwrap();
+    embedded_migrations::run(&db_conn).unwrap();
+
+    spawn(async move {
+        server(
+            PORT,
+            ADDR,
+            &srv_db_path,
+            entries,
+            features,
+            users,
+            sessions,
+            conf(),
+        )
+        .launch()
+        .await
+        .unwrap()
+    });
 
     let mut caps = DesiredCapabilities::firefox();
     if headless {
@@ -145,7 +159,14 @@ async fn in_browser_with<'b, F>(
         .await
         .expect("Driver build failed");
 
-    let may_panic = AssertUnwindSafe(async { f(&driver).await });
+    let mut count = 0;
+    while driver.get("http://localhost:8001/go/health").await.is_err() && count < 50 {
+        count += 1;
+        sleep();
+    }
+
+    let db_conn = Mutex::new(db_conn);
+    let may_panic = AssertUnwindSafe(async { f(&driver, db_conn).await });
 
     let maybe_panicked = may_panic.catch_unwind().await;
 

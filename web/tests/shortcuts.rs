@@ -1,12 +1,15 @@
+#[macro_use]
+extern crate diesel_migrations;
+
 use go_web::guards::SESSION_COOKIE;
 use rocket::http::ContentType;
 use rocket::http::Cookie;
 use rocket::http::Header;
 use rocket::http::Status;
-mod helpers;
-use helpers::*;
+mod utils;
 use serde_json::json;
 use serde_json::Value;
+use utils::*;
 
 #[test]
 fn undefined_shortcut_return_a_404() {

@@ -1,3 +1,4 @@
+use diesel::result::Error;
 use rustbreak::RustbreakError;
 use serde::Deserialize;
 
@@ -15,6 +16,13 @@ pub enum AppError {
 
 impl From<RustbreakError> for AppError {
     fn from(e: RustbreakError) -> Self {
+        error!("{:?}", e);
+        AppError::Db
+    }
+}
+
+impl From<Error> for AppError {
+    fn from(e: Error) -> Self {
         error!("{:?}", e);
         AppError::Db
     }

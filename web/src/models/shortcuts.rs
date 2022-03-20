@@ -1,12 +1,29 @@
 use rustbreak::{deser::Yaml, PathDatabase};
+use serde::Serialize;
 use std::collections::HashMap;
 
 use crate::models::AppError;
+use crate::schema::shortcuts;
 
-#[derive(Queryable)]
+#[derive(Queryable, Serialize)]
 pub struct Shortcut {
-    pub id: String,
+    pub shortcut: String,
     pub url: String,
+}
+
+#[derive(Insertable, AsChangeset)]
+#[table_name = "shortcuts"]
+pub struct NewShortcut {
+    pub shortcut: String,
+    pub url: String,
+}
+
+pub trait Shortcuts {
+    fn all(&self) -> Result<HashMap<String, String>, AppError>;
+    fn sorted(&self) -> Result<Vec<(String, String)>, AppError>;
+    fn find(&self, key: &str) -> Result<Option<String>, AppError>;
+    fn put(&self, key: &str, url: String) -> Result<(), AppError>;
+    fn delete(&self, key: &str) -> Result<(), AppError>;
 }
 
 pub struct Entries {
@@ -19,12 +36,14 @@ impl Entries {
             PathDatabase::load_from_path_or_else(path.into(), HashMap::new).unwrap();
         Self { db }
     }
+}
 
-    pub fn all(&self) -> Result<HashMap<String, String>, AppError> {
+impl Shortcuts for Entries {
+    fn all(&self) -> Result<HashMap<String, String>, AppError> {
         Ok(self.db.borrow_data()?.clone())
     }
 
-    pub fn sorted(&self) -> Result<Vec<(String, String)>, AppError> {
+    fn sorted(&self) -> Result<Vec<(String, String)>, AppError> {
         let mut all_shortcuts = self
             .all()?
             .into_iter()
@@ -36,11 +55,11 @@ impl Entries {
         Ok(all_shortcuts)
     }
 
-    pub fn find(&self, key: &str) -> Result<Option<String>, AppError> {
+    fn find(&self, key: &str) -> Result<Option<String>, AppError> {
         Ok(self.db.borrow_data()?.get(key).cloned())
     }
 
-    pub fn put(&self, key: &str, url: String) -> Result<(), AppError> {
+    fn put(&self, key: &str, url: String) -> Result<(), AppError> {
         {
             let mut db = self.db.borrow_data_mut()?;
             db.insert(key.to_owned(), url);
@@ -49,7 +68,7 @@ impl Entries {
         Ok(())
     }
 
-    pub fn delete(&self, key: &str) -> Result<(), AppError> {
+    fn delete(&self, key: &str) -> Result<(), AppError> {
         {
             let mut db = self.db.borrow_data_mut()?;
             db.remove(key);

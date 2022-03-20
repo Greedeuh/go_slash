@@ -27,7 +27,7 @@ pub mod models;
 pub use models::{features::GlobalFeatures, shortcuts::Entries, users::SimpleUsers};
 pub mod guards;
 use crate::models::users::Sessions;
-mod schema;
+pub mod schema;
 use dotenv::dotenv;
 
 pub struct AppConfig {
@@ -89,4 +89,4 @@ pub fn server(
 }
 
 #[database("go")]
-struct DbConn(diesel::SqliteConnection);
+pub struct DbConn(diesel::SqliteConnection);

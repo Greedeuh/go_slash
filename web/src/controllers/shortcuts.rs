@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 
 use crate::guards::SessionId;
 pub use crate::models::shortcuts::Entries;
+use crate::models::shortcuts::Shortcuts;
 use crate::models::users::{read_or_write, should_be_logged_in_if_features, Right, Sessions};
 use crate::models::AppError;
 use crate::GlobalFeatures;

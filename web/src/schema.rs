@@ -1,6 +1,6 @@
 table! {
-    shortcuts (id) {
-        id -> Text,
+    shortcuts (shortcut) {
+        shortcut -> Text,
         url -> Text,
     }
 }

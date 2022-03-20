@@ -1,11 +1,15 @@
-use std::thread;
-use std::time::Duration;
+#[macro_use]
+extern crate diesel_migrations;
 
+use diesel::SqliteConnection;
 use rocket::async_test;
 use rocket::futures::FutureExt;
-mod helpers;
-use helpers::*;
+use rocket::tokio::sync::Mutex;
+use std::thread;
+use std::time::Duration;
+mod utils;
 use thirtyfour::prelude::*;
+use utils::*;
 
 #[async_test]
 async fn index_should_list_shortcuts() {
@@ -16,8 +20,13 @@ ssshortcut: http://localhost:8001/ssshortcut",
         "",
         "",
         "",
-        |driver: &WebDriver| {
-            async {
+        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+            async move {
+                let con = con.lock().await;
+                shortcut("newShortcut", "http://localhost:8001/newShortcut", &con);
+                shortcut("aShortcut", "http://localhost:8001/aShortcut", &con);
+                shortcut("ssshortcut", "http://localhost:8001/ssshortcut", &con);
+
                 let texts_sorted = vec![
                     "aShortcut http://localhost:8001/aShortcut",
                     "newShortcut http://localhost:8001/newShortcut",
@@ -66,8 +75,13 @@ tadadam: http://localhost:8001/ssshortcut",
         "",
         "",
         "",
-        |driver: &WebDriver| {
-            async {
+        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+            async move {
+                let con = con.lock().await;
+                shortcut("newShortcut", "http://localhost:8001/newShortcut", &con);
+                shortcut("jeanLuc", "http://localhost:8001/aShortcut", &con);
+                shortcut("tadadam", "http://localhost:8001/ssshortcut", &con);
+
                 driver.get("http://localhost:8001").await.unwrap();
 
                 let articles = driver
@@ -128,8 +142,13 @@ tadadam: http://localhost:8001/ssshortcut",
         "",
         "",
         "",
-        |driver: &WebDriver| {
-            async {
+        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+            async move {
+                let con = con.lock().await;
+                shortcut("newShortcut", "http://localhost:8001/newShortcut", &con);
+                shortcut("jeanLuc", "http://localhost:8001/aShortcut1", &con);
+                shortcut("tadadam", "http://localhost:8001/ssshortcut", &con);
+
                 driver.get("http://localhost:8001").await.unwrap();
 
                 let search_bar = driver
@@ -255,8 +274,11 @@ async fn index_user_can_delete_shortcuts() {
         "",
         "",
         "",
-        |driver: &WebDriver| {
-            async {
+        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+            async move {
+                let con = con.lock().await;
+                shortcut("newShortcut", "http://localhost:8001/newShortcut", &con);
+
                 driver.get("http://localhost:8001").await.unwrap();
 
                 let administer_btn = driver.find_element(By::Id("btn-administer")).await.unwrap();
@@ -310,84 +332,90 @@ async fn index_user_can_delete_shortcuts() {
 
 #[async_test]
 async fn index_user_can_add_shortcuts() {
-    in_browser("", "", "", "", |driver: &WebDriver| {
-        async {
-            driver.get("http://localhost:8001").await.unwrap();
+    in_browser(
+        "",
+        "",
+        "",
+        "",
+        |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
+            async {
+                driver.get("http://localhost:8001").await.unwrap();
 
-            let administer_btn = driver.find_element(By::Id("btn-administer")).await.unwrap();
-            assert_eq!(
-                administer_btn.class_name().await.unwrap(),
-                Some("btn-light btn".to_owned())
-            );
-            administer_btn.click().await.unwrap();
+                let administer_btn = driver.find_element(By::Id("btn-administer")).await.unwrap();
+                assert_eq!(
+                    administer_btn.class_name().await.unwrap(),
+                    Some("btn-light btn".to_owned())
+                );
+                administer_btn.click().await.unwrap();
 
-            driver
-                .find_element(By::Css("[name='shortcut']"))
-                .await
-                .unwrap()
-                .send_keys("jeanLuc")
-                .await
-                .unwrap();
-            driver
-                .find_element(By::Css("[name='url']"))
-                .await
-                .unwrap()
-                .send_keys("http://localhost:8001/aShortcut")
-                .await
-                .unwrap();
-            driver
-                .find_element(By::Id("btn-add"))
-                .await
-                .unwrap()
-                .click()
-                .await
-                .unwrap();
-
-            sleep();
-
-            let article = driver
-                .find_element(By::Css("[role='listitem']"))
-                .await
-                .unwrap();
-            assert_eq!(
-                article.text().await.unwrap(),
-                "jeanLuc http://localhost:8001/aShortcut NEW"
-            );
-
-            assert_eq!(
-                article.get_property("href").await.unwrap(),
-                Some("http://localhost:8001/jeanLuc?no_redirect".to_owned())
-            );
-
-            assert_eq!(
                 driver
                     .find_element(By::Css("[name='shortcut']"))
                     .await
                     .unwrap()
-                    .get_property("value")
+                    .send_keys("jeanLuc")
                     .await
-                    .unwrap(),
-                Some("".to_owned())
-            );
-            assert_eq!(
+                    .unwrap();
                 driver
                     .find_element(By::Css("[name='url']"))
                     .await
                     .unwrap()
-                    .get_property("value")
+                    .send_keys("http://localhost:8001/aShortcut")
                     .await
-                    .unwrap(),
-                Some("".to_owned())
-            );
+                    .unwrap();
+                driver
+                    .find_element(By::Id("btn-add"))
+                    .await
+                    .unwrap()
+                    .click()
+                    .await
+                    .unwrap();
 
-            administer_btn.click().await.unwrap();
-            assert_eq!(
-                article.get_property("href").await.unwrap(),
-                Some("http://localhost:8001/aShortcut".to_owned())
-            );
-        }
-        .boxed()
-    })
+                sleep();
+
+                let article = driver
+                    .find_element(By::Css("[role='listitem']"))
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    article.text().await.unwrap(),
+                    "jeanLuc http://localhost:8001/aShortcut NEW"
+                );
+
+                assert_eq!(
+                    article.get_property("href").await.unwrap(),
+                    Some("http://localhost:8001/jeanLuc?no_redirect".to_owned())
+                );
+
+                assert_eq!(
+                    driver
+                        .find_element(By::Css("[name='shortcut']"))
+                        .await
+                        .unwrap()
+                        .get_property("value")
+                        .await
+                        .unwrap(),
+                    Some("".to_owned())
+                );
+                assert_eq!(
+                    driver
+                        .find_element(By::Css("[name='url']"))
+                        .await
+                        .unwrap()
+                        .get_property("value")
+                        .await
+                        .unwrap(),
+                    Some("".to_owned())
+                );
+
+                administer_btn.click().await.unwrap();
+                assert_eq!(
+                    article.get_property("href").await.unwrap(),
+                    Some("http://localhost:8001/aShortcut".to_owned())
+                );
+            }
+            .boxed()
+        },
+    )
     .await;
 }
 
@@ -399,8 +427,12 @@ newShortcut2: http://localhost:8001/claude",
         "",
         "",
         "",
-        |driver: &WebDriver| {
-            async {
+        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+            async move {
+                let con = con.lock().await;
+                shortcut("newShortcut", "http://localhost:8001/looped", &con);
+                shortcut("newShortcut2", "http://localhost:8001/claude", &con);
+
                 // create shortcut
                 driver
                     .get("http://localhost:8001/newShortcut?no_redirect=true")
@@ -485,8 +517,12 @@ newShortcut2: http://localhost:8001/claude",
         "",
         "",
         "",
-        |driver: &WebDriver| {
-            async {
+        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+            async move {
+                let con = con.lock().await;
+                shortcut("newShortcut1", "http://localhost:8001/looped", &con);
+                shortcut("newShortcut2", "http://localhost:8001/claude", &con);
+
                 // create shortcut
                 driver
                     .get("http://localhost:8001/newShortcut")
@@ -567,7 +603,7 @@ login:
 ",
         "",
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver| {
+        |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
             async {
                 driver.get("http://localhost:8001").await.unwrap();
                 thread::sleep(Duration::from_secs_f32(0.6));
@@ -600,7 +636,7 @@ async fn logged_in_without_write() {
       write_private: true",
         "",
         "",
-        |driver: &WebDriver| {
+        |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
             async {
                 driver.get("http://localhost:8001").await.unwrap();
                 assert_eq!(
