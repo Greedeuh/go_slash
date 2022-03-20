@@ -55,7 +55,7 @@ pub enum ShortcutRes {
 
 // rank 11 because static file at /public are at 10 by default
 #[get("/<shortcut..>?<no_redirect>", rank = 11)]
-pub fn shortcuts(
+pub fn get_shortcut(
     shortcut: PathBuf,
     no_redirect: Option<bool>,
     entries: &State<Entries>,

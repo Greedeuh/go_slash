@@ -35,6 +35,7 @@ pub fn launch_empty() -> Client {
     Client::tracked(server(
         PORT,
         ADDR,
+        &gen_file_path(""),
         Entries::from_path(&gen_file_path("")),
         GlobalFeatures::from_path(&gen_file_path("")),
         SimpleUsers::from_path(&gen_file_path("")),
@@ -49,6 +50,7 @@ pub fn launch_with(shortcuts: &str, features: &str, users: &str, sessions: &str)
     Client::tracked(server(
         PORT,
         ADDR,
+        &gen_file_path(""),
         Entries::from_path(&gen_file_path(shortcuts)),
         GlobalFeatures::from_path(&gen_file_path(features)),
         SimpleUsers::from_path(&gen_file_path(users)),
@@ -120,15 +122,19 @@ async fn in_browser_with<'b, F>(
         _ => do_not_close_browser || !headless,
     };
 
+    let db = gen_file_path("");
     let entries = Entries::from_path(&gen_file_path(shortcuts));
     let features = GlobalFeatures::from_path(&gen_file_path(features));
     let users = SimpleUsers::from_path(&gen_file_path(users));
     let sessions = Sessions::from(sessions);
     spawn(async move {
-        server(PORT, ADDR, entries, features, users, sessions, conf())
+        server(PORT, ADDR, &db, entries, features, users, sessions, conf())
             .launch()
             .await
+            .unwrap()
     });
+
+    std::thread::sleep(Duration::from_millis(400));
 
     let mut caps = DesiredCapabilities::firefox();
     if headless {

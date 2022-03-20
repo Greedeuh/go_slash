@@ -6,6 +6,10 @@ use go_web::{models::users::Sessions, server, AppConfig, Entries, GlobalFeatures
 
 #[launch]
 fn rocket() -> _ {
+    dotenv::dotenv().unwrap();
+
+    let db_url = env::var("DATABASE_URL").expect("Missing DATABASE_URL env var");
+
     let file = env::var("SHORTCUTS_FILE");
     let entries = match file {
         Ok(file) => Entries::from_path(&file),
@@ -42,6 +46,7 @@ fn rocket() -> _ {
     server(
         port,
         &addr,
+        &db_url,
         entries,
         features,
         users,
