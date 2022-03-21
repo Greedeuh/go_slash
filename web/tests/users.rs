@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 #[test]
 fn simple_login_is_behind_a_feature_switch() {
-    let (client, _conn) = launch_with("", "", "");
+    let (client, _conn) = launch_with("", "");
     let response = client.get("/go/login").dispatch();
 
     assert_eq!(response.status(), Status::Conflict);
@@ -30,7 +30,7 @@ fn simple_login_is_behind_a_feature_switch() {
 
 #[test]
 fn simple_login_feature_switch() {
-    let (client, _conn) = launch_with("", "", "");
+    let (client, _conn) = launch_with("", "");
     let response = client.get("/go/login").dispatch();
 
     assert_eq!(response.status(), Status::Conflict);
@@ -38,18 +38,19 @@ fn simple_login_feature_switch() {
 
 #[test]
 fn post_simple_login_token() {
-    let (client, _conn) = launch_with(
+    let (client, conn) = launch_with(
         "---
     login:
       simple: true
       read_private: false
       write_private: false
     ",
-        "---
-    some_mail@mail.go:
-        pwd: b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20
-        ",
         "",
+    );
+    user(
+        "some_mail@mail.go",
+        "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
+        &conn,
     );
 
     let response = client
@@ -68,18 +69,19 @@ fn post_simple_login_token() {
 
 #[test]
 fn post_simple_login_wrong_credentials() {
-    let (client, _conn) = launch_with(
+    let (client, conn) = launch_with(
         "---
     login:
       simple: true
       read_private: false
       write_private: false
     ",
-        "---
-    some_mail@mail.go:
-        pwd: b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20
-        ",
         "",
+    );
+    user(
+        "some_mail@mail.go",
+        "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
+        &conn,
     );
 
     let response = client
@@ -99,18 +101,19 @@ fn post_simple_login_wrong_credentials() {
 
 #[test]
 fn post_simple_login_not_a_mail() {
-    let (client, _conn) = launch_with(
+    let (client, conn) = launch_with(
         "---
     login:
       simple: true
       read_private: false
       write_private: false
     ",
-        "---
-    some_mail@mail.go:
-        pwd: b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20
-        ",
         "",
+    );
+    user(
+        "some_mail@mail.go",
+        "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
+        &conn,
     );
 
     let response = client
@@ -130,13 +133,16 @@ async fn simple_login() {
       read_private: false
       write_private: false
     ",
-        "---
-    some_mail@mail.go:
-        pwd: 4a4498acaf82759d929a7571b5bcea425c9275854d963e49333bf8056c673f60
-        ",
         "",
-        |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
-            async {
+        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+            async move {
+                let con = con.lock().await;
+                user(
+                    "some_mail@mail.go",
+                    "4a4498acaf82759d929a7571b5bcea425c9275854d963e49333bf8056c673f60",
+                    &con,
+                );
+
                 driver
                     .get("http://localhost:8001/go/login?from=allo")
                     .await

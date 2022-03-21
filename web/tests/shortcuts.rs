@@ -21,7 +21,7 @@ fn undefined_shortcut_return_a_404() {
 
 #[test]
 fn shortcut_redirect_to_target() {
-    let (client, conn) = launch_with("", "", "");
+    let (client, conn) = launch_with("", "");
     shortcut("myShortCut/hop", "https://thetarget.test.go.com", &conn);
 
     let response = client.get("/myShortCut/hop").dispatch();
@@ -42,7 +42,6 @@ fn shortcut_read_private_should_return_unauthorized() {
       read_private: true
       write_private: false",
         "",
-        "",
     );
     let response = client.get("/myShortCut/hop").dispatch();
 
@@ -57,7 +56,6 @@ fn shortcut_read_private_should_return_ok_with_session() {
       simple: true
       read_private: true
       write_private: false",
-        "",
         "some_session_id: some_mail@mail.com",
     );
     let response = client
@@ -77,7 +75,7 @@ fn shortcut_read_private_should_return_ok_with_session() {
 
 #[test]
 fn create_a_shortcut_with_invalid_url_return_400() {
-    let (client, _conn) = launch_with("", "", "");
+    let (client, _conn) = launch_with("", "");
     let response = client
         .put("/myShortCut/hop")
         .header(ContentType::JSON)
@@ -93,7 +91,7 @@ fn create_a_shortcut_with_invalid_url_return_400() {
 
 #[test]
 fn create_a_shortcut_return_200() {
-    let (client, _conn) = launch_with("", "", "");
+    let (client, _conn) = launch_with("", "");
     let response = client
         .put("/myShortCut/hop")
         .header(ContentType::JSON)
@@ -105,7 +103,7 @@ fn create_a_shortcut_return_200() {
 
 #[test]
 fn replace_a_shortcut_return_200() {
-    let (client, _conn) = launch_with("", "", "");
+    let (client, _conn) = launch_with("", "");
     let response = client
         .put("/myShortCut/hop")
         .header(ContentType::JSON)
@@ -123,7 +121,6 @@ fn put_shortcut_should_return_unauthorized() {
       simple: true
       read_private: false
       write_private: true",
-        "",
         "some_session_id: some_mail@mail.com",
     );
     let response = client
@@ -143,7 +140,6 @@ fn put_shortcut_should_is_ok_with_auth() {
       simple: true
       read_private: false
       write_private: true",
-        "",
         "some_session_id: some_mail@mail.com",
     );
     let response = client
@@ -167,7 +163,7 @@ fn put_shortcut_should_is_ok_with_auth() {
 
 #[test]
 fn delete_a_shortcut_return_200() {
-    let (client, _conn) = launch_with("", "", "");
+    let (client, _conn) = launch_with("", "");
     let response = client.delete("/myShortCut/hop").dispatch();
 
     assert_eq!(response.status(), Status::Ok);
@@ -181,7 +177,6 @@ fn delete_a_shortcut_return_unauthorized() {
       simple: true
       read_private: false
       write_private: true",
-        "",
         "some_session_id: some_mail@mail.com",
     );
     let response = client.delete("/myShortCut/hop").dispatch();
@@ -197,7 +192,6 @@ fn delete_a_shortcut_with_auth_authorized() {
           simple: true
           read_private: false
           write_private: true",
-        "",
         "some_session_id: some_mail@mail.com",
     );
     let response = client

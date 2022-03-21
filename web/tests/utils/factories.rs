@@ -1,6 +1,10 @@
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
-use go_web::{models::shortcuts::NewShortcut, schema::shortcuts};
+use go_web::{
+    models::{shortcuts::NewShortcut, users::NewUser},
+    schema::shortcuts,
+    schema::users,
+};
 
 #[allow(dead_code)]
 pub fn shortcut(shortcut: &str, url: &str, db_con: &SqliteConnection) {
@@ -8,6 +12,17 @@ pub fn shortcut(shortcut: &str, url: &str, db_con: &SqliteConnection) {
         .values(&NewShortcut {
             shortcut: shortcut.to_string(),
             url: url.to_string(),
+        })
+        .execute(db_con)
+        .unwrap();
+}
+
+#[allow(dead_code)]
+pub fn user(mail: &str, pwd: &str, db_con: &SqliteConnection) {
+    diesel::insert_into(users::table)
+        .values(&NewUser {
+            mail: mail.to_string(),
+            pwd: pwd.to_string(),
         })
         .execute(db_con)
         .unwrap();

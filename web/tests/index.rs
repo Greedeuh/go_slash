@@ -16,7 +16,6 @@ async fn index_should_list_shortcuts() {
     in_browser(
         "",
         "",
-        "",
         |driver: &WebDriver, con: Mutex<SqliteConnection>| {
             async move {
                 let con = con.lock().await;
@@ -66,7 +65,6 @@ async fn index_should_list_shortcuts() {
 #[async_test]
 async fn index_user_as_sugestions_when_typing() {
     in_browser(
-        "",
         "",
         "",
         |driver: &WebDriver, con: Mutex<SqliteConnection>| {
@@ -130,7 +128,6 @@ async fn index_user_as_sugestions_when_typing() {
 #[async_test]
 async fn index_user_can_search() {
     in_browser(
-        "",
         "",
         "",
         |driver: &WebDriver, con: Mutex<SqliteConnection>| {
@@ -263,7 +260,6 @@ async fn index_user_can_delete_shortcuts() {
     in_browser(
         "",
         "",
-        "",
         |driver: &WebDriver, con: Mutex<SqliteConnection>| {
             async move {
                 let con = con.lock().await;
@@ -323,7 +319,6 @@ async fn index_user_can_delete_shortcuts() {
 #[async_test]
 async fn index_user_can_add_shortcuts() {
     in_browser(
-        "",
         "",
         "",
         |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
@@ -413,7 +408,6 @@ async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
     in_browser(
         "",
         "",
-        "",
         |driver: &WebDriver, con: Mutex<SqliteConnection>| {
             async move {
                 let con = con.lock().await;
@@ -501,7 +495,6 @@ async fn undefined_shortcut_return_search_filled_and_edit_form() {
     in_browser(
         "",
         "",
-        "",
         |driver: &WebDriver, con: Mutex<SqliteConnection>| {
             async move {
                 let con = con.lock().await;
@@ -585,7 +578,6 @@ login:
   read_private: true
   write_private: false
 ",
-        "",
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
             async {
@@ -617,7 +609,6 @@ async fn logged_in_without_write() {
       simple: true
       read_private: false
       write_private: true",
-        "",
         "",
         |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
             async {

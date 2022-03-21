@@ -17,7 +17,6 @@ async fn features_should_list_editable_features() {
     in_browser(
         "",
         "",
-        "",
         |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
             async {
                 driver
@@ -87,7 +86,6 @@ fn should_be_logged_in_to_manage_features() {
       simple: true
       read_private: false
       write_private: false",
-        "",
         "some_session_id: some_mail@mail.com",
     );
 
@@ -114,7 +112,6 @@ fn should_be_logged_in_to_manage_features_ok_with_auth() {
       read_private: false
       write_private: false
     ",
-        "",
         "some_session_id: some_mail@mail.com",
     );
 

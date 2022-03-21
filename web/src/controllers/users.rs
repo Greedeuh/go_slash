@@ -1,3 +1,5 @@
+use diesel::dsl::count;
+use diesel::prelude::*;
 use lazy_static::lazy_static;
 use regex::Regex;
 use rocket::{http::Status, serde::json::Json, State};
@@ -7,9 +9,11 @@ use serde_json::{json, Map, Value};
 use sha256::digest;
 use uuid::Uuid;
 
+use crate::schema::users::dsl;
+use crate::DbPool;
 use crate::{
     models::{users::Sessions, AppError},
-    AppConfig, GlobalFeatures, SimpleUsers,
+    AppConfig, GlobalFeatures,
 };
 
 lazy_static! {
@@ -50,9 +54,9 @@ pub struct Credentials {
 pub fn simple_login(
     credentials: Json<Credentials>,
     features: &State<GlobalFeatures>,
-    users: &State<SimpleUsers>,
     sessions: &State<Sessions>,
     config: &State<AppConfig>,
+    pool: &State<DbPool>,
 ) -> Result<Json<LoginSuccessfull>, (Status, Value)> {
     if !features.get()?.login.simple {
         return Err(AppError::Disable.into());
@@ -65,16 +69,19 @@ pub fn simple_login(
 
     let pwd = digest(format!("{}{}", credentials.pwd, config.simple_login_salt2));
 
-    let user = users.get_matching_pwd(&credentials.mail, &pwd)?;
+    let conn = pool.get().map_err(AppError::from)?;
+    let mail_pwd_match: i64 = dsl::users
+        .select(count(dsl::mail))
+        .filter(dsl::pwd.eq(&pwd))
+        .find(&credentials.mail)
+        .first(&conn)
+        .map_err(AppError::from)?;
 
-    let _user = match user {
-        Some(user) => user,
-        None => {
-            return Err((
-                Status::Unauthorized,
-                json!({ "error": "Wrong credentials." }),
-            ))
-        }
+    if mail_pwd_match != 1 {
+        return Err((
+            Status::Unauthorized,
+            json!({ "error": "Wrong credentials." }),
+        ));
     };
 
     let token = Uuid::new_v4();

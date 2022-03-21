@@ -1,5 +1,5 @@
 use diesel::{Connection, SqliteConnection};
-use go_web::{models::users::Sessions, server, AppConfig, GlobalFeatures, SimpleUsers};
+use go_web::{models::users::Sessions, server, AppConfig, GlobalFeatures};
 use rocket::{
     futures::{future::BoxFuture, FutureExt},
     local::blocking::Client,
@@ -44,7 +44,6 @@ pub fn launch_empty() -> Client {
         ADDR,
         &db_path,
         GlobalFeatures::from_path(&gen_file_path("")),
-        SimpleUsers::from_path(&gen_file_path("")),
         Sessions::default(),
         conf(),
     ))
@@ -52,7 +51,7 @@ pub fn launch_empty() -> Client {
 }
 
 #[allow(dead_code)]
-pub fn launch_with(features: &str, users: &str, sessions: &str) -> (Client, SqliteConnection) {
+pub fn launch_with(features: &str, sessions: &str) -> (Client, SqliteConnection) {
     if let Err(e) = remove_dir_all("test_dir") {
         println!("{:?}", e);
     };
@@ -67,7 +66,6 @@ pub fn launch_with(features: &str, users: &str, sessions: &str) -> (Client, Sqli
             ADDR,
             &db_path,
             GlobalFeatures::from_path(&gen_file_path(features)),
-            SimpleUsers::from_path(&gen_file_path(users)),
             Sessions::from(sessions),
             conf(),
         ))
@@ -84,36 +82,35 @@ fn conf() -> AppConfig {
 }
 
 #[allow(dead_code)]
-pub async fn in_browser<F>(features: &str, users: &str, sessions: &str, f: F)
+pub async fn in_browser<F>(features: &str, sessions: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(features, users, sessions, f, true, true).await;
+    in_browser_with(features, sessions, f, true, true).await;
 }
 
 #[allow(dead_code)]
 /// Same but launch browser
 #[deprecated(note = "Should only be used in local")]
-pub async fn in_browserr<F>(features: &str, users: &str, sessions: &str, f: F)
+pub async fn in_browserr<F>(features: &str, sessions: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(features, users, sessions, f, false, true).await;
+    in_browser_with(features, sessions, f, false, true).await;
 }
 
 #[allow(dead_code)]
 /// Same but launch browser and do not kill it
 #[deprecated(note = "Should only be used in local")]
-pub async fn in_browserrr<F>(features: &str, users: &str, sessions: &str, f: F)
+pub async fn in_browserrr<F>(features: &str, sessions: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(features, users, sessions, f, false, false).await;
+    in_browser_with(features, sessions, f, false, false).await;
 }
 
 async fn in_browser_with<'b, F>(
     features: &str,
-    users: &str,
     sessions: &str,
     f: F,
     headless: bool,
@@ -139,14 +136,13 @@ async fn in_browser_with<'b, F>(
     let db_path = gen_file_path("");
     let srv_db_path = db_path.clone();
     let features = GlobalFeatures::from_path(&gen_file_path(features));
-    let users = SimpleUsers::from_path(&gen_file_path(users));
     let sessions = Sessions::from(sessions);
 
     let db_conn = SqliteConnection::establish(&db_path).unwrap();
     embedded_migrations::run(&db_conn).unwrap();
 
     spawn(async move {
-        server(PORT, ADDR, &srv_db_path, features, users, sessions, conf())
+        server(PORT, ADDR, &srv_db_path, features, sessions, conf())
             .launch()
             .await
             .unwrap()

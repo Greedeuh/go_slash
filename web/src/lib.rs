@@ -23,7 +23,7 @@ use controllers::{
     users::{login, simple_login},
 };
 pub mod models;
-pub use models::{features::GlobalFeatures, users::SimpleUsers};
+pub use models::features::GlobalFeatures;
 pub mod guards;
 use crate::models::users::Sessions;
 pub mod schema;
@@ -42,7 +42,6 @@ pub fn server(
     address: &str,
     db_url: &str,
     features: GlobalFeatures,
-    users: SimpleUsers,
     sessions: Sessions,
     config: AppConfig,
 ) -> Rocket<Build> {
@@ -75,7 +74,6 @@ pub fn server(
         )
         .mount("/public", FileServer::from(relative!("public")))
         .manage(features)
-        .manage(users)
         .manage(sessions)
         .manage(config)
         .manage(db_pool)

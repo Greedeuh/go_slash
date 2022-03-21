@@ -2,7 +2,7 @@
 extern crate rocket;
 use std::env;
 
-use go_web::{models::users::Sessions, server, AppConfig, GlobalFeatures, SimpleUsers};
+use go_web::{models::users::Sessions, server, AppConfig, GlobalFeatures};
 
 #[launch]
 fn rocket() -> _ {
@@ -14,12 +14,6 @@ fn rocket() -> _ {
     let features = match file {
         Ok(file) => GlobalFeatures::from_path(&file),
         _ => GlobalFeatures::from_path("features.yaml"),
-    };
-
-    let file = env::var("SIMPLE_USERS_FILE");
-    let users = match file {
-        Ok(file) => SimpleUsers::from_path(&file),
-        _ => SimpleUsers::from_path("simple_users.yaml"),
     };
 
     let port = env::var("PORT");
@@ -42,7 +36,6 @@ fn rocket() -> _ {
         &addr,
         &db_url,
         features,
-        users,
         Sessions::default(),
         AppConfig {
             simple_login_salt1,
