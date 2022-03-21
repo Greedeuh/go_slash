@@ -14,9 +14,6 @@ use utils::*;
 #[async_test]
 async fn index_should_list_shortcuts() {
     in_browser(
-        "newShortcut: http://localhost:8001/newShortcut
-aShortcut: http://localhost:8001/aShortcut
-ssshortcut: http://localhost:8001/ssshortcut",
         "",
         "",
         "",
@@ -69,9 +66,6 @@ ssshortcut: http://localhost:8001/ssshortcut",
 #[async_test]
 async fn index_user_as_sugestions_when_typing() {
     in_browser(
-        "newShortcut: http://localhost:8001/newShortcut
-jeanLuc: http://localhost:8001/aShortcut
-tadadam: http://localhost:8001/ssshortcut",
         "",
         "",
         "",
@@ -136,9 +130,6 @@ tadadam: http://localhost:8001/ssshortcut",
 #[async_test]
 async fn index_user_can_search() {
     in_browser(
-        "newShortcut: http://localhost:8001/newShortcut
-jeanLuc: http://localhost:8001/aShortcut1
-tadadam: http://localhost:8001/ssshortcut",
         "",
         "",
         "",
@@ -270,7 +261,6 @@ tadadam: http://localhost:8001/ssshortcut",
 #[async_test]
 async fn index_user_can_delete_shortcuts() {
     in_browser(
-        "newShortcut: http://localhost:8001/newShortcut",
         "",
         "",
         "",
@@ -333,7 +323,6 @@ async fn index_user_can_delete_shortcuts() {
 #[async_test]
 async fn index_user_can_add_shortcuts() {
     in_browser(
-        "",
         "",
         "",
         "",
@@ -422,8 +411,6 @@ async fn index_user_can_add_shortcuts() {
 #[async_test]
 async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
     in_browser(
-        "newShortcut: http://localhost:8001/looped
-newShortcut2: http://localhost:8001/claude",
         "",
         "",
         "",
@@ -512,8 +499,6 @@ newShortcut2: http://localhost:8001/claude",
 #[async_test]
 async fn undefined_shortcut_return_search_filled_and_edit_form() {
     in_browser(
-        "newShortcut1: http://localhost:8001/looped
-newShortcut2: http://localhost:8001/claude",
         "",
         "",
         "",
@@ -594,7 +579,6 @@ newShortcut2: http://localhost:8001/claude",
 #[async_test]
 async fn not_logged_in_should_redirect_to_login() {
     in_browser(
-        "",
         "---
 login:
   simple: true
@@ -628,7 +612,6 @@ login:
 #[async_test]
 async fn logged_in_without_write() {
     in_browser(
-        "",
         "---
     login:
       simple: true

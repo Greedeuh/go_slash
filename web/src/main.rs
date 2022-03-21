@@ -2,19 +2,13 @@
 extern crate rocket;
 use std::env;
 
-use go_web::{models::users::Sessions, server, AppConfig, Entries, GlobalFeatures, SimpleUsers};
+use go_web::{models::users::Sessions, server, AppConfig, GlobalFeatures, SimpleUsers};
 
 #[launch]
 fn rocket() -> _ {
     dotenv::dotenv().unwrap();
 
     let db_url = env::var("DATABASE_URL").expect("Missing DATABASE_URL env var");
-
-    let file = env::var("SHORTCUTS_FILE");
-    let entries = match file {
-        Ok(file) => Entries::from_path(&file),
-        _ => Entries::from_path("shortcuts.yaml"),
-    };
 
     let file = env::var("FEATURE_FILE");
     let features = match file {
@@ -47,7 +41,6 @@ fn rocket() -> _ {
         port,
         &addr,
         &db_url,
-        entries,
         features,
         users,
         Sessions::default(),

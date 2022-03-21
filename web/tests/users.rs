@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 #[test]
 fn simple_login_is_behind_a_feature_switch() {
-    let client = launch_with("", "", "", "");
+    let (client, _conn) = launch_with("", "", "");
     let response = client.get("/go/login").dispatch();
 
     assert_eq!(response.status(), Status::Conflict);
@@ -30,7 +30,7 @@ fn simple_login_is_behind_a_feature_switch() {
 
 #[test]
 fn simple_login_feature_switch() {
-    let client = launch_with("", "", "", "");
+    let (client, _conn) = launch_with("", "", "");
     let response = client.get("/go/login").dispatch();
 
     assert_eq!(response.status(), Status::Conflict);
@@ -38,8 +38,7 @@ fn simple_login_feature_switch() {
 
 #[test]
 fn post_simple_login_token() {
-    let client = launch_with(
-        "",
+    let (client, _conn) = launch_with(
         "---
     login:
       simple: true
@@ -69,8 +68,7 @@ fn post_simple_login_token() {
 
 #[test]
 fn post_simple_login_wrong_credentials() {
-    let client = launch_with(
-        "",
+    let (client, _conn) = launch_with(
         "---
     login:
       simple: true
@@ -101,8 +99,7 @@ fn post_simple_login_wrong_credentials() {
 
 #[test]
 fn post_simple_login_not_a_mail() {
-    let client = launch_with(
-        "",
+    let (client, _conn) = launch_with(
         "---
     login:
       simple: true
@@ -127,7 +124,6 @@ fn post_simple_login_not_a_mail() {
 #[async_test]
 async fn simple_login() {
     in_browser(
-        "another: http://zadazd.com",
         "---
     login:
       simple: true

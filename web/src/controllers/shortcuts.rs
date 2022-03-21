@@ -1,3 +1,4 @@
+use diesel::prelude::*;
 use lazy_static::lazy_static;
 use log::error;
 use regex::Regex;
@@ -8,11 +9,12 @@ use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
 use crate::guards::SessionId;
-pub use crate::models::shortcuts::Entries;
-use crate::models::shortcuts::Shortcuts;
+use crate::models::shortcuts::{sorted, NewShortcut};
 use crate::models::users::{read_or_write, should_be_logged_in_if_features, Right, Sessions};
 use crate::models::AppError;
-use crate::GlobalFeatures;
+use crate::schema::shortcuts;
+use crate::schema::shortcuts::dsl;
+use crate::{DbPool, GlobalFeatures};
 
 lazy_static! {
     static ref URL_REGEX: Regex =
@@ -21,27 +23,20 @@ lazy_static! {
 
 #[get("/")]
 pub fn index(
-    entries: &State<Entries>,
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
     features: &State<GlobalFeatures>,
+    pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
     let user_mail = should_be_logged_in_if_features(&Right::Read, &session_id, sessions, features)?;
 
-    let all_shortcuts = entries.sorted()?;
-
-    let all_shortcuts = all_shortcuts
-        .iter()
-        .map(|(shortcut, url)| json!({"shortcut": shortcut, "url": url}))
-        .collect::<Vec<_>>();
-
-    let all_shortcuts: String = json!(all_shortcuts).to_string();
+    let conn = pool.get().map_err(AppError::from)?;
 
     let right = read_or_write(features, &user_mail)?;
 
     Ok(Template::render(
         "index",
-        json!({ "shortcuts": all_shortcuts, "right": right, "mail": user_mail }),
+        json!({ "shortcuts": json!(sorted(&conn)?).to_string(), "right": right, "mail": user_mail }),
     ))
 }
 
@@ -59,17 +54,26 @@ pub enum ShortcutRes {
 pub fn get_shortcut(
     shortcut: PathBuf,
     no_redirect: Option<bool>,
-    entries: &State<Entries>,
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
     features: &State<GlobalFeatures>,
+    pool: &State<DbPool>,
 ) -> Result<ShortcutRes, (Status, Template)> {
     let user_mail = should_be_logged_in_if_features(&Right::Read, &session_id, sessions, features)?;
     let right = read_or_write(features, &user_mail)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
-    Ok(match entries.find(shortcut)? {
+    let conn = pool.get().map_err(AppError::from)?;
+
+    let url = dsl::shortcuts
+        .select(dsl::url)
+        .find(shortcut)
+        .first::<String>(&conn)
+        .optional()
+        .map_err(AppError::from)?;
+
+    Ok(match url {
         Some(url) => {
             if let Some(true) = no_redirect {
                 ShortcutRes::Ok(Template::render(
@@ -77,10 +81,7 @@ pub fn get_shortcut(
                     json!({
                         "shortcut": shortcut,
                         "url": url,
-                        "shortcuts": json!(entries.sorted()?
-                            .iter()
-                            .map(|(shortcut, url)| json!({"shortcut": shortcut, "url": url}))
-                            .collect::<Vec<_>>())
+                        "shortcuts": json!(sorted(&conn)?)
                             .to_string(),
                         "url": url,
                         "no_redirect": true,
@@ -96,10 +97,7 @@ pub fn get_shortcut(
             "index",
             json!({
                 "shortcut": shortcut,
-                "shortcuts": json!(entries.sorted()?
-                                    .iter()
-                                    .map(|(shortcut, url)| json!({"shortcut": shortcut, "url": url}))
-                                    .collect::<Vec<_>>())
+                "shortcuts": json!(sorted(&conn)?)
                                     .to_string(),
                 "not_found": true,
                 "right": right,
@@ -117,11 +115,11 @@ pub struct Url {
 #[put("/<shortcut..>", data = "<url>")]
 pub fn put_shortcut(
     shortcut: PathBuf,
-    entries: &State<Entries>,
     url: Json<Url>,
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
     features: &State<GlobalFeatures>,
+    pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
     should_be_logged_in_if_features(&Right::Write, &session_id, sessions, features)?;
 
@@ -132,7 +130,15 @@ pub fn put_shortcut(
         return Err((Status::BadRequest, json!({"error": "Wrong URL format."})));
     }
 
-    if entries.put(shortcut, url).is_ok() {};
+    let conn = pool.get().map_err(AppError::from)?;
+
+    diesel::replace_into(shortcuts::table)
+        .values(NewShortcut {
+            shortcut: shortcut.to_string(),
+            url,
+        })
+        .execute(&conn)
+        .map_err(AppError::from)?;
 
     Ok(Status::Ok)
 }
@@ -140,16 +146,21 @@ pub fn put_shortcut(
 #[delete("/<shortcut..>")]
 pub fn delete_shortcut(
     shortcut: PathBuf,
-    entries: &State<Entries>,
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
     features: &State<GlobalFeatures>,
+    pool: &State<DbPool>,
 ) -> Result<Template, (Status, Value)> {
     should_be_logged_in_if_features(&Right::Write, &session_id, sessions, features)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
-    if entries.delete(shortcut).is_ok() {};
+    let conn = pool.get().map_err(AppError::from)?;
+
+    diesel::delete(shortcuts::table)
+        .filter(dsl::shortcut.eq(shortcut))
+        .execute(&conn)
+        .map_err(AppError::from)?;
 
     Ok(Template::render(
         "index",

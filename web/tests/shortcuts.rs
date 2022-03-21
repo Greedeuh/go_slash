@@ -21,7 +21,9 @@ fn undefined_shortcut_return_a_404() {
 
 #[test]
 fn shortcut_redirect_to_target() {
-    let client = launch_with("myShortCut/hop: https://thetarget.test.go.com", "", "", "");
+    let (client, conn) = launch_with("", "", "");
+    shortcut("myShortCut/hop", "https://thetarget.test.go.com", &conn);
+
     let response = client.get("/myShortCut/hop").dispatch();
 
     assert_eq!(response.status(), Status::PermanentRedirect);
@@ -33,8 +35,7 @@ fn shortcut_redirect_to_target() {
 
 #[test]
 fn shortcut_read_private_should_return_unauthorized() {
-    let client = launch_with(
-        "myShortCut/hop: https://thetarget.test.go.com",
+    let (client, _conn) = launch_with(
         "---
     login:
       simple: true
@@ -50,8 +51,7 @@ fn shortcut_read_private_should_return_unauthorized() {
 
 #[test]
 fn shortcut_read_private_should_return_ok_with_session() {
-    let client = launch_with(
-        "myShortCut/hop: https://thetarget.test.go.com",
+    let (client, _conn) = launch_with(
         "---
     login:
       simple: true
@@ -77,7 +77,7 @@ fn shortcut_read_private_should_return_ok_with_session() {
 
 #[test]
 fn create_a_shortcut_with_invalid_url_return_400() {
-    let client = launch_with("", "", "", "");
+    let (client, _conn) = launch_with("", "", "");
     let response = client
         .put("/myShortCut/hop")
         .header(ContentType::JSON)
@@ -93,7 +93,7 @@ fn create_a_shortcut_with_invalid_url_return_400() {
 
 #[test]
 fn create_a_shortcut_return_200() {
-    let client = launch_with("", "", "", "");
+    let (client, _conn) = launch_with("", "", "");
     let response = client
         .put("/myShortCut/hop")
         .header(ContentType::JSON)
@@ -105,7 +105,7 @@ fn create_a_shortcut_return_200() {
 
 #[test]
 fn replace_a_shortcut_return_200() {
-    let client = launch_with("/myShortCut/hop: http://azdazd.dz", "", "", "");
+    let (client, _conn) = launch_with("", "", "");
     let response = client
         .put("/myShortCut/hop")
         .header(ContentType::JSON)
@@ -117,8 +117,7 @@ fn replace_a_shortcut_return_200() {
 
 #[test]
 fn put_shortcut_should_return_unauthorized() {
-    let client = launch_with(
-        "/myShortCut/hop: http://azdazd.dz",
+    let (client, _conn) = launch_with(
         "---
     login:
       simple: true
@@ -138,8 +137,7 @@ fn put_shortcut_should_return_unauthorized() {
 
 #[test]
 fn put_shortcut_should_is_ok_with_auth() {
-    let client = launch_with(
-        "/myShortCut/hop: http://azdazd.dz",
+    let (client, _conn) = launch_with(
         "---
     login:
       simple: true
@@ -169,7 +167,7 @@ fn put_shortcut_should_is_ok_with_auth() {
 
 #[test]
 fn delete_a_shortcut_return_200() {
-    let client = launch_with("/myShortCut/hop: http://azdazd.dz", "", "", "");
+    let (client, _conn) = launch_with("", "", "");
     let response = client.delete("/myShortCut/hop").dispatch();
 
     assert_eq!(response.status(), Status::Ok);
@@ -177,8 +175,7 @@ fn delete_a_shortcut_return_200() {
 
 #[test]
 fn delete_a_shortcut_return_unauthorized() {
-    let client = launch_with(
-        "/myShortCut/hop: http://azdazd.dz",
+    let (client, _conn) = launch_with(
         "---
     login:
       simple: true
@@ -194,8 +191,7 @@ fn delete_a_shortcut_return_unauthorized() {
 
 #[test]
 fn delete_a_shortcut_with_auth_authorized() {
-    let client = launch_with(
-        "/myShortCut/hop: http://azdazd.dz",
+    let (client, _conn) = launch_with(
         "---
         login:
           simple: true

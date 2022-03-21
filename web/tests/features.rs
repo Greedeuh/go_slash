@@ -18,7 +18,6 @@ async fn features_should_list_editable_features() {
         "",
         "",
         "",
-        "",
         |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
             async {
                 driver
@@ -82,8 +81,7 @@ async fn features_should_list_editable_features() {
 
 #[test]
 fn should_be_logged_in_to_manage_features() {
-    let client = launch_with(
-        "",
+    let (client, _conn) = launch_with(
         "---
     login:
       simple: true
@@ -109,8 +107,7 @@ fn should_be_logged_in_to_manage_features() {
 
 #[test]
 fn should_be_logged_in_to_manage_features_ok_with_auth() {
-    let client = launch_with(
-        "",
+    let (client, _conn) = launch_with(
         "---
     login:
       simple: true

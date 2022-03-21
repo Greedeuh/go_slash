@@ -1,5 +1,5 @@
 use diesel::{Connection, SqliteConnection};
-use go_web::{models::users::Sessions, server, AppConfig, Entries, GlobalFeatures, SimpleUsers};
+use go_web::{models::users::Sessions, server, AppConfig, GlobalFeatures, SimpleUsers};
 use rocket::{
     futures::{future::BoxFuture, FutureExt},
     local::blocking::Client,
@@ -18,12 +18,9 @@ const PORT: u16 = 8001;
 const ADDR: &str = "127.0.0.1";
 embed_migrations!("migrations");
 
+#[allow(unused_must_use)]
 fn gen_file_path(content: &str) -> String {
-    if let Err(e) = remove_dir_all("test_dir") {
-        println!("{:?}", e);
-    };
-
-    create_dir("test_dir").unwrap();
+    create_dir("test_dir");
 
     let path = format!("test_dir/filename_{}.yml", Uuid::new_v4());
     if !content.is_empty() {
@@ -34,11 +31,18 @@ fn gen_file_path(content: &str) -> String {
 
 #[allow(dead_code)]
 pub fn launch_empty() -> Client {
+    if let Err(e) = remove_dir_all("test_dir") {
+        println!("{:?}", e);
+    };
+
+    let db_path = gen_file_path("");
+    let db_conn = SqliteConnection::establish(&db_path).unwrap();
+    embedded_migrations::run(&db_conn).unwrap();
+
     Client::tracked(server(
         PORT,
         ADDR,
-        &gen_file_path(""),
-        Entries::from_path(&gen_file_path("")),
+        &db_path,
         GlobalFeatures::from_path(&gen_file_path("")),
         SimpleUsers::from_path(&gen_file_path("")),
         Sessions::default(),
@@ -48,23 +52,28 @@ pub fn launch_empty() -> Client {
 }
 
 #[allow(dead_code)]
-pub fn launch_with(shortcuts: &str, features: &str, users: &str, sessions: &str) -> Client {
-    Client::tracked(server(
-        PORT,
-        ADDR,
-        &gen_file_path(""),
-        Entries::from_path(&gen_file_path(shortcuts)),
-        GlobalFeatures::from_path(&gen_file_path(features)),
-        SimpleUsers::from_path(&gen_file_path(users)),
-        Sessions::from(sessions),
-        conf(),
-    ))
-    .expect("valid rocket instance")
-}
+pub fn launch_with(features: &str, users: &str, sessions: &str) -> (Client, SqliteConnection) {
+    if let Err(e) = remove_dir_all("test_dir") {
+        println!("{:?}", e);
+    };
 
-#[allow(dead_code)]
-pub fn entries(shortcuts: &str) -> Entries {
-    Entries::from_path(&gen_file_path(shortcuts))
+    let db_path = gen_file_path("");
+    let db_conn = SqliteConnection::establish(&db_path).unwrap();
+    embedded_migrations::run(&db_conn).unwrap();
+
+    (
+        Client::tracked(server(
+            PORT,
+            ADDR,
+            &db_path,
+            GlobalFeatures::from_path(&gen_file_path(features)),
+            SimpleUsers::from_path(&gen_file_path(users)),
+            Sessions::from(sessions),
+            conf(),
+        ))
+        .expect("valid rocket instance"),
+        db_conn,
+    )
 }
 
 fn conf() -> AppConfig {
@@ -75,35 +84,34 @@ fn conf() -> AppConfig {
 }
 
 #[allow(dead_code)]
-pub async fn in_browser<F>(shortcuts: &str, features: &str, users: &str, sessions: &str, f: F)
+pub async fn in_browser<F>(features: &str, users: &str, sessions: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(shortcuts, features, users, sessions, f, true, true).await;
+    in_browser_with(features, users, sessions, f, true, true).await;
 }
 
 #[allow(dead_code)]
 /// Same but launch browser
 #[deprecated(note = "Should only be used in local")]
-pub async fn in_browserr<F>(shortcuts: &str, features: &str, users: &str, sessions: &str, f: F)
+pub async fn in_browserr<F>(features: &str, users: &str, sessions: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(shortcuts, features, users, sessions, f, false, true).await;
+    in_browser_with(features, users, sessions, f, false, true).await;
 }
 
 #[allow(dead_code)]
 /// Same but launch browser and do not kill it
 #[deprecated(note = "Should only be used in local")]
-pub async fn in_browserrr<F>(shortcuts: &str, features: &str, users: &str, sessions: &str, f: F)
+pub async fn in_browserrr<F>(features: &str, users: &str, sessions: &str, f: F)
 where
     F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
 {
-    in_browser_with(shortcuts, features, users, sessions, f, false, false).await;
+    in_browser_with(features, users, sessions, f, false, false).await;
 }
 
 async fn in_browser_with<'b, F>(
-    shortcuts: &str,
     features: &str,
     users: &str,
     sessions: &str,
@@ -113,6 +121,10 @@ async fn in_browser_with<'b, F>(
 ) where
     F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
 {
+    if let Err(e) = remove_dir_all("test_dir") {
+        println!("{:?}", e);
+    };
+
     let do_not_close_browser = close_browser;
     let do_not_close_browser = !match env::var("CLOSE_BROWSER") {
         Ok(var) => do_not_close_browser || var == "true",
@@ -126,7 +138,6 @@ async fn in_browser_with<'b, F>(
 
     let db_path = gen_file_path("");
     let srv_db_path = db_path.clone();
-    let entries = Entries::from_path(&gen_file_path(shortcuts));
     let features = GlobalFeatures::from_path(&gen_file_path(features));
     let users = SimpleUsers::from_path(&gen_file_path(users));
     let sessions = Sessions::from(sessions);
@@ -135,19 +146,10 @@ async fn in_browser_with<'b, F>(
     embedded_migrations::run(&db_conn).unwrap();
 
     spawn(async move {
-        server(
-            PORT,
-            ADDR,
-            &srv_db_path,
-            entries,
-            features,
-            users,
-            sessions,
-            conf(),
-        )
-        .launch()
-        .await
-        .unwrap()
+        server(PORT, ADDR, &srv_db_path, features, users, sessions, conf())
+            .launch()
+            .await
+            .unwrap()
     });
 
     let mut caps = DesiredCapabilities::firefox();

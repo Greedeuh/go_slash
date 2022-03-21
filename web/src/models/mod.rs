@@ -1,4 +1,3 @@
-use diesel::result::Error;
 use rustbreak::RustbreakError;
 use serde::Deserialize;
 
@@ -21,8 +20,15 @@ impl From<RustbreakError> for AppError {
     }
 }
 
-impl From<Error> for AppError {
-    fn from(e: Error) -> Self {
+impl From<diesel::result::Error> for AppError {
+    fn from(e: diesel::result::Error) -> Self {
+        error!("{:?}", e);
+        AppError::Db
+    }
+}
+
+impl From<r2d2::Error> for AppError {
+    fn from(e: r2d2::Error) -> Self {
         error!("{:?}", e);
         AppError::Db
     }

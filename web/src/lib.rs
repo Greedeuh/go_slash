@@ -4,16 +4,15 @@ extern crate rocket;
 extern crate rocket_dyn_templates;
 #[macro_use]
 extern crate diesel;
-use rocket::figment::{
-    util::map,
-    value::{Map, Value},
+use diesel::{
+    r2d2::{ConnectionManager, Pool, PooledConnection},
+    SqliteConnection,
 };
 use rocket::{
     fs::{relative, FileServer},
     routes, Build, Config, Rocket,
 };
 use rocket_dyn_templates::Template;
-use rocket_sync_db_pools::database;
 use std::env;
 
 pub mod controllers;
@@ -24,7 +23,7 @@ use controllers::{
     users::{login, simple_login},
 };
 pub mod models;
-pub use models::{features::GlobalFeatures, shortcuts::Entries, users::SimpleUsers};
+pub use models::{features::GlobalFeatures, users::SimpleUsers};
 pub mod guards;
 use crate::models::users::Sessions;
 pub mod schema;
@@ -35,11 +34,13 @@ pub struct AppConfig {
     pub simple_login_salt2: String,
 }
 
+pub type DbPool = Pool<ConnectionManager<SqliteConnection>>;
+pub type DbConn = PooledConnection<ConnectionManager<SqliteConnection>>;
+
 pub fn server(
     port: u16,
     address: &str,
     db_url: &str,
-    entries: Entries,
     features: GlobalFeatures,
     users: SimpleUsers,
     sessions: Sessions,
@@ -47,20 +48,14 @@ pub fn server(
 ) -> Rocket<Build> {
     dotenv().ok();
 
-    let db_config: Map<_, Value> = map! {
-        "url" => db_url.into(),
-        "pool_size" => 10i16.into()
-    };
+    let db_manager: ConnectionManager<SqliteConnection> = ConnectionManager::new(db_url);
+    let db_pool = Pool::builder().max_size(15).build(db_manager).unwrap();
 
     let rocket_config = Config {
         port,
         address: address.parse().unwrap(),
         ..Config::debug_default()
     };
-
-    let rocket_config = rocket::Config::figment()
-        .merge(("databases", map!["go" => db_config]))
-        .merge(rocket_config);
 
     rocket::build()
         .configure(rocket_config)
@@ -79,14 +74,10 @@ pub fn server(
             ],
         )
         .mount("/public", FileServer::from(relative!("public")))
-        .manage(entries)
         .manage(features)
         .manage(users)
         .manage(sessions)
         .manage(config)
-        .attach(DbConn::fairing())
+        .manage(db_pool)
         .attach(Template::fairing())
 }
-
-#[database("go")]
-pub struct DbConn(diesel::SqliteConnection);
