@@ -1,7 +1,8 @@
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use go_web::{
-    models::{shortcuts::NewShortcut, users::NewUser},
+    models::{features::Features, shortcuts::NewShortcut, users::NewUser},
+    schema::global_features,
     schema::shortcuts,
     schema::users,
 };
@@ -24,6 +25,14 @@ pub fn user(mail: &str, pwd: &str, db_con: &SqliteConnection) {
             mail: mail.to_string(),
             pwd: pwd.to_string(),
         })
+        .execute(db_con)
+        .unwrap();
+}
+
+#[allow(dead_code)]
+pub fn global_features(features: &Features, db_con: &SqliteConnection) {
+    diesel::update(global_features::table)
+        .set(global_features::features.eq(serde_json::to_string(features).unwrap()))
         .execute(db_con)
         .unwrap();
 }

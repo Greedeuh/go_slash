@@ -2,19 +2,13 @@
 extern crate rocket;
 use std::env;
 
-use go_web::{models::users::Sessions, server, AppConfig, GlobalFeatures};
+use go_web::{models::users::Sessions, server, AppConfig};
 
 #[launch]
 fn rocket() -> _ {
     dotenv::dotenv().unwrap();
 
     let db_url = env::var("DATABASE_URL").expect("Missing DATABASE_URL env var");
-
-    let file = env::var("FEATURE_FILE");
-    let features = match file {
-        Ok(file) => GlobalFeatures::from_path(&file),
-        _ => GlobalFeatures::from_path("features.yaml"),
-    };
 
     let port = env::var("PORT");
     let port = match port {
@@ -35,7 +29,6 @@ fn rocket() -> _ {
         port,
         &addr,
         &db_url,
-        features,
         Sessions::default(),
         AppConfig {
             simple_login_salt1,

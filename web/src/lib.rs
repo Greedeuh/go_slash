@@ -22,9 +22,8 @@ use controllers::{
     shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut},
     users::{login, simple_login},
 };
-pub mod models;
-pub use models::features::GlobalFeatures;
 pub mod guards;
+pub mod models;
 use crate::models::users::Sessions;
 pub mod schema;
 use dotenv::dotenv;
@@ -41,7 +40,6 @@ pub fn server(
     port: u16,
     address: &str,
     db_url: &str,
-    features: GlobalFeatures,
     sessions: Sessions,
     config: AppConfig,
 ) -> Rocket<Build> {

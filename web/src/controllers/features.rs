@@ -5,39 +5,43 @@ use serde_json::{json, Value};
 use crate::{
     guards::SessionId,
     models::{
-        features::PatchableFeatures,
+        features::{get_global_features, patch_features, PatchableFeatures},
         users::{should_be_logged_in_if_features, Right, Sessions},
+        AppError,
     },
-    GlobalFeatures,
+    DbPool,
 };
 
 #[get("/go/features")]
 pub fn features(
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
-    features: &State<GlobalFeatures>,
+    pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
-    should_be_logged_in_if_features(&Right::Admin, &session_id, sessions, features)?;
+    let conn = pool.get().map_err(AppError::from)?;
+    let features = get_global_features(&conn)?;
 
-    let features = features.get()?;
+    should_be_logged_in_if_features(&Right::Admin, &session_id, sessions, &features)?;
 
     Ok(Template::render(
         "features",
-        json!({
-            "features": json!(features).to_string()
-        }),
+        json!({ "features": json!(features).to_string() }),
     ))
 }
 
 #[patch("/go/features", data = "<new_features>")]
 pub fn patch_feature(
-    features: &State<GlobalFeatures>,
     new_features: Json<PatchableFeatures>,
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
+    pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    should_be_logged_in_if_features(&Right::Admin, &session_id, sessions, features)?;
+    let conn = pool.get().map_err(AppError::from)?;
+    let features = get_global_features(&conn)?;
 
-    features.patch(&new_features)?;
+    should_be_logged_in_if_features(&Right::Admin, &session_id, sessions, &features)?;
+
+    patch_features(new_features.into_inner(), &conn)?;
+
     Ok(Status::Ok)
 }

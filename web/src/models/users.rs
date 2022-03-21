@@ -1,8 +1,9 @@
 use rocket::State;
 use std::{collections::HashMap, sync::Mutex};
 
+use crate::models::features::Features;
 use crate::schema::users;
-use crate::{guards::SessionId, models::AppError, GlobalFeatures};
+use crate::{guards::SessionId, models::AppError};
 
 #[derive(Insertable)]
 #[table_name = "users"]
@@ -56,15 +57,13 @@ pub fn should_be_logged_in_if_features(
     right: &Right,
     session_id: &Option<SessionId>,
     sessions: &State<Sessions>,
-    features: &State<GlobalFeatures>,
+    features: &Features,
 ) -> Result<Option<String>, AppError> {
-    if features.get()?.login.simple {
+    if features.login.simple {
         match right {
             Right::Admin => should_be_logged_in(session_id, sessions),
-            Right::Read if features.get()?.login.read_private => {
-                should_be_logged_in(session_id, sessions)
-            }
-            Right::Write if features.get()?.login.write_private => {
+            Right::Read if features.login.read_private => should_be_logged_in(session_id, sessions),
+            Right::Write if features.login.write_private => {
                 should_be_logged_in(session_id, sessions)
             }
             _ => match session_id {
@@ -94,11 +93,8 @@ fn should_be_logged_in(
     }
 }
 
-pub fn read_or_write(
-    features: &State<GlobalFeatures>,
-    user_mail: &Option<String>,
-) -> Result<String, AppError> {
-    let features = features.get()?.login;
+pub fn read_or_write(features: &Features, user_mail: &Option<String>) -> Result<String, AppError> {
+    let features = &features.login;
 
     Ok(
         if features.simple && features.write_private && user_mail.is_none() {

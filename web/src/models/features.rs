@@ -1,72 +1,63 @@
-use rustbreak::{deser::Yaml, PathDatabase};
+use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use crate::models::AppError;
+use crate::schema::global_features::dsl;
+use crate::DbConn;
 
-pub struct GlobalFeatures {
-    features: PathDatabase<Features, Yaml>,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
 pub struct Features {
     pub login: LoginFeature,
 }
 
-impl Default for Features {
-    fn default() -> Self {
-        Features {
-            login: LoginFeature {
-                simple: false,
-                read_private: false,
-                write_private: false,
-            },
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
 pub struct LoginFeature {
     pub simple: bool,
     pub read_private: bool,
     pub write_private: bool,
 }
 
-impl GlobalFeatures {
-    pub fn from_path(path: &str) -> Self {
-        let features: PathDatabase<Features, Yaml> =
-            PathDatabase::load_from_path_or_else(path.into(), Features::default).unwrap();
-        Self { features }
-    }
+pub fn get_global_features(conn: &DbConn) -> Result<Features, AppError> {
+    let features = dsl::global_features
+        .select(dsl::features)
+        .first::<String>(conn)
+        .map_err(AppError::from)?;
 
-    pub fn get(&self) -> Result<Features, AppError> {
-        let features = self.features.borrow_data()?.clone();
-        Ok(features)
-    }
+    serde_json::from_str(&features).map_err(|e| {
+        error!("Failed to parse features {}", e);
+        AppError::Db
+    })
+}
 
-    pub fn patch(&self, new_features: &PatchableFeatures) -> Result<(), AppError> {
-        {
-            let mut features = self.features.borrow_data_mut()?;
+pub fn patch_features(new_features: PatchableFeatures, conn: &DbConn) -> Result<usize, AppError> {
+    let mut features = get_global_features(conn)?;
 
-            if let Some(login) = &new_features.login {
-                if let Some(simple) = login.simple {
-                    features.login.simple = simple;
-                }
-            }
+    if let Some(login) = &new_features.login {
+        if let Some(simple) = login.simple {
+            features.login.simple = simple;
         }
-        self.features.save()?;
-
-        Ok(())
+        if let Some(read_private) = login.read_private {
+            features.login.read_private = read_private;
+        }
+        if let Some(write_private) = login.write_private {
+            features.login.write_private = write_private;
+        }
     }
+    diesel::update(dsl::global_features)
+        .set(dsl::features.eq(json!(features).to_string()))
+        .execute(conn)
+        .map_err(AppError::from)
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct PatchableFeatures {
-    login: Option<PatchableLoginFeature>,
+    pub login: Option<PatchableLoginFeature>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct PatchableLoginFeature {
-    simple: Option<bool>,
-    read_private: Option<bool>,
-    write_private: Option<bool>,
+    pub simple: Option<bool>,
+    pub read_private: Option<bool>,
+    pub write_private: Option<bool>,
 }

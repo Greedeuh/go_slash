@@ -5,7 +5,7 @@ pub mod features;
 pub mod shortcuts;
 pub mod users;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub enum AppError {
     Db,
     Disable,

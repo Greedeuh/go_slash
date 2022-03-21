@@ -3,6 +3,7 @@ extern crate diesel_migrations;
 
 use diesel::SqliteConnection;
 use go_web::controllers::users::LoginSuccessfull;
+use go_web::models::features::{Features, LoginFeature};
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
@@ -15,7 +16,7 @@ use uuid::Uuid;
 
 #[test]
 fn simple_login_is_behind_a_feature_switch() {
-    let (client, _conn) = launch_with("", "");
+    let (client, _conn) = launch_with("");
     let response = client.get("/go/login").dispatch();
 
     assert_eq!(response.status(), Status::Conflict);
@@ -30,7 +31,7 @@ fn simple_login_is_behind_a_feature_switch() {
 
 #[test]
 fn simple_login_feature_switch() {
-    let (client, _conn) = launch_with("", "");
+    let (client, _conn) = launch_with("");
     let response = client.get("/go/login").dispatch();
 
     assert_eq!(response.status(), Status::Conflict);
@@ -38,18 +39,19 @@ fn simple_login_feature_switch() {
 
 #[test]
 fn post_simple_login_token() {
-    let (client, conn) = launch_with(
-        "---
-    login:
-      simple: true
-      read_private: false
-      write_private: false
-    ",
-        "",
-    );
+    let (client, conn) = launch_with("");
     user(
         "some_mail@mail.go",
         "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+        },
         &conn,
     );
 
@@ -69,18 +71,19 @@ fn post_simple_login_token() {
 
 #[test]
 fn post_simple_login_wrong_credentials() {
-    let (client, conn) = launch_with(
-        "---
-    login:
-      simple: true
-      read_private: false
-      write_private: false
-    ",
-        "",
-    );
+    let (client, conn) = launch_with("");
     user(
         "some_mail@mail.go",
         "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+        },
         &conn,
     );
 
@@ -101,18 +104,19 @@ fn post_simple_login_wrong_credentials() {
 
 #[test]
 fn post_simple_login_not_a_mail() {
-    let (client, conn) = launch_with(
-        "---
-    login:
-      simple: true
-      read_private: false
-      write_private: false
-    ",
-        "",
-    );
+    let (client, conn) = launch_with("");
     user(
         "some_mail@mail.go",
         "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+        },
         &conn,
     );
 
@@ -126,123 +130,123 @@ fn post_simple_login_not_a_mail() {
 
 #[async_test]
 async fn simple_login() {
-    in_browser(
-        "---
-    login:
-      simple: true
-      read_private: false
-      write_private: false
-    ",
-        "",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
-            async move {
-                let con = con.lock().await;
-                user(
-                    "some_mail@mail.go",
-                    "4a4498acaf82759d929a7571b5bcea425c9275854d963e49333bf8056c673f60",
-                    &con,
-                );
+    in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+        async move {
+            let conn = con.lock().await;
+            user(
+                "some_mail@mail.go",
+                "4a4498acaf82759d929a7571b5bcea425c9275854d963e49333bf8056c673f60",
+                &conn,
+            );
+            global_features(
+                &Features {
+                    login: LoginFeature {
+                        simple: true,
+                        ..Default::default()
+                    },
+                },
+                &conn,
+            );
 
-                driver
-                    .get("http://localhost:8001/go/login?from=allo")
-                    .await
-                    .unwrap();
+            driver
+                .get("http://localhost:8001/go/login?from=allo")
+                .await
+                .unwrap();
 
+            driver
+                .find_element(By::Css("[type='email']"))
+                .await
+                .unwrap()
+                .send_keys("some_mail@mail.go")
+                .await
+                .unwrap();
+            driver
+                .find_element(By::Css("[type='password']"))
+                .await
+                .unwrap()
+                .send_keys("wrong_pwd")
+                .await
+                .unwrap();
+            driver
+                .find_element(By::Css("[type='submit']"))
+                .await
+                .unwrap()
+                .click()
+                .await
+                .unwrap();
+
+            sleep();
+
+            assert_eq!(
                 driver
-                    .find_element(By::Css("[type='email']"))
+                    .find_element(By::Css("[role='alert']"))
                     .await
                     .unwrap()
-                    .send_keys("some_mail@mail.go")
+                    .text()
                     .await
-                    .unwrap();
+                    .unwrap(),
+                "Wrong credentials :/ !"
+            );
+
+            driver
+                .get("http://localhost:8001/go/login?from=/allo")
+                .await
+                .unwrap();
+
+            driver
+                .find_element(By::Css("[type='email']"))
+                .await
+                .unwrap()
+                .send_keys("some_mail@mail.go")
+                .await
+                .unwrap();
+            driver
+                .find_element(By::Css("[type='password']"))
+                .await
+                .unwrap()
+                .send_keys("some_pwd")
+                .await
+                .unwrap();
+            driver
+                .find_element(By::Css("[type='submit']"))
+                .await
+                .unwrap()
+                .click()
+                .await
+                .unwrap();
+
+            assert_eq!(
                 driver
-                    .find_element(By::Css("[type='password']"))
+                    .find_element(By::Css("[role='alert']"))
                     .await
                     .unwrap()
-                    .send_keys("wrong_pwd")
+                    .text()
                     .await
-                    .unwrap();
-                driver
-                    .find_element(By::Css("[type='submit']"))
-                    .await
-                    .unwrap()
-                    .click()
-                    .await
-                    .unwrap();
+                    .unwrap(),
+                "Login success !"
+            );
 
-                sleep();
+            std::thread::sleep(std::time::Duration::from_millis(400));
 
-                assert_eq!(
-                    driver
-                        .find_element(By::Css("[role='alert']"))
-                        .await
-                        .unwrap()
-                        .text()
-                        .await
-                        .unwrap(),
-                    "Wrong credentials :/ !"
-                );
+            assert_eq!(
+                driver.current_url().await.unwrap(),
+                "http://localhost:8001/allo"
+            );
+            let login_link = driver.find_element(By::Css(".navbar-text")).await.unwrap();
+            assert_eq!(login_link.text().await.unwrap(), "some_mail@mail.go");
 
-                driver
-                    .get("http://localhost:8001/go/login?from=/allo")
-                    .await
-                    .unwrap();
+            driver
+                .get("http://localhost:8001/another?no_redirect")
+                .await
+                .unwrap();
+            let login_link = driver.find_element(By::Css(".navbar-text")).await.unwrap();
+            assert_eq!(login_link.text().await.unwrap(), "some_mail@mail.go");
 
-                driver
-                    .find_element(By::Css("[type='email']"))
-                    .await
-                    .unwrap()
-                    .send_keys("some_mail@mail.go")
-                    .await
-                    .unwrap();
-                driver
-                    .find_element(By::Css("[type='password']"))
-                    .await
-                    .unwrap()
-                    .send_keys("some_pwd")
-                    .await
-                    .unwrap();
-                driver
-                    .find_element(By::Css("[type='submit']"))
-                    .await
-                    .unwrap()
-                    .click()
-                    .await
-                    .unwrap();
-
-                assert_eq!(
-                    driver
-                        .find_element(By::Css("[role='alert']"))
-                        .await
-                        .unwrap()
-                        .text()
-                        .await
-                        .unwrap(),
-                    "Login success !"
-                );
-
-                std::thread::sleep(std::time::Duration::from_millis(400));
-
-                assert_eq!(
-                    driver.current_url().await.unwrap(),
-                    "http://localhost:8001/allo"
-                );
-                let login_link = driver.find_element(By::Css(".navbar-text")).await.unwrap();
-                assert_eq!(login_link.text().await.unwrap(), "some_mail@mail.go");
-
-                driver
-                    .get("http://localhost:8001/another?no_redirect")
-                    .await
-                    .unwrap();
-                let login_link = driver.find_element(By::Css(".navbar-text")).await.unwrap();
-                assert_eq!(login_link.text().await.unwrap(), "some_mail@mail.go");
-
-                driver.get("http://localhost:8001").await.unwrap();
-                let login_link = driver.find_element(By::Css(".navbar-text")).await.unwrap();
-                assert_eq!(login_link.text().await.unwrap(), "some_mail@mail.go");
-            }
-            .boxed()
-        },
-    )
+            driver.get("http://localhost:8001").await.unwrap();
+            let login_link = driver.find_element(By::Css(".navbar-text")).await.unwrap();
+            assert_eq!(login_link.text().await.unwrap(), "some_mail@mail.go");
+        }
+        .boxed()
+    })
     .await;
 }

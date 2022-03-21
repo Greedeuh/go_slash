@@ -1,12 +1,14 @@
 #[macro_use]
 extern crate diesel_migrations;
 use diesel::SqliteConnection;
+use go_web::models::features::{Features, LoginFeature};
 use rocket::async_test;
 use rocket::futures::FutureExt;
 mod utils;
 use rocket::http::{Cookie, Header, Status};
 use rocket::tokio::sync::Mutex;
 use serde_json::json;
+use std::default::Default;
 use thirtyfour::prelude::*;
 use utils::*;
 
@@ -14,79 +16,78 @@ use go_web::guards::SESSION_COOKIE;
 
 #[async_test]
 async fn features_should_list_editable_features() {
-    in_browser(
-        "",
-        "",
-        |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
-            async {
-                driver
-                    .get("http://localhost:8001/go/features")
+    in_browser("", |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
+        async {
+            driver
+                .get("http://localhost:8001/go/features")
+                .await
+                .unwrap();
+
+            let features = driver
+                .find_elements(By::Css("[role='article']"))
+                .await
+                .unwrap();
+
+            assert!(!features.is_empty());
+
+            for feature in features {
+                let switch = feature
+                    .find_element(By::Css("[role='switch']"))
                     .await
                     .unwrap();
-
-                let features = driver
-                    .find_elements(By::Css("[role='article']"))
-                    .await
-                    .unwrap();
-
-                assert!(!features.is_empty());
-
-                for feature in features {
-                    let switch = feature
-                        .find_element(By::Css("[role='switch']"))
-                        .await
-                        .unwrap();
-                    assert_eq!(
-                        switch.get_property("checked").await.unwrap(),
-                        Some("false".to_owned())
-                    );
-                    // switch.click().await.unwrap();
-                    // assert_eq!(
-                    //     switch.get_property("checked").await.unwrap(),
-                    //     Some("true".to_owned())
-                    // );
-                }
-
-                driver
-                    .get("http://localhost:8001/go/features")
-                    .await
-                    .unwrap();
-
-                // TODO re-use when having another feature
-                // let features = driver
-                //     .find_elements(By::Css("[role='article']"))
-                //     .await
-                //     .unwrap();
-
-                // assert!(!features.is_empty());
-
-                // for feature in features {
-                //     assert_eq!(feature.text().await.unwrap(), "simple");
-                //     let switch = feature
-                //         .find_element(By::Css("[role='switch']"))
-                //         .await
-                //         .unwrap();
-                //     assert_eq!(
-                //         switch.get_property("checked").await.unwrap(),
-                //         Some("true".to_owned())
-                //     );
-                // }
+                assert_eq!(
+                    switch.get_property("checked").await.unwrap(),
+                    Some("false".to_owned())
+                );
+                // switch.click().await.unwrap();
+                // assert_eq!(
+                //     switch.get_property("checked").await.unwrap(),
+                //     Some("true".to_owned())
+                // );
             }
-            .boxed()
-        },
-    )
+
+            driver
+                .get("http://localhost:8001/go/features")
+                .await
+                .unwrap();
+
+            // TODO re-use when having another feature
+            // let features = driver
+            //     .find_elements(By::Css("[role='article']"))
+            //     .await
+            //     .unwrap();
+
+            // assert!(!features.is_empty());
+
+            // for feature in features {
+            //     assert_eq!(feature.text().await.unwrap(), "simple");
+            //     let switch = feature
+            //         .find_element(By::Css("[role='switch']"))
+            //         .await
+            //         .unwrap();
+            //     assert_eq!(
+            //         switch.get_property("checked").await.unwrap(),
+            //         Some("true".to_owned())
+            //     );
+            // }
+        }
+        .boxed()
+    })
     .await;
 }
 
 #[test]
 fn should_be_logged_in_to_manage_features() {
-    let (client, _conn) = launch_with(
-        "---
-    login:
-      simple: true
-      read_private: false
-      write_private: false",
-        "some_session_id: some_mail@mail.com",
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+        },
+        &conn,
     );
 
     assert_eq!(
@@ -105,14 +106,16 @@ fn should_be_logged_in_to_manage_features() {
 
 #[test]
 fn should_be_logged_in_to_manage_features_ok_with_auth() {
-    let (client, _conn) = launch_with(
-        "---
-    login:
-      simple: true
-      read_private: false
-      write_private: false
-    ",
-        "some_session_id: some_mail@mail.com",
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+        },
+        &conn,
     );
 
     assert_ne!(

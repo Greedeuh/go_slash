@@ -9,11 +9,12 @@ use serde_json::{json, Map, Value};
 use sha256::digest;
 use uuid::Uuid;
 
+use crate::models::features::get_global_features;
 use crate::schema::users::dsl;
 use crate::DbPool;
 use crate::{
     models::{users::Sessions, AppError},
-    AppConfig, GlobalFeatures,
+    AppConfig,
 };
 
 lazy_static! {
@@ -23,11 +24,14 @@ lazy_static! {
 
 #[get("/go/login")]
 pub fn login(
-    features: &State<GlobalFeatures>,
     conf: &State<AppConfig>,
+    pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
+    let conn = pool.get().map_err(AppError::from)?;
+    let features = get_global_features(&conn)?;
+
     let mut context: Map<String, Value> = Map::new();
-    if !features.get()?.login.simple {
+    if !features.login.simple {
         return Err(AppError::Disable.into());
     } else {
         context.insert(
@@ -53,12 +57,14 @@ pub struct Credentials {
 #[post("/go/login", data = "<credentials>")]
 pub fn simple_login(
     credentials: Json<Credentials>,
-    features: &State<GlobalFeatures>,
     sessions: &State<Sessions>,
     config: &State<AppConfig>,
     pool: &State<DbPool>,
 ) -> Result<Json<LoginSuccessfull>, (Status, Value)> {
-    if !features.get()?.login.simple {
+    let conn = pool.get().map_err(AppError::from)?;
+    let features = get_global_features(&conn)?;
+
+    if !features.login.simple {
         return Err(AppError::Disable.into());
     }
 

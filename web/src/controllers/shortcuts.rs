@@ -9,12 +9,13 @@ use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
 use crate::guards::SessionId;
+use crate::models::features::get_global_features;
 use crate::models::shortcuts::{sorted, NewShortcut};
 use crate::models::users::{read_or_write, should_be_logged_in_if_features, Right, Sessions};
 use crate::models::AppError;
 use crate::schema::shortcuts;
 use crate::schema::shortcuts::dsl;
-use crate::{DbPool, GlobalFeatures};
+use crate::DbPool;
 
 lazy_static! {
     static ref URL_REGEX: Regex =
@@ -25,14 +26,15 @@ lazy_static! {
 pub fn index(
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
-    features: &State<GlobalFeatures>,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
-    let user_mail = should_be_logged_in_if_features(&Right::Read, &session_id, sessions, features)?;
-
     let conn = pool.get().map_err(AppError::from)?;
+    let features = get_global_features(&conn)?;
 
-    let right = read_or_write(features, &user_mail)?;
+    let user_mail =
+        should_be_logged_in_if_features(&Right::Read, &session_id, sessions, &features)?;
+
+    let right = read_or_write(&features, &user_mail)?;
 
     Ok(Template::render(
         "index",
@@ -56,11 +58,14 @@ pub fn get_shortcut(
     no_redirect: Option<bool>,
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
-    features: &State<GlobalFeatures>,
     pool: &State<DbPool>,
 ) -> Result<ShortcutRes, (Status, Template)> {
-    let user_mail = should_be_logged_in_if_features(&Right::Read, &session_id, sessions, features)?;
-    let right = read_or_write(features, &user_mail)?;
+    let conn = pool.get().map_err(AppError::from)?;
+    let features = get_global_features(&conn)?;
+
+    let user_mail =
+        should_be_logged_in_if_features(&Right::Read, &session_id, sessions, &features)?;
+    let right = read_or_write(&features, &user_mail)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
@@ -118,10 +123,12 @@ pub fn put_shortcut(
     url: Json<Url>,
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
-    features: &State<GlobalFeatures>,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    should_be_logged_in_if_features(&Right::Write, &session_id, sessions, features)?;
+    let conn = pool.get().map_err(AppError::from)?;
+    let features = get_global_features(&conn)?;
+
+    should_be_logged_in_if_features(&Right::Write, &session_id, sessions, &features)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
@@ -148,10 +155,12 @@ pub fn delete_shortcut(
     shortcut: PathBuf,
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
-    features: &State<GlobalFeatures>,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Value)> {
-    should_be_logged_in_if_features(&Right::Write, &session_id, sessions, features)?;
+    let conn = pool.get().map_err(AppError::from)?;
+    let features = get_global_features(&conn)?;
+
+    should_be_logged_in_if_features(&Right::Write, &session_id, sessions, &features)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
