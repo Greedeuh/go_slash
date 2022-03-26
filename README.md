@@ -10,10 +10,37 @@ Manage shortcuts at `go/` using the wrench next to the search bar or at `go/your
 
 ## Installation
 
-Download release from [todo](todo) then launch the `todo`.
-You should already have acces unsing `localhost` in place of `go` (eg. `localhost/yourShortcut`).
+### Server
 
-Then bind the localhost on `go` using next tutos.
+#### Config
+
+`var_name=default_value` => required?, description
+
+`DATABASE_URL` => required, sqlite file path eg `DATABASE_URL=go.db`
+
+`PORT=8000` => listening port
+
+`ADDR=127.0.0.1` => listening port
+
+`SALT1` => required, hash salt used for auth put random chars and remember it
+
+`SALT2` => required, hash salt used for auth put random chars, remember it and keep it secret
+
+`DB_MIGRATE=false` => run db migrations at startup if there is some
+
+#### Run
+
+In `web/` run `cargo build -r` then you got in `target\release` you got the app as `go_web` that you can launch with you env vars setup.
+(You also can use directyly `cargo run` if you don't need release compile)
+
+eg.
+
+`VARS... go_web` or `DATABASE_URL=go.db SALT1=random1 SALT2=random2 cargo run`
+
+#### Manage DB
+
+For now only sqlite is available.
+Use [diesel](https://diesel.rs/) cli to manage db migrations.
 
 ## Contributing
 
