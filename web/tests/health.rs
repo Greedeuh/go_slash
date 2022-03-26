@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate diesel_migrations;
-
 mod utils;
 use rocket::http::Status;
 use utils::*;

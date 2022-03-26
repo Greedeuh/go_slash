@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate diesel_migrations;
-
 use go_web::guards::SESSION_COOKIE;
 use go_web::models::features::Features;
 use go_web::models::features::LoginFeature;

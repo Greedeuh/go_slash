@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate diesel_migrations;
-
 use diesel::SqliteConnection;
 use go_web::controllers::users::LoginSuccessfull;
 use go_web::models::features::{Features, LoginFeature};

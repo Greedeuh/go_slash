@@ -18,10 +18,10 @@ rustbreak = { version = "2", features = ["yaml_enc"] }
 uuid = { version = "0.8.2", features = ["v4"] }
 sha256 = "1.0.3"
 diesel = { version = "1.4.8", features = ["sqlite", "r2d2"] }
+diesel_migrations = "1.4.0"
 r2d2 = "0.8.9"
 dotenv = "0.15.0"
 
 [dev-dependencies]
 thirtyfour = "0.28.1"
 uuid = { version = "0.8.2", features = ["v4"] }
-diesel_migrations = "1.4.0"

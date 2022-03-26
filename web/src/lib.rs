@@ -4,6 +4,8 @@ extern crate rocket;
 extern crate rocket_dyn_templates;
 #[macro_use]
 extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
 use diesel::{
     r2d2::{ConnectionManager, Pool, PooledConnection},
     SqliteConnection,
@@ -28,6 +30,8 @@ use crate::models::users::Sessions;
 pub mod schema;
 use dotenv::dotenv;
 
+embed_migrations!("migrations");
+
 pub struct AppConfig {
     pub simple_login_salt1: String,
     pub simple_login_salt2: String,
@@ -42,11 +46,16 @@ pub fn server(
     db_url: &str,
     sessions: Sessions,
     config: AppConfig,
+    run_migration: bool,
 ) -> Rocket<Build> {
     dotenv().ok();
 
     let db_manager: ConnectionManager<SqliteConnection> = ConnectionManager::new(db_url);
     let db_pool = Pool::builder().max_size(15).build(db_manager).unwrap();
+
+    if run_migration {
+        embedded_migrations::run(&db_pool.get().unwrap()).unwrap();
+    }
 
     let rocket_config = Config {
         port,

@@ -16,7 +16,6 @@ use uuid::Uuid;
 
 const PORT: u16 = 8001;
 const ADDR: &str = "127.0.0.1";
-embed_migrations!("migrations");
 
 #[allow(unused_must_use)]
 fn gen_file_path(content: &str) -> String {
@@ -36,11 +35,16 @@ pub fn launch_empty() -> Client {
     };
 
     let db_path = gen_file_path("");
-    let db_conn = SqliteConnection::establish(&db_path).unwrap();
-    embedded_migrations::run(&db_conn).unwrap();
 
-    Client::tracked(server(PORT, ADDR, &db_path, Sessions::default(), conf()))
-        .expect("valid rocket instance")
+    Client::tracked(server(
+        PORT,
+        ADDR,
+        &db_path,
+        Sessions::default(),
+        conf(),
+        true,
+    ))
+    .expect("valid rocket instance")
 }
 
 #[allow(dead_code)]
@@ -51,7 +55,6 @@ pub fn launch_with(sessions: &str) -> (Client, SqliteConnection) {
 
     let db_path = gen_file_path("");
     let db_conn = SqliteConnection::establish(&db_path).unwrap();
-    embedded_migrations::run(&db_conn).unwrap();
 
     (
         Client::tracked(server(
@@ -60,6 +63,7 @@ pub fn launch_with(sessions: &str) -> (Client, SqliteConnection) {
             &db_path,
             Sessions::from(sessions),
             conf(),
+            true,
         ))
         .expect("valid rocket instance"),
         db_conn,
@@ -125,10 +129,9 @@ where
     let sessions = Sessions::from(sessions);
 
     let db_conn = SqliteConnection::establish(&db_path).unwrap();
-    embedded_migrations::run(&db_conn).unwrap();
 
     spawn(async move {
-        server(PORT, ADDR, &srv_db_path, sessions, conf())
+        server(PORT, ADDR, &srv_db_path, sessions, conf(), true)
             .launch()
             .await
             .unwrap()

@@ -25,6 +25,9 @@ fn rocket() -> _ {
     let simple_login_salt1 = env::var("SALT1").expect("expect env var SALT1");
     let simple_login_salt2 = env::var("SALT2").expect("expect env var SALT2");
 
+    let run_migrations = env::var("RUN_MIGRATIONS");
+    let run_migrations = matches!(run_migrations, Ok(run_migrations) if run_migrations == "true");
+
     server(
         port,
         &addr,
@@ -34,5 +37,6 @@ fn rocket() -> _ {
             simple_login_salt1,
             simple_login_salt2,
         },
+        run_migrations,
     )
 }
