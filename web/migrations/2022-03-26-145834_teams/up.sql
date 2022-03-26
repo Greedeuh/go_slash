@@ -1,11 +1,13 @@
 CREATE TABLE teams (
-  slug VARCHAR NOT NULL PRIMARY KEY,
-  title VARCHAR NOT NULL
+  slug      VARCHAR NOT NULL PRIMARY KEY,
+  title     VARCHAR NOT NULL,
+  accepted  BOOLEAN NOT NULL
 );
 
 CREATE TABLE users_teams (
   user_mail VARCHAR NOT NULL,
   team_slug VARCHAR NOT NULL,
+  is_admin  BOOLEAN NOT NULL,
   accepted  BOOLEAN NOT NULL,
   FOREIGN KEY (user_mail) REFERENCES users(mail),
   FOREIGN KEY (team_slug) REFERENCES teams(slug),
@@ -14,3 +16,6 @@ CREATE TABLE users_teams (
 
 ALTER TABLE shortcuts 
   ADD team_slug VARCHAR REFERENCES teams(slug);
+
+ALTER TABLE users 
+  ADD is_admin BOOLEAN NOT NULL;

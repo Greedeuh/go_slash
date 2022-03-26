@@ -16,6 +16,7 @@ table! {
     teams (slug) {
         slug -> Text,
         title -> Text,
+        accepted -> Bool,
     }
 }
 
@@ -23,6 +24,7 @@ table! {
     users (mail) {
         mail -> Text,
         pwd -> Text,
+        is_admin -> Bool,
     }
 }
 
@@ -30,6 +32,7 @@ table! {
     users_teams (user_mail, team_slug) {
         user_mail -> Text,
         team_slug -> Text,
+        is_admin -> Bool,
         accepted -> Bool,
     }
 }
