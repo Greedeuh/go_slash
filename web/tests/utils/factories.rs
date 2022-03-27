@@ -8,22 +8,24 @@ use go_web::{
 };
 
 #[allow(dead_code)]
-pub fn shortcut(shortcut: &str, url: &str, db_con: &SqliteConnection) {
+pub fn shortcut(shortcut: &str, url: &str, team_slug: &str, db_con: &SqliteConnection) {
     diesel::insert_into(shortcuts::table)
         .values(&NewShortcut {
             shortcut: shortcut.to_string(),
             url: url.to_string(),
+            team_slug: team_slug.to_string(),
         })
         .execute(db_con)
         .unwrap();
 }
 
 #[allow(dead_code)]
-pub fn user(mail: &str, pwd: &str, db_con: &SqliteConnection) {
+pub fn user(mail: &str, pwd: &str, admin: bool, db_con: &SqliteConnection) {
     diesel::insert_into(users::table)
         .values(&NewUser {
             mail: mail.to_string(),
             pwd: pwd.to_string(),
+            is_admin: admin,
         })
         .execute(db_con)
         .unwrap();

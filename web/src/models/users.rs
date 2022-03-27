@@ -10,6 +10,7 @@ use crate::{guards::SessionId, models::AppError};
 pub struct NewUser {
     pub mail: String,
     pub pwd: String,
+    pub is_admin: bool,
 }
 
 #[derive(Default)]

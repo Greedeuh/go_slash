@@ -14,9 +14,9 @@ async fn index_should_list_shortcuts() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
             let con = con.lock().await;
-            shortcut("newShortcut", "http://localhost:8001/newShortcut", &con);
-            shortcut("aShortcut", "http://localhost:8001/aShortcut", &con);
-            shortcut("ssshortcut", "http://localhost:8001/ssshortcut", &con);
+            shortcut("newShortcut", "http://localhost:8001/newShortcut", "", &con);
+            shortcut("aShortcut", "http://localhost:8001/aShortcut", "", &con);
+            shortcut("ssshortcut", "http://localhost:8001/ssshortcut", "", &con);
 
             let texts_sorted = vec![
                 "aShortcut http://localhost:8001/aShortcut",
@@ -61,9 +61,9 @@ async fn index_user_as_sugestions_when_typing() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
             let con = con.lock().await;
-            shortcut("newShortcut", "http://localhost:8001/newShortcut", &con);
-            shortcut("jeanLuc", "http://localhost:8001/aShortcut", &con);
-            shortcut("tadadam", "http://localhost:8001/ssshortcut", &con);
+            shortcut("newShortcut", "http://localhost:8001/newShortcut", "", &con);
+            shortcut("jeanLuc", "http://localhost:8001/aShortcut", "", &con);
+            shortcut("tadadam", "http://localhost:8001/ssshortcut", "", &con);
 
             driver.get("http://localhost:8001").await.unwrap();
 
@@ -120,9 +120,9 @@ async fn index_user_can_search() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
             let con = con.lock().await;
-            shortcut("newShortcut", "http://localhost:8001/newShortcut", &con);
-            shortcut("jeanLuc", "http://localhost:8001/aShortcut1", &con);
-            shortcut("tadadam", "http://localhost:8001/ssshortcut", &con);
+            shortcut("newShortcut", "http://localhost:8001/newShortcut", "", &con);
+            shortcut("jeanLuc", "http://localhost:8001/aShortcut1", "", &con);
+            shortcut("tadadam", "http://localhost:8001/ssshortcut", "", &con);
 
             driver.get("http://localhost:8001").await.unwrap();
 
@@ -246,7 +246,7 @@ async fn index_user_can_delete_shortcuts() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
             let con = con.lock().await;
-            shortcut("newShortcut", "http://localhost:8001/newShortcut", &con);
+            shortcut("newShortcut", "http://localhost:8001/newShortcut", "", &con);
 
             driver.get("http://localhost:8001").await.unwrap();
 
@@ -386,8 +386,8 @@ async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
             let con = con.lock().await;
-            shortcut("newShortcut", "http://localhost:8001/looped", &con);
-            shortcut("newShortcut2", "http://localhost:8001/claude", &con);
+            shortcut("newShortcut", "http://localhost:8001/looped", "", &con);
+            shortcut("newShortcut2", "http://localhost:8001/claude", "", &con);
 
             // create shortcut
             driver
@@ -469,8 +469,8 @@ async fn undefined_shortcut_return_search_filled_and_edit_form() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
             let con = con.lock().await;
-            shortcut("newShortcut1", "http://localhost:8001/looped", &con);
-            shortcut("newShortcut2", "http://localhost:8001/claude", &con);
+            shortcut("newShortcut1", "http://localhost:8001/looped", "", &con);
+            shortcut("newShortcut2", "http://localhost:8001/claude", "", &con);
 
             // create shortcut
             driver

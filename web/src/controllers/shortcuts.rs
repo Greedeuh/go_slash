@@ -143,6 +143,7 @@ pub fn put_shortcut(
         .values(NewShortcut {
             shortcut: shortcut.to_string(),
             url,
+            team_slug: "".to_string(),
         })
         .execute(&conn)
         .map_err(AppError::from)?;

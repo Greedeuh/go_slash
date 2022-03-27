@@ -43,6 +43,7 @@ pub fn launch_empty() -> Client {
         Sessions::default(),
         conf(),
         true,
+        true,
     ))
     .expect("valid rocket instance")
 }
@@ -63,6 +64,7 @@ pub fn launch_with(sessions: &str) -> (Client, SqliteConnection) {
             &db_path,
             Sessions::from(sessions),
             conf(),
+            true,
             true,
         ))
         .expect("valid rocket instance"),
@@ -131,7 +133,7 @@ where
     let db_conn = SqliteConnection::establish(&db_path).unwrap();
 
     spawn(async move {
-        server(PORT, ADDR, &srv_db_path, sessions, conf(), true)
+        server(PORT, ADDR, &srv_db_path, sessions, conf(), true, true)
             .launch()
             .await
             .unwrap()

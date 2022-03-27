@@ -40,6 +40,7 @@ fn rocket() -> _ {
             simple_login_salt2,
         },
         run_migrations,
+        false,
     )
 }
 

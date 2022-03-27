@@ -21,7 +21,7 @@ fn undefined_shortcut_return_a_404() {
 #[test]
 fn shortcut_redirect_to_target() {
     let (client, conn) = launch_with("");
-    shortcut("myShortCut/hop", "https://thetarget.test.go.com", &conn);
+    shortcut("myShortCut/hop", "https://thetarget.test.go.com", "", &conn);
 
     let response = client.get("/myShortCut/hop").dispatch();
 

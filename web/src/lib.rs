@@ -48,6 +48,7 @@ pub fn server(
     sessions: Sessions,
     config: AppConfig,
     run_migration: bool,
+    cli_colors: bool,
 ) -> Rocket<Build> {
     dotenv().ok();
 
@@ -61,7 +62,7 @@ pub fn server(
     let rocket_config = Config {
         port,
         address: address.parse().unwrap(),
-        cli_colors: false,
+        cli_colors,
         ..Config::debug_default()
     };
 

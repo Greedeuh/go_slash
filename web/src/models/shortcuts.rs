@@ -9,6 +9,7 @@ use crate::DbConn;
 pub struct Shortcut {
     pub shortcut: String,
     pub url: String,
+    pub team_slug: String,
 }
 
 #[derive(Insertable)]
@@ -16,6 +17,7 @@ pub struct Shortcut {
 pub struct NewShortcut {
     pub shortcut: String,
     pub url: String,
+    pub team_slug: String,
 }
 
 pub fn sorted(conn: &DbConn) -> Result<Vec<Shortcut>, AppError> {

@@ -8,7 +8,7 @@ table! {
     shortcuts (shortcut) {
         shortcut -> Text,
         url -> Text,
-        team_slug -> Nullable<Text>,
+        team_slug -> Text,
     }
 }
 
@@ -16,7 +16,8 @@ table! {
     teams (slug) {
         slug -> Text,
         title -> Text,
-        accepted -> Bool,
+        is_private -> Bool,
+        is_accepted -> Bool,
     }
 }
 
@@ -33,7 +34,7 @@ table! {
         user_mail -> Text,
         team_slug -> Text,
         is_admin -> Bool,
-        accepted -> Bool,
+        is_accepted -> Bool,
     }
 }
 
