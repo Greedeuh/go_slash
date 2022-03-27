@@ -11,6 +11,7 @@ use diesel::{
     SqliteConnection,
 };
 use rocket::{
+    fairing::AdHoc,
     fs::{relative, FileServer},
     routes, Build, Config, Rocket,
 };
@@ -60,6 +61,7 @@ pub fn server(
     let rocket_config = Config {
         port,
         address: address.parse().unwrap(),
+        cli_colors: false,
         ..Config::debug_default()
     };
 
@@ -85,4 +87,13 @@ pub fn server(
         .manage(config)
         .manage(db_pool)
         .attach(Template::fairing())
+        .attach(AdHoc::on_response("HTTP code", |_, res| {
+            Box::pin(async move {
+                if (200..399).contains(&res.status().code) {
+                    info!("{}", res.status());
+                } else {
+                    error!("{}", res.status());
+                }
+            })
+        }))
 }

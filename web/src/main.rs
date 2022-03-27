@@ -28,6 +28,8 @@ fn rocket() -> _ {
     let run_migrations = env::var("RUN_MIGRATIONS");
     let run_migrations = matches!(run_migrations, Ok(run_migrations) if run_migrations == "true");
 
+    logger();
+
     server(
         port,
         &addr,
@@ -39,4 +41,23 @@ fn rocket() -> _ {
         },
         run_migrations,
     )
+}
+
+fn logger() {
+    fern::Dispatch::new()
+        // Perform allocation-free log formatting
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                "{}[{}][{}] {}",
+                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                record.target(),
+                record.level(),
+                message
+            ))
+        })
+        .level(log::LevelFilter::Info)
+        .chain(std::io::stdout())
+        .chain(fern::log_file("go.log").unwrap())
+        .apply()
+        .unwrap();
 }

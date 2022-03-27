@@ -5,3 +5,4 @@ test_dir
 go.db-shm
 go.db-wal
 go.db
+go.log
