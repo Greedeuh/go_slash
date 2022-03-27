@@ -6,6 +6,7 @@ use crate::models::AppError;
 
 pub mod features;
 pub mod shortcuts;
+pub mod teams;
 pub mod users;
 
 impl From<AppError> for (Status, Value) {

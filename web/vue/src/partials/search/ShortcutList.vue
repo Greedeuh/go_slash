@@ -3,7 +3,7 @@
     <a
       v-for="(shortcut, i) in shortcuts"
       :href="administer ? shortcut.shortcut + '?no_redirect' : shortcut.url"
-      :key="i"
+      :key="shortcut.shortcut"
       role="listitem"
       :class="{ active: i == selected_index, 'no-redirect': administer }"
       class="list-group-item d-flex justify-content-between align-items-start"
@@ -19,12 +19,7 @@
           ><i class="icon-eye-open"></i
         ></span>
       </div>
-      <div
-        v-if="administer"
-        class="btn-group"
-        role="group"
-        aria-label="Basic mixed styles example"
-      >
+      <div v-if="administer" class="btn-group" role="group">
         <button
           id="btn-delete"
           @click.prevent="delete_shortcut(shortcut.shortcut)"

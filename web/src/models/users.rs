@@ -1,8 +1,11 @@
+use diesel::prelude::*;
 use rocket::State;
 use std::{collections::HashMap, sync::Mutex};
 
 use crate::models::features::Features;
 use crate::schema::users;
+use crate::schema::users::dsl;
+use crate::DbConn;
 use crate::{guards::SessionId, models::AppError};
 
 #[derive(Insertable)]
@@ -54,15 +57,28 @@ pub enum Right {
     Write,
 }
 
+pub fn read_or_write(features: &Features, user_mail: &Option<String>) -> Result<String, AppError> {
+    let features = &features.login;
+
+    Ok(
+        if features.simple && features.write_private && user_mail.is_none() {
+            "read".to_string()
+        } else {
+            "write".to_string()
+        },
+    )
+}
+
 pub fn should_be_logged_in_if_features(
     right: &Right,
     session_id: &Option<SessionId>,
     sessions: &State<Sessions>,
     features: &Features,
+    conn: &DbConn,
 ) -> Result<Option<String>, AppError> {
     if features.login.simple {
         match right {
-            Right::Admin => should_be_logged_in(session_id, sessions),
+            Right::Admin => should_be_logged_in_and_admin(session_id, sessions, conn),
             Right::Read if features.login.read_private => should_be_logged_in(session_id, sessions),
             Right::Write if features.login.write_private => {
                 should_be_logged_in(session_id, sessions)
@@ -94,14 +110,21 @@ fn should_be_logged_in(
     }
 }
 
-pub fn read_or_write(features: &Features, user_mail: &Option<String>) -> Result<String, AppError> {
-    let features = &features.login;
-
-    Ok(
-        if features.simple && features.write_private && user_mail.is_none() {
-            "read".to_string()
-        } else {
-            "write".to_string()
-        },
-    )
+fn should_be_logged_in_and_admin(
+    session_id: &Option<SessionId>,
+    sessions: &State<Sessions>,
+    conn: &DbConn,
+) -> Result<Option<String>, AppError> {
+    let mail = should_be_logged_in(session_id, sessions)?.unwrap();
+    if dsl::users
+        .select(dsl::is_admin)
+        .filter(dsl::is_admin.eq(true))
+        .find(&mail)
+        .first::<bool>(conn)
+        .optional()?
+        .is_none()
+    {
+        return Err(AppError::Unauthorized);
+    }
+    Ok(Some(mail))
 }

@@ -3,6 +3,7 @@ use serde::Deserialize;
 
 pub mod features;
 pub mod shortcuts;
+pub mod teams;
 pub mod users;
 
 #[derive(Deserialize, Debug)]

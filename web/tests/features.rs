@@ -84,6 +84,7 @@ fn should_be_logged_in_to_manage_features() {
                 simple: true,
                 ..Default::default()
             },
+            ..Default::default()
         },
         &conn,
     );
@@ -112,6 +113,7 @@ fn should_be_logged_in_to_manage_features_ok_with_auth() {
                 simple: true,
                 ..Default::default()
             },
+            ..Default::default()
         },
         &conn,
     );

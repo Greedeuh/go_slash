@@ -553,6 +553,7 @@ async fn not_logged_in_should_redirect_to_login() {
                             read_private: true,
                             ..Default::default()
                         },
+                        ..Default::default()
                     },
                     &conn,
                 );
@@ -589,6 +590,7 @@ async fn logged_in_without_write() {
                         write_private: true,
                         ..Default::default()
                     },
+                    ..Default::default()
                 },
                 &conn,
             );

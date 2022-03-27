@@ -49,6 +49,7 @@ fn post_simple_login_token() {
                 simple: true,
                 ..Default::default()
             },
+            ..Default::default()
         },
         &conn,
     );
@@ -78,10 +79,8 @@ fn post_simple_login_wrong_credentials() {
     );
     global_features(
         &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
+            teams: true,
+            ..Default::default()
         },
         &conn,
     );
@@ -116,6 +115,7 @@ fn post_simple_login_not_a_mail() {
                 simple: true,
                 ..Default::default()
             },
+            ..Default::default()
         },
         &conn,
     );
@@ -145,6 +145,7 @@ async fn simple_login() {
                         simple: true,
                         ..Default::default()
                     },
+                    ..Default::default()
                 },
                 &conn,
             );

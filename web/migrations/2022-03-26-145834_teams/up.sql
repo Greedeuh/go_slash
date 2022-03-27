@@ -5,6 +5,8 @@ CREATE TABLE teams (
   is_accepted BOOLEAN NOT NULL
 );
 
+INSERT INTO teams (slug, title, is_private, is_accepted) VALUES ('', 'Global', false, true);
+
 CREATE TABLE users_teams (
   user_mail   VARCHAR NOT NULL,
   team_slug   VARCHAR NOT NULL,
@@ -20,3 +22,5 @@ ALTER TABLE shortcuts
 
 ALTER TABLE users 
   ADD is_admin BOOLEAN NOT NULL;
+
+UPDATE global_features SET features = '{ "login": { "simple": false, "read_private": false, "write_private": false }, "teams": false }';

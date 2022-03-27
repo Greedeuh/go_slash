@@ -43,6 +43,7 @@ fn shortcut_read_private_should_return_unauthorized() {
                 read_private: true,
                 ..Default::default()
             },
+            ..Default::default()
         },
         &conn,
     );
@@ -63,6 +64,7 @@ fn shortcut_read_private_should_return_ok_with_session() {
                 read_private: true,
                 ..Default::default()
             },
+            ..Default::default()
         },
         &conn,
     );
@@ -133,6 +135,7 @@ fn put_shortcut_should_return_unauthorized() {
                 write_private: true,
                 ..Default::default()
             },
+            ..Default::default()
         },
         &conn,
     );
@@ -156,6 +159,7 @@ fn put_shortcut_should_is_ok_with_auth() {
                 write_private: true,
                 ..Default::default()
             },
+            ..Default::default()
         },
         &conn,
     );
@@ -197,6 +201,7 @@ fn delete_a_shortcut_return_unauthorized() {
                 write_private: true,
                 ..Default::default()
             },
+            ..Default::default()
         },
         &conn,
     );
@@ -216,6 +221,7 @@ fn delete_a_shortcut_with_auth_authorized() {
                 write_private: true,
                 ..Default::default()
             },
+            ..Default::default()
         },
         &conn,
     );

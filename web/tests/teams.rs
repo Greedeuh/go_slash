@@ -1,61 +1,113 @@
 use diesel::SqliteConnection;
-use go_web::controllers::users::LoginSuccessfull;
+use go_web::guards::SESSION_COOKIE;
 use go_web::models::features::{Features, LoginFeature};
 use rocket::async_test;
 use rocket::futures::FutureExt;
+use rocket::http::Status;
 use rocket::tokio::sync::Mutex;
 mod utils;
-use rocket::http::Status;
 use serde_json::json;
 use thirtyfour::prelude::*;
 use utils::*;
-use uuid::Uuid;
 
-async fn user_can_ask_to_create_a_team() {
+#[test]
+fn feature_team_disable() {
+    let (client, _conn) = launch_with("");
+    let response = client.get("/go/teams").dispatch();
+
+    assert_eq!(response.status(), Status::Conflict);
+}
+
+#[async_test]
+async fn list_teams() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<SqliteConnection>| {
             async move {
                 let con = con.lock().await;
-                shortcut("newShortcut", "http://localhost:8001/newShortcut", "", &con);
-                shortcut("aShortcut", "http://localhost:8001/aShortcut", "", &con);
-                shortcut("ssshortcut", "http://localhost:8001/ssshortcut", "", &con);
+                team("slug1", "team1", false, true, &con);
+                team("slug2", "team2", true, true, &con);
+                team("slug3", "team3", true, false, &con);
+                team("slug4", "team4", false, false, &con);
+                user("some_mail@mail.com", "pwd", true, &con);
 
-                let texts_sorted = vec![
-                    "aShortcut http://localhost:8001/aShortcut",
-                    "newShortcut http://localhost:8001/newShortcut",
-                    "ssshortcut http://localhost:8001/ssshortcut",
-                ];
-                let href_sorted = vec![
-                    "http://localhost:8001/aShortcut",
-                    "http://localhost:8001/newShortcut",
-                    "http://localhost:8001/ssshortcut",
-                ];
-
-                driver.get("http://localhost:8001").await.unwrap();
-
-                let login_link = driver.find_element(By::Css("a.nav-link")).await.unwrap();
-                assert_eq!(
-                    login_link.get_attribute("href").await.unwrap(),
-                    Some("/go/login".to_owned())
+                global_features(
+                    &Features {
+                        teams: true,
+                        ..Default::default()
+                    },
+                    &con,
                 );
-                assert_eq!(login_link.text().await.unwrap(), "Login");
 
-                let articles = driver
-                    .find_elements(By::Css("[role='listitem']"))
+                assert_list_all(driver).await;
+
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
+                        teams: true,
+                    },
+                    &con,
+                );
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await
                     .unwrap();
-
-                for i in 0..texts_sorted.len() {
-                    assert_eq!(&articles[i].text().await.unwrap(), texts_sorted[i]);
-                    assert_eq!(
-                        articles[i].get_attribute("href").await.unwrap(),
-                        Some(href_sorted[i].to_owned())
-                    );
-                }
+                assert_list_all(driver).await;
             }
             .boxed()
         },
     )
     .await;
+}
+
+async fn assert_list_all(driver: &WebDriver) {
+    let texts_sorted = vec!["Global", "team1", "team2", "team3", "team4"];
+    let href_sorted = vec![
+        "/go/teams/",
+        "/go/teams/slug1",
+        "/go/teams/slug2",
+        "/go/teams/slug3",
+        "/go/teams/slug4",
+    ];
+    let locks = vec![false, false, true, true, false];
+    let checks = vec![true, true, true, false, false];
+
+    driver.get("http://localhost:8001/go/teams").await.unwrap();
+
+    let articles = driver
+        .find_elements(By::Css("[role='listitem']"))
+        .await
+        .unwrap();
+
+    for i in 0..texts_sorted.len() {
+        let article = &articles[i];
+        assert_eq!(&article.text().await.unwrap(), texts_sorted[i]);
+        assert_eq!(
+            article.get_attribute("href").await.unwrap(),
+            Some(href_sorted[i].to_owned())
+        );
+
+        println!("{}", i);
+        if locks[i] {
+            article.find_element(By::Css(".icon-lock")).await.unwrap();
+        } else {
+            assert!(article.find_element(By::Css(".icon-lock")).await.is_err());
+        }
+        if checks[i] {
+            article.find_element(By::Css(".icon-check")).await.unwrap();
+            assert!(article
+                .find_element(By::Css(".icon-check-empty"))
+                .await
+                .is_err());
+        } else {
+            assert!(article.find_element(By::Css(".icon-check")).await.is_err());
+            article
+                .find_element(By::Css(".icon-check-empty"))
+                .await
+                .unwrap();
+        }
+    }
 }

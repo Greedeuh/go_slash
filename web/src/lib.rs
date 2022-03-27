@@ -23,6 +23,7 @@ use controllers::{
     features::{features, patch_feature},
     health_check,
     shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut},
+    teams::list_teams,
     users::{login, simple_login},
 };
 pub mod guards;
@@ -79,7 +80,8 @@ pub fn server(
                 features,
                 patch_feature,
                 simple_login,
-                health_check
+                health_check,
+                list_teams
             ],
         )
         .mount("/public", FileServer::from(relative!("public")))
@@ -91,9 +93,9 @@ pub fn server(
         .attach(AdHoc::on_response("HTTP code", |_, res| {
             Box::pin(async move {
                 if (200..399).contains(&res.status().code) {
-                    info!("{}", res.status());
+                    info!("   >> {}", res.status());
                 } else {
-                    error!("{}", res.status());
+                    error!("   >> {}", res.status());
                 }
             })
         }))

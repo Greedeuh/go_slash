@@ -9,6 +9,7 @@ use crate::DbConn;
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
 pub struct Features {
     pub login: LoginFeature,
+    pub teams: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
@@ -44,6 +45,11 @@ pub fn patch_features(new_features: PatchableFeatures, conn: &DbConn) -> Result<
             features.login.write_private = write_private;
         }
     }
+
+    if let Some(teams) = new_features.teams {
+        features.teams = teams;
+    }
+
     diesel::update(dsl::global_features)
         .set(dsl::features.eq(json!(features).to_string()))
         .execute(conn)
@@ -53,6 +59,7 @@ pub fn patch_features(new_features: PatchableFeatures, conn: &DbConn) -> Result<
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct PatchableFeatures {
     pub login: Option<PatchableLoginFeature>,
+    pub teams: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
