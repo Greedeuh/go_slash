@@ -1,16 +1,15 @@
-use std::cmp::Ordering;
-
 use diesel::prelude::*;
 use rocket::{http::Status, State};
 use rocket_dyn_templates::Template;
 use serde_json::json;
+use std::cmp::Ordering;
 
 use crate::{
     guards::SessionId,
     models::{
         features::get_global_features,
         teams::TeamForUser,
-        users::{should_be_logged_in_if_features, Right, Sessions},
+        users::{should_be_logged_in_with, Right, Sessions},
         AppError,
     },
     schema::{teams::dsl, users_teams},
@@ -30,10 +29,23 @@ pub fn list_teams(
         return Err(AppError::Disable.into());
     }
 
-    should_be_logged_in_if_features(&Right::Read, &session_id, sessions, &features, &conn)?;
+    let user = should_be_logged_in_with(&Right::Read, &session_id, sessions, &features, &conn)?;
+
+    info!(
+        "query: {}",
+        diesel::debug_query::<diesel::sqlite::Sqlite, _>(
+            &dsl::teams
+                .left_join(users_teams::table)
+                .filter(users_teams::user_mail.eq(&user.mail))
+        )
+    );
 
     let mut teams: Vec<TeamForUser> = dsl::teams
-        .left_join(users_teams::table)
+        .left_join(
+            users_teams::table.on(dsl::slug
+                .eq(users_teams::team_slug)
+                .and(users_teams::user_mail.eq(&user.mail))),
+        )
         .load(&conn)
         .map_err(AppError::from)?;
 
@@ -49,6 +61,6 @@ pub fn list_teams(
 
     Ok(Template::render(
         "teams",
-        json!({ "teams": json!(teams).to_string() }),
+        json!({ "teams": json!(teams).to_string(), "mail": &user.mail }),
     ))
 }

@@ -22,7 +22,7 @@ fn feature_team_disable() {
 
 #[async_test]
 #[serial]
-async fn list_teams_full_power() {
+async fn list_teams_with_icons() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<SqliteConnection>| {
@@ -47,16 +47,6 @@ async fn list_teams_full_power() {
 
                 global_features(
                     &Features {
-                        teams: true,
-                        ..Default::default()
-                    },
-                    &con,
-                );
-
-                assert_list_all_full_power(driver).await;
-
-                global_features(
-                    &Features {
                         login: LoginFeature {
                             simple: true,
                             ..Default::default()
@@ -69,7 +59,53 @@ async fn list_teams_full_power() {
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await
                     .unwrap();
-                assert_list_all_full_power(driver).await;
+                let texts_sorted = vec!["Global", "team1", "team2", "team3", "team4"];
+                let href_sorted = vec![
+                    "/go/teams/",
+                    "/go/teams/slug1",
+                    "/go/teams/slug2",
+                    "/go/teams/slug3",
+                    "/go/teams/slug4",
+                ];
+                let locks = vec![false, false, true, true, false];
+                let checks = vec![true, true, true, false, false];
+
+                driver.get("http://localhost:8001/go/teams").await.unwrap();
+
+                let articles = driver
+                    .find_elements(By::Css("[role='listitem']"))
+                    .await
+                    .unwrap();
+
+                for i in 0..texts_sorted.len() {
+                    let article = &articles[i];
+                    print!("{}", i);
+                    assert!(article.text().await.unwrap().starts_with(texts_sorted[i]));
+                    assert_eq!(
+                        article.get_attribute("href").await.unwrap(),
+                        Some(href_sorted[i].to_owned())
+                    );
+
+                    println!("{}", i);
+                    if locks[i] {
+                        article.find_element(By::Css(".icon-lock")).await.unwrap();
+                    } else {
+                        assert!(article.find_element(By::Css(".icon-lock")).await.is_err());
+                    }
+                    if checks[i] {
+                        article.find_element(By::Css(".icon-check")).await.unwrap();
+                        assert!(article
+                            .find_element(By::Css(".icon-check-empty"))
+                            .await
+                            .is_err());
+                    } else {
+                        assert!(article.find_element(By::Css(".icon-check")).await.is_err());
+                        article
+                            .find_element(By::Css(".icon-check-empty"))
+                            .await
+                            .unwrap();
+                    }
+                }
             }
             .boxed()
         },
@@ -77,59 +113,9 @@ async fn list_teams_full_power() {
     .await;
 }
 
-async fn assert_list_all_full_power(driver: &WebDriver) {
-    let texts_sorted = vec!["Global", "team1", "team2", "team3", "team4"];
-    let href_sorted = vec![
-        "/go/teams/",
-        "/go/teams/slug1",
-        "/go/teams/slug2",
-        "/go/teams/slug3",
-        "/go/teams/slug4",
-    ];
-    let locks = vec![false, false, true, true, false];
-    let checks = vec![true, true, true, false, false];
-
-    driver.get("http://localhost:8001/go/teams").await.unwrap();
-
-    let articles = driver
-        .find_elements(By::Css("[role='listitem']"))
-        .await
-        .unwrap();
-
-    for i in 0..texts_sorted.len() {
-        let article = &articles[i];
-        print!("{}", i);
-        assert!(article.text().await.unwrap().starts_with(texts_sorted[i]));
-        assert_eq!(
-            article.get_attribute("href").await.unwrap(),
-            Some(href_sorted[i].to_owned())
-        );
-
-        println!("{}", i);
-        if locks[i] {
-            article.find_element(By::Css(".icon-lock")).await.unwrap();
-        } else {
-            assert!(article.find_element(By::Css(".icon-lock")).await.is_err());
-        }
-        if checks[i] {
-            article.find_element(By::Css(".icon-check")).await.unwrap();
-            assert!(article
-                .find_element(By::Css(".icon-check-empty"))
-                .await
-                .is_err());
-        } else {
-            assert!(article.find_element(By::Css(".icon-check")).await.is_err());
-            article
-                .find_element(By::Css(".icon-check-empty"))
-                .await
-                .unwrap();
-        }
-    }
-}
-
 #[async_test]
 #[serial]
-async fn list_user_teams() {
+async fn action_on_teams_list() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<SqliteConnection>| {
@@ -144,6 +130,14 @@ async fn list_user_teams() {
                     "pwd",
                     false,
                     &[("slug1", false)],
+                    &con,
+                );
+                // another user should not change the behaviour
+                user(
+                    "another@mail.com",
+                    "pwd",
+                    false,
+                    &[("slug2", false), ("slug3", true)],
                     &con,
                 );
                 global_features(
@@ -287,6 +281,14 @@ async fn action_on_teams() {
                     "pwd",
                     false,
                     &[("slug1", false)],
+                    &con,
+                );
+                // another user should not change the behaviour
+                user(
+                    "another@mail.com",
+                    "pwd",
+                    false,
+                    &[("slug2", false), ("slug3", true)],
                     &con,
                 );
                 global_features(

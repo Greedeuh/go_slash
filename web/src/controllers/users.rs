@@ -12,7 +12,7 @@ use uuid::Uuid;
 use crate::guards::SessionId;
 use crate::models::features::get_global_features;
 use crate::models::teams::Team;
-use crate::models::users::{should_be_logged_in_if_features, Right, UserTeam};
+use crate::models::users::{should_be_logged_in_with, Right, UserTeam};
 use crate::schema::users::dsl;
 use crate::schema::{teams, users_teams};
 use crate::DbPool;
@@ -125,16 +125,7 @@ pub fn join_team(
         return Err(AppError::Disable.into());
     }
 
-    let user = match should_be_logged_in_if_features(
-        &Right::Read,
-        &session_id,
-        sessions,
-        &features,
-        &conn,
-    )? {
-        Some(user) => user,
-        None => return Err(AppError::Unauthorized.into()),
-    };
+    let user = should_be_logged_in_with(&Right::Read, &session_id, sessions, &features, &conn)?;
 
     let team: Option<Team> = teams::table
         .find(&slug)
@@ -184,16 +175,7 @@ pub fn leave_team(
         return Err(AppError::Disable.into());
     }
 
-    let user = match should_be_logged_in_if_features(
-        &Right::Read,
-        &session_id,
-        sessions,
-        &features,
-        &conn,
-    )? {
-        Some(user) => user,
-        None => return Err(AppError::Unauthorized.into()),
-    };
+    let user = should_be_logged_in_with(&Right::Read, &session_id, sessions, &features, &conn)?;
 
     diesel::delete(users_teams::table)
         .filter(

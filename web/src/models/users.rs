@@ -85,7 +85,20 @@ pub fn read_or_write(features: &Features, user_mail: &Option<String>) -> Result<
     )
 }
 
-pub fn should_be_logged_in_if_features(
+pub fn should_be_logged_in_with(
+    right: &Right,
+    session_id: &Option<SessionId>,
+    sessions: &State<Sessions>,
+    features: &Features,
+    conn: &DbConn,
+) -> Result<User, AppError> {
+    match should_be_logged_in_if_features_with(right, session_id, sessions, features, conn)? {
+        Some(user) => Ok(user),
+        None => Err(AppError::Unauthorized),
+    }
+}
+
+pub fn should_be_logged_in_if_features_with(
     right: &Right,
     session_id: &Option<SessionId>,
     sessions: &State<Sessions>,

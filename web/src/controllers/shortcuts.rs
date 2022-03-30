@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use crate::guards::SessionId;
 use crate::models::features::get_global_features;
 use crate::models::shortcuts::{sorted, NewShortcut};
-use crate::models::users::{read_or_write, should_be_logged_in_if_features, Right, Sessions};
+use crate::models::users::{read_or_write, should_be_logged_in_if_features_with, Right, Sessions};
 use crate::models::AppError;
 use crate::schema::shortcuts;
 use crate::schema::shortcuts::dsl;
@@ -31,8 +31,13 @@ pub fn index(
     let conn = pool.get().map_err(AppError::from)?;
     let features = get_global_features(&conn)?;
 
-    let user =
-        should_be_logged_in_if_features(&Right::Read, &session_id, sessions, &features, &conn)?;
+    let user = should_be_logged_in_if_features_with(
+        &Right::Read,
+        &session_id,
+        sessions,
+        &features,
+        &conn,
+    )?;
     let user_mail = user.map(|u| u.mail);
 
     let right = read_or_write(&features, &user_mail)?;
@@ -64,8 +69,13 @@ pub fn get_shortcut(
     let conn = pool.get().map_err(AppError::from)?;
     let features = get_global_features(&conn)?;
 
-    let user =
-        should_be_logged_in_if_features(&Right::Read, &session_id, sessions, &features, &conn)?;
+    let user = should_be_logged_in_if_features_with(
+        &Right::Read,
+        &session_id,
+        sessions,
+        &features,
+        &conn,
+    )?;
     let user_mail = user.map(|u| u.mail);
     let right = read_or_write(&features, &user_mail)?;
 
@@ -130,7 +140,7 @@ pub fn put_shortcut(
     let conn = pool.get().map_err(AppError::from)?;
     let features = get_global_features(&conn)?;
 
-    should_be_logged_in_if_features(&Right::Write, &session_id, sessions, &features, &conn)?;
+    should_be_logged_in_if_features_with(&Right::Write, &session_id, sessions, &features, &conn)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
@@ -163,7 +173,7 @@ pub fn delete_shortcut(
     let conn = pool.get().map_err(AppError::from)?;
     let features = get_global_features(&conn)?;
 
-    should_be_logged_in_if_features(&Right::Write, &session_id, sessions, &features, &conn)?;
+    should_be_logged_in_if_features_with(&Right::Write, &session_id, sessions, &features, &conn)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 

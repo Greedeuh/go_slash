@@ -6,7 +6,7 @@ use crate::{
     guards::SessionId,
     models::{
         features::{get_global_features, patch_features, PatchableFeatures},
-        users::{should_be_logged_in_if_features, Right, Sessions},
+        users::{should_be_logged_in_if_features_with, Right, Sessions},
         AppError,
     },
     DbPool,
@@ -21,7 +21,7 @@ pub fn features(
     let conn = pool.get().map_err(AppError::from)?;
     let features = get_global_features(&conn)?;
 
-    should_be_logged_in_if_features(&Right::Admin, &session_id, sessions, &features, &conn)?;
+    should_be_logged_in_if_features_with(&Right::Admin, &session_id, sessions, &features, &conn)?;
 
     Ok(Template::render(
         "features",
@@ -39,7 +39,7 @@ pub fn patch_feature(
     let conn = pool.get().map_err(AppError::from)?;
     let features = get_global_features(&conn)?;
 
-    should_be_logged_in_if_features(&Right::Admin, &session_id, sessions, &features, &conn)?;
+    should_be_logged_in_if_features_with(&Right::Admin, &session_id, sessions, &features, &conn)?;
 
     patch_features(new_features.into_inner(), &conn)?;
 
