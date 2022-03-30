@@ -6,7 +6,7 @@
       :key="shortcut.shortcut"
       role="listitem"
       :class="{ active: i == selected_index, 'no-redirect': administer }"
-      class="list-group-item d-flex justify-content-between align-items-start"
+      class="list-group-item-action list-group-item d-flex justify-content-between align-items-start"
       @click="click_shortcut_index(i)"
     >
       <div class="ms-2 me-auto content">

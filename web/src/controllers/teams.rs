@@ -9,11 +9,11 @@ use crate::{
     guards::SessionId,
     models::{
         features::get_global_features,
-        teams::Team,
+        teams::TeamForUser,
         users::{should_be_logged_in_if_features, Right, Sessions},
         AppError,
     },
-    schema::teams::dsl,
+    schema::{teams::dsl, users_teams},
     DbPool,
 };
 
@@ -30,11 +30,14 @@ pub fn list_teams(
         return Err(AppError::Disable.into());
     }
 
-    should_be_logged_in_if_features(&Right::Admin, &session_id, sessions, &features, &conn)?;
+    should_be_logged_in_if_features(&Right::Read, &session_id, sessions, &features, &conn)?;
 
-    let mut teams = dsl::teams.load::<Team>(&conn).map_err(AppError::from)?;
+    let mut teams: Vec<TeamForUser> = dsl::teams
+        .left_join(users_teams::table)
+        .load(&conn)
+        .map_err(AppError::from)?;
 
-    teams.sort_by(|a, b| {
+    teams.sort_by(|TeamForUser { team: a, .. }, TeamForUser { team: b, .. }| {
         if a.slug.is_empty() {
             Ordering::Less
         } else if b.slug.is_empty() {

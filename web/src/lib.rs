@@ -24,7 +24,7 @@ use controllers::{
     health_check,
     shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut},
     teams::list_teams,
-    users::{login, simple_login},
+    users::{join_global_team, join_team, login, simple_login},
 };
 pub mod guards;
 pub mod models;
@@ -81,7 +81,9 @@ pub fn server(
                 patch_feature,
                 simple_login,
                 health_check,
-                list_teams
+                list_teams,
+                join_global_team,
+                join_team
             ],
         )
         .mount("/public", FileServer::from(relative!("public")))

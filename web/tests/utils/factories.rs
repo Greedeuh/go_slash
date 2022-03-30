@@ -1,11 +1,16 @@
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use go_web::{
-    models::{features::Features, shortcuts::NewShortcut, teams::Team, users::NewUser},
+    models::{
+        features::Features,
+        shortcuts::NewShortcut,
+        teams::Team,
+        users::{User, UserTeam},
+    },
     schema::global_features,
-    schema::shortcuts,
     schema::teams,
     schema::users,
+    schema::{shortcuts, users_teams},
 };
 
 #[allow(dead_code)]
@@ -21,15 +26,27 @@ pub fn shortcut(shortcut: &str, url: &str, team_slug: &str, db_con: &SqliteConne
 }
 
 #[allow(dead_code)]
-pub fn user(mail: &str, pwd: &str, admin: bool, db_con: &SqliteConnection) {
+pub fn user(mail: &str, pwd: &str, admin: bool, teams: &[(&str, bool)], db_con: &SqliteConnection) {
     diesel::insert_into(users::table)
-        .values(&NewUser {
+        .values(&User {
             mail: mail.to_string(),
             pwd: pwd.to_string(),
             is_admin: admin,
         })
         .execute(db_con)
         .unwrap();
+
+    for (team, is_admin) in teams {
+        diesel::insert_into(users_teams::table)
+            .values(&UserTeam {
+                user_mail: mail.to_string(),
+                team_slug: team.to_string(),
+                is_admin: *is_admin,
+                is_accepted: true,
+            })
+            .execute(db_con)
+            .unwrap();
+    }
 }
 
 #[allow(dead_code)]

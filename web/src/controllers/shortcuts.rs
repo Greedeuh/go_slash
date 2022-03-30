@@ -31,8 +31,9 @@ pub fn index(
     let conn = pool.get().map_err(AppError::from)?;
     let features = get_global_features(&conn)?;
 
-    let user_mail =
+    let user =
         should_be_logged_in_if_features(&Right::Read, &session_id, sessions, &features, &conn)?;
+    let user_mail = user.map(|u| u.mail);
 
     let right = read_or_write(&features, &user_mail)?;
 
@@ -63,8 +64,9 @@ pub fn get_shortcut(
     let conn = pool.get().map_err(AppError::from)?;
     let features = get_global_features(&conn)?;
 
-    let user_mail =
+    let user =
         should_be_logged_in_if_features(&Right::Read, &session_id, sessions, &features, &conn)?;
+    let user_mail = user.map(|u| u.mail);
     let right = read_or_write(&features, &user_mail)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;

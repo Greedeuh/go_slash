@@ -1,19 +1,35 @@
-use diesel::prelude::*;
+use diesel::{prelude::*, Associations, Identifiable, Insertable};
 use rocket::State;
 use std::{collections::HashMap, sync::Mutex};
 
 use crate::models::features::Features;
 use crate::schema::users;
 use crate::schema::users::dsl;
+use crate::schema::users_teams;
 use crate::DbConn;
 use crate::{guards::SessionId, models::AppError};
 
-#[derive(Insertable)]
+#[derive(Insertable, Queryable, Identifiable)]
 #[table_name = "users"]
-pub struct NewUser {
+#[primary_key(mail)]
+pub struct User {
     pub mail: String,
     pub pwd: String,
     pub is_admin: bool,
+}
+
+#[derive(Identifiable, Queryable, Associations, Insertable, PartialEq, Debug, Serialize)]
+#[belongs_to(Team, foreign_key = team_slug)]
+#[belongs_to(User, foreign_key = user_mail)]
+#[table_name = "users_teams"]
+#[primary_key(user_mail, team_slug)]
+pub struct UserTeam {
+    #[serde(skip)]
+    pub user_mail: String,
+    #[serde(skip)]
+    pub team_slug: String,
+    pub is_admin: bool,
+    pub is_accepted: bool,
 }
 
 #[derive(Default)]
@@ -75,16 +91,27 @@ pub fn should_be_logged_in_if_features(
     sessions: &State<Sessions>,
     features: &Features,
     conn: &DbConn,
-) -> Result<Option<String>, AppError> {
+) -> Result<Option<User>, AppError> {
     if features.login.simple {
         match right {
-            Right::Admin => should_be_logged_in_and_admin(session_id, sessions, conn),
-            Right::Read if features.login.read_private => should_be_logged_in(session_id, sessions),
+            Right::Admin => {
+                let user = should_be_logged_in(session_id, sessions, conn)?;
+                if user.is_admin {
+                    Ok(Some(user))
+                } else {
+                    Err(AppError::Unauthorized)
+                }
+            }
+            Right::Read if features.login.read_private => {
+                should_be_logged_in(session_id, sessions, conn).map(Some)
+            }
             Right::Write if features.login.write_private => {
-                should_be_logged_in(session_id, sessions)
+                should_be_logged_in(session_id, sessions, conn).map(Some)
             }
             _ => match session_id {
-                Some(session_id) => Ok(sessions.is_logged_in(&session_id.0)),
+                Some(session_id) => {
+                    should_be_logged_in(&Some(session_id.clone()), sessions, conn).map(Some)
+                }
                 None => Ok(None),
             },
         }
@@ -96,35 +123,17 @@ pub fn should_be_logged_in_if_features(
 fn should_be_logged_in(
     session_id: &Option<SessionId>,
     sessions: &State<Sessions>,
-) -> Result<Option<String>, AppError> {
+    conn: &DbConn,
+) -> Result<User, AppError> {
     if let Some(session_id) = session_id {
         match sessions.is_logged_in(&session_id.0) {
             None => {
                 error!("Wrong session_id.");
                 Err(AppError::Unauthorized)
             }
-            Some(mail) => Ok(Some(mail)),
+            Some(mail) => Ok(dsl::users.find(&mail).first::<User>(conn)?),
         }
     } else {
         Err(AppError::Unauthorized)
     }
-}
-
-fn should_be_logged_in_and_admin(
-    session_id: &Option<SessionId>,
-    sessions: &State<Sessions>,
-    conn: &DbConn,
-) -> Result<Option<String>, AppError> {
-    let mail = should_be_logged_in(session_id, sessions)?.unwrap();
-    if dsl::users
-        .select(dsl::is_admin)
-        .filter(dsl::is_admin.eq(true))
-        .find(&mail)
-        .first::<bool>(conn)
-        .optional()?
-        .is_none()
-    {
-        return Err(AppError::Unauthorized);
-    }
-    Ok(Some(mail))
 }

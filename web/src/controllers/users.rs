@@ -9,8 +9,12 @@ use serde_json::{json, Map, Value};
 use sha256::digest;
 use uuid::Uuid;
 
+use crate::guards::SessionId;
 use crate::models::features::get_global_features;
+use crate::models::teams::Team;
+use crate::models::users::{should_be_logged_in_if_features, Right, UserTeam};
 use crate::schema::users::dsl;
+use crate::schema::{teams, users_teams};
 use crate::DbPool;
 use crate::{
     models::{users::Sessions, AppError},
@@ -96,4 +100,63 @@ pub fn simple_login(
     Ok(Json(LoginSuccessfull {
         token: token.to_simple().to_string(),
     }))
+}
+
+#[post("/go/user/teams")]
+pub fn join_global_team(
+    session_id: Option<SessionId>,
+    sessions: &State<Sessions>,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Value)> {
+    join_team("".to_string(), session_id, sessions, pool)
+}
+
+#[post("/go/user/teams/<slug>")]
+pub fn join_team(
+    slug: String,
+    session_id: Option<SessionId>,
+    sessions: &State<Sessions>,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Value)> {
+    let conn = pool.get().map_err(AppError::from)?;
+    let features = get_global_features(&conn)?;
+
+    if !features.login.simple {
+        return Err(AppError::Disable.into());
+    }
+
+    let user = match should_be_logged_in_if_features(
+        &Right::Read,
+        &session_id,
+        sessions,
+        &features,
+        &conn,
+    )? {
+        Some(user) => user,
+        None => return Err(AppError::Unauthorized.into()),
+    };
+
+    let team: Option<Team> = teams::table
+        .find(&slug)
+        .first(&conn)
+        .optional()
+        .map_err(AppError::from)?;
+
+    let team = if let Some(team) = team {
+        team
+    } else {
+        return Err((Status::NotFound, json!({"error": "Team not found"})));
+    };
+
+    diesel::insert_into(users_teams::table)
+        .values(UserTeam {
+            user_mail: user.mail,
+            team_slug: slug,
+            is_admin: false,
+            is_accepted: !team.is_private,
+        })
+        .execute(&conn)
+        .map_err(AppError::from)?;
+
+    Ok(Status::Created)
 }

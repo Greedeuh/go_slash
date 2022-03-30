@@ -6,6 +6,7 @@ use rocket::{
 
 pub const SESSION_COOKIE: &str = "go_session_id";
 
+#[derive(Clone)]
 pub struct SessionId(pub String);
 
 #[rocket::async_trait]
