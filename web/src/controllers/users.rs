@@ -160,3 +160,49 @@ pub fn join_team(
 
     Ok(Status::Created)
 }
+
+#[delete("/go/user/teams")]
+pub fn leave_global_team(
+    session_id: Option<SessionId>,
+    sessions: &State<Sessions>,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Value)> {
+    leave_team("".to_string(), session_id, sessions, pool)
+}
+
+#[delete("/go/user/teams/<slug>")]
+pub fn leave_team(
+    slug: String,
+    session_id: Option<SessionId>,
+    sessions: &State<Sessions>,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Value)> {
+    let conn = pool.get().map_err(AppError::from)?;
+    let features = get_global_features(&conn)?;
+
+    if !features.login.simple {
+        return Err(AppError::Disable.into());
+    }
+
+    let user = match should_be_logged_in_if_features(
+        &Right::Read,
+        &session_id,
+        sessions,
+        &features,
+        &conn,
+    )? {
+        Some(user) => user,
+        None => return Err(AppError::Unauthorized.into()),
+    };
+
+    diesel::delete(users_teams::table)
+        .filter(
+            users_teams::user_mail
+                .eq(&user.mail)
+                .and(users_teams::team_slug.eq(&slug)),
+        )
+        .execute(&conn)
+        .map_err(AppError::from)?;
+
+    Ok(Status::Ok)
+}

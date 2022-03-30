@@ -4,6 +4,7 @@ use rocket::http::Status;
 use rocket::tokio::sync::Mutex;
 use rocket::{async_test, http};
 use serde_json::json;
+use serial_test::serial;
 use thirtyfour::prelude::*;
 
 mod utils;
@@ -20,6 +21,7 @@ fn feature_team_disable() {
 }
 
 #[async_test]
+#[serial]
 async fn list_teams_full_power() {
     in_browser(
         "some_session_id: some_mail@mail.com",
@@ -126,6 +128,7 @@ async fn assert_list_all_full_power(driver: &WebDriver) {
 }
 
 #[async_test]
+#[serial]
 async fn list_user_teams() {
     in_browser(
         "some_session_id: some_mail@mail.com",
@@ -271,6 +274,7 @@ fn delete_user_team() {
 }
 
 #[async_test]
+#[serial]
 async fn action_on_teams() {
     in_browser(
         "some_session_id: some_mail@mail.com",

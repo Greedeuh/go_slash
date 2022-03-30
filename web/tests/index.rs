@@ -6,10 +6,12 @@ use rocket::tokio::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 mod utils;
+use serial_test::serial;
 use thirtyfour::prelude::*;
 use utils::*;
 
 #[async_test]
+#[serial]
 async fn index_should_list_shortcuts() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
@@ -57,6 +59,7 @@ async fn index_should_list_shortcuts() {
 }
 
 #[async_test]
+#[serial]
 async fn index_user_as_sugestions_when_typing() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
@@ -116,6 +119,7 @@ async fn index_user_as_sugestions_when_typing() {
 }
 
 #[async_test]
+#[serial]
 async fn index_user_can_search() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
@@ -242,6 +246,7 @@ async fn index_user_can_search() {
 }
 
 #[async_test]
+#[serial]
 async fn index_user_can_delete_shortcuts() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
@@ -299,6 +304,7 @@ async fn index_user_can_delete_shortcuts() {
 }
 
 #[async_test]
+#[serial]
 async fn index_user_can_add_shortcuts() {
     in_browser("", |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
         async {
@@ -382,6 +388,7 @@ async fn index_user_can_add_shortcuts() {
 }
 
 #[async_test]
+#[serial]
 async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
@@ -465,6 +472,7 @@ async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
 }
 
 #[async_test]
+#[serial]
 async fn undefined_shortcut_return_search_filled_and_edit_form() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
@@ -540,6 +548,7 @@ async fn undefined_shortcut_return_search_filled_and_edit_form() {
 }
 
 #[async_test]
+#[serial]
 async fn not_logged_in_should_redirect_to_login() {
     in_browser(
         "some_session_id: some_mail@mail.com",
@@ -579,6 +588,7 @@ async fn not_logged_in_should_redirect_to_login() {
 }
 
 #[async_test]
+#[serial]
 async fn logged_in_without_write() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {

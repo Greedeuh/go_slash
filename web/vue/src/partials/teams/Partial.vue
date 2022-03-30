@@ -33,7 +33,12 @@
         >
           Waiting
         </button>
-        <button v-if="team.user_link" type="button" class="btn btn-danger">
+        <button
+          v-if="team.user_link"
+          @click.prevent="leave(team.slug)"
+          type="button"
+          class="btn btn-danger"
+        >
           Leave
         </button>
       </div>
@@ -81,6 +86,17 @@ export default defineComponent({
               is_admin: false,
               is_accepted: !team.is_private,
             };
+          }
+        })
+        .catch(console.log);
+    },
+    leave(slug: string) {
+      axios
+        .delete("/go/user/teams/" + slug)
+        .then((res) => {
+          let team = this.teams.find((t) => t.slug === slug);
+          if (res.status === 200 && team) {
+            team.user_link = undefined;
           }
         })
         .catch(console.log);

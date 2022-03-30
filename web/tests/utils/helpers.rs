@@ -7,7 +7,7 @@ use rocket::{
 };
 use std::{
     env,
-    fs::{create_dir, remove_dir_all, write},
+    fs::{create_dir, write},
     panic::{resume_unwind, AssertUnwindSafe},
     time::Duration,
 };
@@ -30,10 +30,6 @@ fn gen_file_path(content: &str) -> String {
 
 #[allow(dead_code)]
 pub fn launch_empty() -> Client {
-    if let Err(e) = remove_dir_all("test_dir") {
-        println!("{:?}", e);
-    };
-
     let db_path = gen_file_path("");
 
     Client::tracked(server(
@@ -50,10 +46,6 @@ pub fn launch_empty() -> Client {
 
 #[allow(dead_code)]
 pub fn launch_with(sessions: &str) -> (Client, SqliteConnection) {
-    if let Err(e) = remove_dir_all("test_dir") {
-        println!("{:?}", e);
-    };
-
     let db_path = gen_file_path("");
     let db_conn = SqliteConnection::establish(&db_path).unwrap();
 
@@ -111,10 +103,6 @@ async fn in_browser_with<'b, F>(sessions: &str, f: F, headless: bool, close_brow
 where
     F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
 {
-    if let Err(e) = remove_dir_all("test_dir") {
-        println!("{:?}", e);
-    };
-
     let do_not_close_browser = close_browser;
     let do_not_close_browser = !match env::var("CLOSE_BROWSER") {
         Ok(var) => do_not_close_browser || var == "true",

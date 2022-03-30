@@ -6,6 +6,7 @@ mod utils;
 use rocket::http::{Cookie, Header, Status};
 use rocket::tokio::sync::Mutex;
 use serde_json::json;
+use serial_test::serial;
 use std::default::Default;
 use thirtyfour::prelude::*;
 use utils::*;
@@ -13,6 +14,7 @@ use utils::*;
 use go_web::guards::SESSION_COOKIE;
 
 #[async_test]
+#[serial]
 async fn features_should_list_editable_features() {
     in_browser("", |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
         async {

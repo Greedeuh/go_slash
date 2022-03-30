@@ -7,6 +7,7 @@ use rocket::tokio::sync::Mutex;
 mod utils;
 use rocket::http::Status;
 use serde_json::json;
+use serial_test::serial;
 use thirtyfour::prelude::*;
 use utils::*;
 use uuid::Uuid;
@@ -81,7 +82,10 @@ fn post_simple_login_wrong_credentials() {
     );
     global_features(
         &Features {
-            teams: true,
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
             ..Default::default()
         },
         &conn,
@@ -132,6 +136,7 @@ fn post_simple_login_not_a_mail() {
 }
 
 #[async_test]
+#[serial]
 async fn simple_login() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
