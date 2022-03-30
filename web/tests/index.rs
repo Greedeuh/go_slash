@@ -16,12 +16,18 @@ async fn index_should_list_shortcuts() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
             let con = con.lock().await;
+            team("team1", "Team 1", false, true, &con);
             shortcut("newShortcut", "http://localhost:8001/newShortcut", "", &con);
-            shortcut("aShortcut", "http://localhost:8001/aShortcut", "", &con);
+            shortcut(
+                "aShortcut",
+                "http://localhost:8001/aShortcut",
+                "team1",
+                &con,
+            );
             shortcut("ssshortcut", "http://localhost:8001/ssshortcut", "", &con);
 
             let texts_sorted = vec![
-                "aShortcut http://localhost:8001/aShortcut",
+                "aShortcut http://localhost:8001/aShortcut team1",
                 "newShortcut http://localhost:8001/newShortcut",
                 "ssshortcut http://localhost:8001/ssshortcut",
             ];
@@ -64,8 +70,9 @@ async fn index_user_as_sugestions_when_typing() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
             let con = con.lock().await;
+            team("team1", "Team 1", false, true, &con);
             shortcut("newShortcut", "http://localhost:8001/newShortcut", "", &con);
-            shortcut("jeanLuc", "http://localhost:8001/aShortcut", "", &con);
+            shortcut("jeanLuc", "http://localhost:8001/aShortcut", "slug1", &con);
             shortcut("tadadam", "http://localhost:8001/ssshortcut", "", &con);
 
             driver.get("http://localhost:8001").await.unwrap();
@@ -105,7 +112,7 @@ async fn index_user_as_sugestions_when_typing() {
             // type in tuc should suggest jeanLuc and newShortcut but not tadam
             assert_eq!(
                 articles[0].text().await.unwrap(),
-                "jeanLuc http://localhost:8001/aShortcut"
+                "jeanLuc http://localhost:8001/aShortcut slug1"
             );
             assert_eq!(
                 articles[1].text().await.unwrap(),
@@ -124,8 +131,9 @@ async fn index_user_can_search() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
             let con = con.lock().await;
+            team("team1", "Team 1", false, true, &con);
             shortcut("newShortcut", "http://localhost:8001/newShortcut", "", &con);
-            shortcut("jeanLuc", "http://localhost:8001/aShortcut1", "", &con);
+            shortcut("jeanLuc", "http://localhost:8001/aShortcut1", "team1", &con);
             shortcut("tadadam", "http://localhost:8001/ssshortcut", "", &con);
 
             driver.get("http://localhost:8001").await.unwrap();
@@ -144,7 +152,7 @@ async fn index_user_can_search() {
             // down arrow select first
             assert_eq!(
                 articles[0].text().await.unwrap(),
-                "jeanLuc http://localhost:8001/aShortcut1"
+                "jeanLuc http://localhost:8001/aShortcut1 team1"
             );
             assert!(articles[0]
                 .class_name()
@@ -163,7 +171,7 @@ async fn index_user_can_search() {
             // down arrow again select snd & unselect first
             assert_eq!(
                 articles[0].text().await.unwrap(),
-                "jeanLuc http://localhost:8001/aShortcut1"
+                "jeanLuc http://localhost:8001/aShortcut1 team1"
             );
             assert!(!articles[0]
                 .class_name()
@@ -187,7 +195,7 @@ async fn index_user_can_search() {
             // up arrow select first & unselect first
             assert_eq!(
                 articles[0].text().await.unwrap(),
-                "jeanLuc http://localhost:8001/aShortcut1"
+                "jeanLuc http://localhost:8001/aShortcut1 team1"
             );
             assert!(articles[0]
                 .class_name()

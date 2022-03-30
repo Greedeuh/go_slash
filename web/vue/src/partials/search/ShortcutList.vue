@@ -14,6 +14,9 @@
           {{ shortcut.shortcut }}
         </span>
         {{ shortcut.url }}
+        <span v-if="shortcut.team_slug !== ''" class="badge bg-primary">{{
+          shortcut.team_slug
+        }}</span>
         <span v-if="shortcut.new" class="badge bg-success">NEW</span>
         <span v-if="administer" class="edit-icon"
           ><i class="icon-eye-open"></i
