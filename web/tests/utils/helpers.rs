@@ -127,7 +127,7 @@ where
             .unwrap()
     });
 
-    let mut caps = DesiredCapabilities::firefox();
+    let mut caps = DesiredCapabilities::chrome();
     if headless {
         caps.set_headless().expect("Headless conf failed");
     }
@@ -139,6 +139,9 @@ where
     let mut count = 0;
     while driver.get("http://localhost:8001/go/health").await.is_err() && count < 50 {
         count += 1;
+        if count == 50 {
+            log::error!("Waiting for test server timeout.",)
+        }
         sleep();
     }
 
