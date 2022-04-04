@@ -519,7 +519,7 @@ async fn index_user_can_add_shortcuts_for_team() {
                         .get_property("value")
                         .await
                         .unwrap(),
-                    Some("team1".to_owned())
+                    Some("slug1".to_owned())
                 );
 
                 administer_btn.click().await.unwrap();
