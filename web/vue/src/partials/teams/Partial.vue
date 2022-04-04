@@ -62,7 +62,7 @@ interface Team {
   title: string;
   is_private: boolean;
   is_accepted: boolean;
-  user_link: {
+  user_link?: {
     is_admin: boolean;
     is_accepted: boolean;
   };

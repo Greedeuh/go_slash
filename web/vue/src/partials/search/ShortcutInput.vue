@@ -27,6 +27,19 @@
         @focus="global_focus(true)"
         @blur="global_focus(false)"
       />
+      <span v-if="admin_teams" class="input-group-text">for</span>
+      <select
+        v-if="admin_teams"
+        v-model="team"
+        class="form-select"
+        name="team"
+        @focus="global_focus(true)"
+        @blur="global_focus(false)"
+      >
+        <option v-for="team in admin_teams" :key="team.slug" :value="team.slug">
+          {{ team.slug === "" ? "Global team" : team.slug }}
+        </option>
+      </select>
       <button
         id="btn-add"
         class="btn btn-primary"
@@ -48,9 +61,10 @@ export default defineComponent({
   props: {
     initial_shortcut: String,
     initial_url: String,
+    admin_teams: Object,
   },
   data() {
-    return { shortcut: this.initial_shortcut, url: this.initial_url };
+    return { shortcut: this.initial_shortcut, url: this.initial_url, team: "" };
   },
   emits: ["save"],
   methods: {
@@ -69,6 +83,7 @@ export default defineComponent({
         shortcut: this.shortcut,
         url: this.url,
         on_success,
+        team: this.team,
       });
     },
     // lazy way to stop the global listning of partial on enter, tab ... while on our current form

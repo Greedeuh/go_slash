@@ -1,6 +1,7 @@
 use go_web::guards::SESSION_COOKIE;
 use go_web::models::features::Features;
 use go_web::models::features::LoginFeature;
+use go_web::models::shortcuts::Shortcut;
 use rocket::http::ContentType;
 use rocket::http::Cookie;
 use rocket::http::Header;
@@ -111,6 +112,47 @@ fn create_a_shortcut_return_200() {
         .dispatch();
 
     assert_eq!(response.status(), Status::Ok);
+}
+
+#[test]
+fn create_a_shortcut_with_team_return_200() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, false, &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        false,
+        &[("slug1", true)],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let response = client
+        .put("/myShortCut/hop")
+        .header(ContentType::JSON)
+        .body(r#"{"url": "http://localhost", "team": "slug1"}"#)
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Ok);
+
+    let shortcut = get_shortcut("myShortCut/hop", &conn);
+    assert_eq!(
+        shortcut,
+        Shortcut {
+            shortcut: "myShortCut/hop".to_string(),
+            url: "http://localhost".to_string(),
+            team_slug: "slug1".to_string()
+        }
+    );
 }
 
 #[test]

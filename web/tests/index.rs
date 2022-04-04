@@ -1,10 +1,13 @@
 use diesel::SqliteConnection;
+use go_web::guards::SESSION_COOKIE;
 use go_web::models::features::{Features, LoginFeature};
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
+use serde_json::json;
 use std::thread;
 use std::time::Duration;
+use thirtyfour::components::select::SelectElement;
 mod utils;
 use serial_test::serial;
 use thirtyfour::prelude::*;
@@ -339,6 +342,10 @@ async fn index_user_can_add_shortcuts() {
                 .send_keys("http://localhost:8001/aShortcut")
                 .await
                 .unwrap();
+
+            // no team feature
+            assert!(driver.find_element(By::Css("[name='team']")).await.is_err());
+
             driver
                 .find_element(By::Id("btn-add"))
                 .await
@@ -392,6 +399,138 @@ async fn index_user_can_add_shortcuts() {
         }
         .boxed()
     })
+    .await;
+}
+
+#[async_test]
+#[serial]
+async fn index_user_can_add_shortcuts_for_team() {
+    in_browserr(
+        "some_session_id: some_mail@mail.com",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+            async move {
+                let con = con.lock().await;
+                team("slug1", "team1", false, false, &con);
+                team("slug2", "team1", false, false, &con);
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    false,
+                    &[("slug1", true), ("slug2", true)],
+                    &con,
+                );
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
+                        teams: true,
+                    },
+                    &con,
+                );
+
+                let options_expected = vec!["slug1", "slug2"];
+
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await
+                    .unwrap();
+
+                driver.get("http://localhost:8001").await.unwrap();
+
+                let administer_btn = driver.find_element(By::Id("btn-administer")).await.unwrap();
+                assert_eq!(
+                    administer_btn.class_name().await.unwrap(),
+                    Some("btn-light btn".to_owned())
+                );
+                administer_btn.click().await.unwrap();
+
+                driver
+                    .find_element(By::Css("[name='shortcut']"))
+                    .await
+                    .unwrap()
+                    .send_keys("jeanLuc")
+                    .await
+                    .unwrap();
+                driver
+                    .find_element(By::Css("[name='url']"))
+                    .await
+                    .unwrap()
+                    .send_keys("http://localhost:8001/aShortcut")
+                    .await
+                    .unwrap();
+
+                // no team feature
+                let team = driver.find_element(By::Css("[name='team']")).await.unwrap();
+                let team = SelectElement::new(&team).await.unwrap();
+
+                let options = team.options().await.unwrap();
+                for i in 0..options_expected.len() {
+                    assert_eq!(
+                        options[i].get_attribute("value").await.unwrap(),
+                        Some(options_expected[i].to_string())
+                    );
+                    assert_eq!(options[i].text().await.unwrap(), options_expected[i]);
+                }
+
+                team.select_by_exact_text("slug1").await.unwrap();
+
+                driver
+                    .find_element(By::Id("btn-add"))
+                    .await
+                    .unwrap()
+                    .click()
+                    .await
+                    .unwrap();
+
+                sleep();
+
+                let article = driver
+                    .find_element(By::Css("[role='listitem']"))
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    article.text().await.unwrap(),
+                    "jeanLuc http://localhost:8001/aShortcut slug1 NEW"
+                );
+
+                assert_eq!(
+                    article.get_property("href").await.unwrap(),
+                    Some("http://localhost:8001/jeanLuc?no_redirect".to_owned())
+                );
+
+                assert_eq!(
+                    driver
+                        .find_element(By::Css("[name='shortcut']"))
+                        .await
+                        .unwrap()
+                        .get_property("value")
+                        .await
+                        .unwrap(),
+                    Some("".to_owned())
+                );
+
+                assert_eq!(
+                    driver
+                        .find_element(By::Css("[name='team']"))
+                        .await
+                        .unwrap()
+                        .get_property("value")
+                        .await
+                        .unwrap(),
+                    Some("team1".to_owned())
+                );
+
+                administer_btn.click().await.unwrap();
+                assert_eq!(
+                    article.get_property("href").await.unwrap(),
+                    Some("http://localhost:8001/aShortcut".to_owned())
+                );
+            }
+            .boxed()
+        },
+    )
     .await;
 }
 

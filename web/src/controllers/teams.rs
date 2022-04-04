@@ -8,7 +8,7 @@ use crate::{
     guards::SessionId,
     models::{
         features::get_global_features,
-        teams::TeamForUser,
+        teams::TeamForOptUser,
         users::{should_be_logged_in_with, Right, Sessions},
         AppError,
     },
@@ -31,16 +31,7 @@ pub fn list_teams(
 
     let user = should_be_logged_in_with(&Right::Read, &session_id, sessions, &features, &conn)?;
 
-    info!(
-        "query: {}",
-        diesel::debug_query::<diesel::sqlite::Sqlite, _>(
-            &dsl::teams
-                .left_join(users_teams::table)
-                .filter(users_teams::user_mail.eq(&user.mail))
-        )
-    );
-
-    let mut teams: Vec<TeamForUser> = dsl::teams
+    let mut teams: Vec<TeamForOptUser> = dsl::teams
         .left_join(
             users_teams::table.on(dsl::slug
                 .eq(users_teams::team_slug)
@@ -49,15 +40,17 @@ pub fn list_teams(
         .load(&conn)
         .map_err(AppError::from)?;
 
-    teams.sort_by(|TeamForUser { team: a, .. }, TeamForUser { team: b, .. }| {
-        if a.slug.is_empty() {
-            Ordering::Less
-        } else if b.slug.is_empty() {
-            Ordering::Greater
-        } else {
-            a.title.cmp(&b.title)
-        }
-    });
+    teams.sort_by(
+        |TeamForOptUser { team: a, .. }, TeamForOptUser { team: b, .. }| {
+            if a.slug.is_empty() {
+                Ordering::Less
+            } else if b.slug.is_empty() {
+                Ordering::Greater
+            } else {
+                a.title.cmp(&b.title)
+            }
+        },
+    );
 
     Ok(Template::render(
         "teams",

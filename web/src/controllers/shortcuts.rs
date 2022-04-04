@@ -11,10 +11,13 @@ use std::path::{Path, PathBuf};
 use crate::guards::SessionId;
 use crate::models::features::get_global_features;
 use crate::models::shortcuts::{sorted, NewShortcut};
+use crate::models::teams::{Team, TEAM_COLUMNS};
 use crate::models::users::{read_or_write, should_be_logged_in_if_features_with, Right, Sessions};
 use crate::models::AppError;
 use crate::schema::shortcuts;
 use crate::schema::shortcuts::dsl;
+use crate::schema::teams;
+use crate::schema::users_teams;
 use crate::DbPool;
 
 lazy_static! {
@@ -42,9 +45,26 @@ pub fn index(
 
     let right = read_or_write(&features, &user_mail)?;
 
+    let admin_teams = if let Some(user_mail) = &user_mail && features.teams {
+        Some(
+            json!(teams::table
+                .inner_join(
+                    users_teams::table.on(teams::slug
+                        .eq(users_teams::team_slug)
+                        .and(users_teams::user_mail.eq(user_mail))
+                        .and(users_teams::is_admin.eq(true))),
+                )
+                .select(TEAM_COLUMNS)
+                .load::<Team>(&conn)
+                .map_err(AppError::from)?).to_string(),
+        )
+    } else {
+        None
+    };
+
     Ok(Template::render(
         "index",
-        json!({ "shortcuts": json!(sorted(&conn)?).to_string(), "right": right, "mail": user_mail }),
+        json!({ "shortcuts": json!(sorted(&conn)?).to_string(), "right": right, "mail": user_mail, "admin_teams": admin_teams }),
     ))
 }
 
@@ -127,12 +147,13 @@ pub fn get_shortcut(
 #[derive(Deserialize)]
 pub struct Url {
     url: String,
+    team: Option<String>,
 }
 
-#[put("/<shortcut..>", data = "<url>")]
+#[put("/<shortcut..>", data = "<data>")]
 pub fn put_shortcut(
     shortcut: PathBuf,
-    url: Json<Url>,
+    data: Json<Url>,
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
     pool: &State<DbPool>,
@@ -144,10 +165,17 @@ pub fn put_shortcut(
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
-    let url = url.into_inner().url;
+    let data = data.into_inner();
+    let url = data.url;
     if !URL_REGEX.is_match(&url) {
         return Err((Status::BadRequest, json!({"error": "Wrong URL format."})));
     }
+
+    let team_slug = if features.teams && let Some(team) = data.team {
+        team
+    } else {
+        "".to_string()
+    };
 
     let conn = pool.get().map_err(AppError::from)?;
 
@@ -155,7 +183,7 @@ pub fn put_shortcut(
         .values(NewShortcut {
             shortcut: shortcut.to_string(),
             url,
-            team_slug: "".to_string(),
+            team_slug,
         })
         .execute(&conn)
         .map_err(AppError::from)?;

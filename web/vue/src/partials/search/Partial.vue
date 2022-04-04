@@ -14,7 +14,7 @@
       :initial_shortcut="shortcut"
       :initial_url="url"
     />
-    <ShortcutInput v-if="administer" @save="add" />
+    <ShortcutInput v-if="administer" :admin_teams="admin_teams" @save="add" />
     <ShortcutList
       :shortcuts="fuzzed_or_all"
       :selected_index="selected_index"
@@ -38,12 +38,20 @@ interface Window {
   url?: string;
   shortcuts: Shortcut[];
   right: string;
+  admin_teams: Team[];
 }
 
 export interface Shortcut {
   shortcut: string;
   url: string;
   new: boolean;
+}
+
+interface Team {
+  slug: string;
+  title: string;
+  is_private: boolean;
+  is_accepted: boolean;
 }
 
 function setup_fuse(shortcuts: Shortcut[]) {
@@ -61,6 +69,7 @@ const SHORTCUTS = win.shortcuts;
 const SHORTCUT = win.shortcut;
 const URL = win.url;
 const RIGHT = win.right;
+const ADMIN_TEAMS = win.admin_teams;
 
 let key_press: (e: KeyboardEvent) => void;
 
@@ -77,6 +86,7 @@ export default defineComponent({
       shortcut: SHORTCUT,
       url: URL,
       right: RIGHT,
+      admin_teams: ADMIN_TEAMS,
     };
   },
   computed: {
@@ -151,10 +161,12 @@ export default defineComponent({
     add({
       shortcut,
       url,
+      team,
       on_success,
     }: {
       shortcut: string;
       url: string;
+      team: string;
       on_success: () => void;
     }) {
       axios.put("/" + shortcut, { url }).then((res) => {
@@ -162,7 +174,7 @@ export default defineComponent({
           const shortcuts = this.shortcuts.filter(
             (s) => s.shortcut !== shortcut
           );
-          shortcuts.unshift({ shortcut, url, new: true });
+          shortcuts.unshift({ shortcut, url, team_slug: team, new: true });
           this.shortcuts = shortcuts;
           this.fuse.setCollection(this.shortcuts);
           on_success();

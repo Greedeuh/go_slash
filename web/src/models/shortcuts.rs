@@ -5,7 +5,7 @@ use crate::models::AppError;
 use crate::schema::shortcuts;
 use crate::DbConn;
 
-#[derive(Queryable, Serialize)]
+#[derive(Queryable, Serialize, PartialEq, Eq, Debug)]
 pub struct Shortcut {
     pub shortcut: String,
     pub url: String,
