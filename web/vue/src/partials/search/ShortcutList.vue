@@ -14,9 +14,11 @@
           {{ shortcut.shortcut }}
         </span>
         {{ shortcut.url }}
-        <span v-if="shortcut.team_slug !== ''" class="badge bg-primary">{{
-          shortcut.team_slug
-        }}</span>
+        <span
+          v-if="shortcut.team_slug !== ''"
+          class="badge bg-primary team_slug"
+          >{{ shortcut.team_slug }}</span
+        >
         <span v-if="shortcut.new" class="badge bg-success">NEW</span>
         <span v-if="administer" class="edit-icon"
           ><i class="icon-eye-open"></i
@@ -68,5 +70,9 @@ export default defineComponent({
 
 .no-redirect:hover .edit-icon {
   display: inline;
+}
+
+.team_slug {
+  margin-right: 0.5em;
 }
 </style>

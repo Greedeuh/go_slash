@@ -405,7 +405,7 @@ async fn index_user_can_add_shortcuts() {
 #[async_test]
 #[serial]
 async fn index_user_can_add_shortcuts_for_team() {
-    in_browserr(
+    in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<SqliteConnection>| {
             async move {
@@ -492,7 +492,7 @@ async fn index_user_can_add_shortcuts_for_team() {
                     .unwrap();
                 assert_eq!(
                     article.text().await.unwrap(),
-                    "jeanLuc http://localhost:8001/aShortcut slug1 NEW"
+                    "jeanLuc http://localhost:8001/aShortcut slug1NEW"
                 );
 
                 assert_eq!(
