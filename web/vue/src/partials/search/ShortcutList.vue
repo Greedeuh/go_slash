@@ -27,7 +27,12 @@
       <div v-if="administer" class="btn-group" role="group">
         <button
           id="btn-delete"
-          @click.prevent="delete_shortcut(shortcut.shortcut)"
+          @click.prevent="
+            delete_shortcut({
+              shortcut: shortcut.shortcut,
+              team_slug: shortcut.team_slug,
+            })
+          "
           class="btn btn-danger"
         >
           <i class="icon-trash"></i>
@@ -52,7 +57,7 @@ export default defineComponent({
     click_shortcut_index(index: number) {
       this.$emit("click_shortcut_index", index);
     },
-    delete_shortcut(shortcut: string) {
+    delete_shortcut(shortcut: { shortcut: string; team_slug: string }) {
       this.$emit("delete_shortcut", shortcut);
     },
   },

@@ -134,9 +134,8 @@ async fn index_user_can_search() {
     in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
         async move {
             let con = con.lock().await;
-            team("team1", "Team 1", false, true, &con);
             shortcut("newShortcut", "http://localhost:8001/newShortcut", "", &con);
-            shortcut("jeanLuc", "http://localhost:8001/aShortcut1", "team1", &con);
+            shortcut("jeanLuc", "http://localhost:8001/aShortcut1", "", &con);
             shortcut("tadadam", "http://localhost:8001/ssshortcut", "", &con);
 
             driver.get("http://localhost:8001").await.unwrap();
@@ -155,7 +154,7 @@ async fn index_user_can_search() {
             // down arrow select first
             assert_eq!(
                 articles[0].text().await.unwrap(),
-                "jeanLuc http://localhost:8001/aShortcut1 team1"
+                "jeanLuc http://localhost:8001/aShortcut1"
             );
             assert!(articles[0]
                 .class_name()
@@ -174,7 +173,7 @@ async fn index_user_can_search() {
             // down arrow again select snd & unselect first
             assert_eq!(
                 articles[0].text().await.unwrap(),
-                "jeanLuc http://localhost:8001/aShortcut1 team1"
+                "jeanLuc http://localhost:8001/aShortcut1"
             );
             assert!(!articles[0]
                 .class_name()
@@ -198,7 +197,7 @@ async fn index_user_can_search() {
             // up arrow select first & unselect first
             assert_eq!(
                 articles[0].text().await.unwrap(),
-                "jeanLuc http://localhost:8001/aShortcut1 team1"
+                "jeanLuc http://localhost:8001/aShortcut1"
             );
             assert!(articles[0]
                 .class_name()
@@ -296,6 +295,62 @@ async fn index_user_can_delete_shortcuts() {
                 .await
                 .unwrap();
             search_bar.send_keys("newShortcut").await.unwrap();
+            let articles = driver
+                .find_elements(By::Css("[role='listitem']"))
+                .await
+                .unwrap();
+            assert_eq!(articles.len(), 0);
+
+            driver.get("http://localhost:8001").await.unwrap();
+            let articles = driver
+                .find_elements(By::Css("[role='listitem']"))
+                .await
+                .unwrap();
+            assert_eq!(articles.len(), 0);
+        }
+        .boxed()
+    })
+    .await;
+}
+
+#[async_test]
+#[serial]
+async fn index_user_can_delete_shortcuts_with_team() {
+    in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+        async move {
+            let con = con.lock().await;
+            team("team1", "Team 1", false, true, &con);
+            shortcut("jeanLuc", "http://localhost:8001/aShortcut1", "team1", &con);
+            global_features(
+                &Features {
+                    login: LoginFeature {
+                        simple: true,
+                        ..Default::default()
+                    },
+                    teams: true,
+                },
+                &con,
+            );
+
+            driver.get("http://localhost:8001").await.unwrap();
+
+            let administer_btn = driver.find_element(By::Id("btn-administer")).await.unwrap();
+            assert_eq!(
+                administer_btn.class_name().await.unwrap(),
+                Some("btn-light btn".to_owned())
+            );
+
+            administer_btn.click().await.unwrap();
+            driver
+                .find_element(By::Id("btn-delete"))
+                .await
+                .unwrap()
+                .click()
+                .await
+                .unwrap();
+
+            sleep();
+
             let articles = driver
                 .find_elements(By::Css("[role='listitem']"))
                 .await
@@ -526,6 +581,16 @@ async fn index_user_can_add_shortcuts_for_team() {
                 assert_eq!(
                     article.get_property("href").await.unwrap(),
                     Some("http://localhost:8001/aShortcut".to_owned())
+                );
+
+                driver.get("http://localhost:8001").await.unwrap();
+                let article = driver
+                    .find_element(By::Css("[role='listitem']"))
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    article.text().await.unwrap(),
+                    "jeanLuc http://localhost:8001/aShortcut slug1"
                 );
             }
             .boxed()

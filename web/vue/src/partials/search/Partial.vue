@@ -148,11 +148,17 @@ export default defineComponent({
     set_administer() {
       this.administer = !this.administer;
     },
-    delete_shortcut(shortcut: string) {
-      axios.delete("/" + shortcut).then((res) => {
+    delete_shortcut({
+      shortcut,
+      team_slug,
+    }: {
+      shortcut: string;
+      team_slug: string;
+    }) {
+      axios.delete(`/${shortcut}?team=${team_slug}`).then((res) => {
         if (res.status === 200) {
           this.shortcuts = this.shortcuts.filter(
-            (s) => s.shortcut !== shortcut
+            (s) => s.shortcut !== shortcut || s.team_slug !== team_slug
           );
           this.fuse.setCollection(this.shortcuts);
         }
@@ -172,7 +178,7 @@ export default defineComponent({
       axios.put(`/${shortcut}?team=${team}`, { url }).then((res) => {
         if (res.status === 200) {
           const shortcuts = this.shortcuts.filter(
-            (s) => s.shortcut !== shortcut
+            (s) => s.shortcut !== shortcut || s.team_slug !== team
           );
           shortcuts.unshift({ shortcut, url, team_slug: team, new: true });
           this.shortcuts = shortcuts;

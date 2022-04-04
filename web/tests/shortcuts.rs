@@ -234,10 +234,10 @@ fn delete_a_shortcut_return_200() {
 }
 
 #[test]
-fn delete_a_shortcut_with_return_200() {
+fn delete_a_shortcut_with_team_return_200() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, false, &conn);
-    shortcut("/myShortCut/hop", "http://localhost", "slug1", &conn);
+    shortcut("myShortCut/hop", "http://localhost", "slug1", &conn);
     user(
         "some_mail@mail.com",
         "pwd",
