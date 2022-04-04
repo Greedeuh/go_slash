@@ -169,7 +169,7 @@ export default defineComponent({
       team: string;
       on_success: () => void;
     }) {
-      axios.put("/" + shortcut, { url }).then((res) => {
+      axios.put(`/${shortcut}?team=${team}`, { url }).then((res) => {
         if (res.status === 200) {
           const shortcuts = this.shortcuts.filter(
             (s) => s.shortcut !== shortcut

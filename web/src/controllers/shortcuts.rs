@@ -147,12 +147,12 @@ pub fn get_shortcut(
 #[derive(Deserialize)]
 pub struct Url {
     url: String,
-    team: Option<String>,
 }
 
-#[put("/<shortcut..>", data = "<data>")]
+#[put("/<shortcut..>?<team>", data = "<data>")]
 pub fn put_shortcut(
     shortcut: PathBuf,
+    team: Option<String>,
     data: Json<Url>,
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
@@ -171,7 +171,7 @@ pub fn put_shortcut(
         return Err((Status::BadRequest, json!({"error": "Wrong URL format."})));
     }
 
-    let team_slug = if features.teams && let Some(team) = data.team {
+    let team_slug = if features.teams && let Some(team) = team {
         team
     } else {
         "".to_string()
@@ -191,9 +191,10 @@ pub fn put_shortcut(
     Ok(Status::Ok)
 }
 
-#[delete("/<shortcut..>")]
+#[delete("/<shortcut..>?<team>")]
 pub fn delete_shortcut(
     shortcut: PathBuf,
+    team: Option<String>,
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
     pool: &State<DbPool>,
@@ -205,10 +206,16 @@ pub fn delete_shortcut(
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
+    let team_slug = if features.teams && let Some(team) = team {
+        team
+    } else {
+        "".to_string()
+    };
+
     let conn = pool.get().map_err(AppError::from)?;
 
     diesel::delete(shortcuts::table)
-        .filter(dsl::shortcut.eq(shortcut))
+        .filter(dsl::shortcut.eq(shortcut).and(dsl::team_slug.eq(team_slug)))
         .execute(&conn)
         .map_err(AppError::from)?;
 

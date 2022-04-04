@@ -137,16 +137,16 @@ fn create_a_shortcut_with_team_return_200() {
     );
 
     let response = client
-        .put("/myShortCut/hop")
+        .put("/myShortCut/hop?team=slug1")
         .header(ContentType::JSON)
-        .body(r#"{"url": "http://localhost", "team": "slug1"}"#)
+        .body(r#"{"url": "http://localhost"}"#)
         .dispatch();
 
     assert_eq!(response.status(), Status::Ok);
 
     let shortcut = get_shortcut("myShortCut/hop", &conn);
     assert_eq!(
-        shortcut,
+        shortcut.unwrap(),
         Shortcut {
             shortcut: "myShortCut/hop".to_string(),
             url: "http://localhost".to_string(),
@@ -229,6 +229,43 @@ fn put_shortcut_should_is_ok_with_auth() {
 fn delete_a_shortcut_return_200() {
     let (client, _conn) = launch_with("");
     let response = client.delete("/myShortCut/hop").dispatch();
+
+    assert_eq!(response.status(), Status::Ok);
+}
+
+#[test]
+fn delete_a_shortcut_with_return_200() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, false, &conn);
+    shortcut("/myShortCut/hop", "http://localhost", "slug1", &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        false,
+        &[("slug1", true)],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let shortcut = get_shortcut("myShortCut/hop", &conn);
+    assert!(shortcut.is_some());
+
+    let response = client
+        .delete("/myShortCut/hop?team=slug1")
+        .cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    let shortcut = get_shortcut("myShortCut/hop", &conn);
+    assert!(shortcut.is_none());
 
     assert_eq!(response.status(), Status::Ok);
 }
