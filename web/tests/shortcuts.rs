@@ -122,7 +122,7 @@ fn create_a_shortcut_with_team_return_200() {
         "some_mail@mail.com",
         "pwd",
         false,
-        &[("slug1", true)],
+        &[("slug1", true, 0)],
         &conn,
     );
     global_features(
@@ -242,7 +242,7 @@ fn delete_a_shortcut_with_team_return_200() {
         "some_mail@mail.com",
         "pwd",
         false,
-        &[("slug1", true)],
+        &[("slug1", true, 0)],
         &conn,
     );
     global_features(

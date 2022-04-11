@@ -12,6 +12,7 @@ CREATE TABLE users_teams (
   team_slug   VARCHAR NOT NULL,
   is_admin    BOOLEAN NOT NULL,
   is_accepted BOOLEAN NOT NULL,
+  rank        SMALLINT NOT NULL,
   FOREIGN KEY (user_mail) REFERENCES users(mail),
   FOREIGN KEY (team_slug) REFERENCES teams(slug),
   PRIMARY KEY (user_mail, team_slug)

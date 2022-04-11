@@ -30,6 +30,7 @@ pub struct UserTeam {
     pub team_slug: String,
     pub is_admin: bool,
     pub is_accepted: bool,
+    pub rank: i16,
 }
 
 #[derive(Default)]

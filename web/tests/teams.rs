@@ -37,10 +37,10 @@ async fn list_teams_with_icons() {
                     "pwd",
                     true,
                     &[
-                        ("slug1", false),
-                        ("slug2", false),
-                        ("slug3", false),
-                        ("slug4", false),
+                        ("slug1", false, 0),
+                        ("slug2", false, 0),
+                        ("slug3", false, 0),
+                        ("slug4", false, 0),
                     ],
                     &con,
                 );
@@ -129,7 +129,7 @@ async fn action_on_teams_list() {
                     "some_mail@mail.com",
                     "pwd",
                     false,
-                    &[("slug1", false)],
+                    &[("slug1", false, 0)],
                     &con,
                 );
                 // another user should not change the behaviour
@@ -137,7 +137,7 @@ async fn action_on_teams_list() {
                     "another@mail.com",
                     "pwd",
                     false,
-                    &[("slug2", false), ("slug3", true)],
+                    &[("slug2", false, 0), ("slug3", true, 0)],
                     &con,
                 );
                 global_features(
@@ -177,11 +177,19 @@ async fn action_on_teams_list() {
 }
 
 #[test]
-fn post_user_team_need_user() {
-    let (client, conn) = launch_with("");
-    let response = client.post("/go/user/teams/slug1").dispatch();
+fn post_user_team_need_feature() {
+    let (client, _conn) = launch_with("");
+    let response = client
+        .post("/go/user/teams/slug1")
+        .body(json!({ "rank": 0 }).to_string())
+        .dispatch();
 
     assert_eq!(response.status(), Status::Conflict);
+}
+
+#[test]
+fn post_user_team_need_user() {
+    let (client, conn) = launch_with("");
 
     global_features(
         &Features {
@@ -193,7 +201,10 @@ fn post_user_team_need_user() {
         },
         &conn,
     );
-    let response = client.post("/go/user/teams/slug1").dispatch();
+    let response = client
+        .post("/go/user/teams/slug1")
+        .body(json!({ "rank": 0 }).to_string())
+        .dispatch();
     assert_eq!(response.status(), Status::Unauthorized);
 }
 
@@ -214,6 +225,7 @@ fn post_user_team() {
     );
     let response = client
         .post("/go/user/teams/slug1")
+        .body(json!({ "rank": 0 }).to_string())
         .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
     assert_eq!(response.status(), Status::Created);
@@ -247,7 +259,7 @@ fn delete_user_team() {
         "some_mail@mail.com",
         "pwd",
         false,
-        &[("slug1", false)],
+        &[("slug1", false, 0)],
         &conn,
     );
     global_features(
@@ -280,7 +292,7 @@ async fn action_on_teams() {
                     "some_mail@mail.com",
                     "pwd",
                     false,
-                    &[("slug1", false)],
+                    &[("slug1", false, 0)],
                     &con,
                 );
                 // another user should not change the behaviour
@@ -288,7 +300,7 @@ async fn action_on_teams() {
                     "another@mail.com",
                     "pwd",
                     false,
-                    &[("slug2", false), ("slug3", true)],
+                    &[("slug2", false, 0), ("slug3", true, 0)],
                     &con,
                 );
                 global_features(

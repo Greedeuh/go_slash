@@ -82,8 +82,8 @@ export default defineComponent({
       this.$emit("save", {
         shortcut: this.shortcut,
         url: this.url,
+        team_slug: this.team,
         on_success,
-        team: this.team,
       });
     },
     // lazy way to stop the global listning of partial on enter, tab ... while on our current form

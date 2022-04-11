@@ -26,7 +26,13 @@ pub fn shortcut(shortcut: &str, url: &str, team_slug: &str, db_con: &SqliteConne
 }
 
 #[allow(dead_code)]
-pub fn user(mail: &str, pwd: &str, admin: bool, teams: &[(&str, bool)], db_con: &SqliteConnection) {
+pub fn user(
+    mail: &str,
+    pwd: &str,
+    admin: bool,
+    teams: &[(&str, bool, i16)],
+    db_con: &SqliteConnection,
+) {
     diesel::insert_into(users::table)
         .values(&User {
             mail: mail.to_string(),
@@ -36,13 +42,14 @@ pub fn user(mail: &str, pwd: &str, admin: bool, teams: &[(&str, bool)], db_con: 
         .execute(db_con)
         .unwrap();
 
-    for (team, is_admin) in teams {
+    for (team, is_admin, rank) in teams {
         diesel::insert_into(users_teams::table)
             .values(&UserTeam {
                 user_mail: mail.to_string(),
                 team_slug: team.to_string(),
                 is_admin: *is_admin,
                 is_accepted: true,
+                rank: *rank,
             })
             .execute(db_con)
             .unwrap();

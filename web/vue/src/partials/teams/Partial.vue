@@ -78,13 +78,14 @@ export default defineComponent({
   methods: {
     join(slug: string) {
       axios
-        .post("/go/user/teams/" + slug)
+        .post("/go/user/teams/" + slug, { rank: 0 })
         .then((res) => {
           let team = this.teams.find((t) => t.slug === slug);
           if (res.status === 201 && team) {
             team.user_link = {
               is_admin: false,
               is_accepted: !team.is_private,
+              rank: 0,
             };
           }
         })

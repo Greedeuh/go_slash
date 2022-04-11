@@ -471,7 +471,7 @@ async fn index_user_can_add_shortcuts_for_team() {
                     "some_mail@mail.com",
                     "pwd",
                     false,
-                    &[("slug1", true), ("slug2", true)],
+                    &[("slug1", true, 0), ("slug2", true, 0)],
                     &con,
                 );
                 global_features(

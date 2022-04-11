@@ -237,7 +237,7 @@ async fn simple_login() {
                 "Login success !"
             );
 
-            std::thread::sleep(std::time::Duration::from_millis(400));
+            std::thread::sleep(std::time::Duration::from_millis(500));
 
             assert_eq!(
                 driver.current_url().await.unwrap(),

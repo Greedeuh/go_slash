@@ -102,18 +102,25 @@ pub fn simple_login(
     }))
 }
 
-#[post("/go/user/teams")]
+#[derive(Deserialize)]
+pub struct UserTeamLink {
+    pub rank: i16,
+}
+
+#[post("/go/user/teams", data = "<team_user_link>")]
 pub fn join_global_team(
     session_id: Option<SessionId>,
+    team_user_link: Json<UserTeamLink>,
     sessions: &State<Sessions>,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    join_team("".to_string(), session_id, sessions, pool)
+    join_team("".to_string(), team_user_link, session_id, sessions, pool)
 }
 
-#[post("/go/user/teams/<slug>")]
+#[post("/go/user/teams/<slug>", data = "<team_user_link>")]
 pub fn join_team(
     slug: String,
+    team_user_link: Json<UserTeamLink>,
     session_id: Option<SessionId>,
     sessions: &State<Sessions>,
     pool: &State<DbPool>,
@@ -145,6 +152,7 @@ pub fn join_team(
             team_slug: slug,
             is_admin: false,
             is_accepted: !team.is_private,
+            rank: team_user_link.rank,
         })
         .execute(&conn)
         .map_err(AppError::from)?;

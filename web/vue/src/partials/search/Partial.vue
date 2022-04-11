@@ -44,6 +44,7 @@ interface Window {
 export interface Shortcut {
   shortcut: string;
   url: string;
+  team_slug: string;
   new: boolean;
 }
 
@@ -167,20 +168,20 @@ export default defineComponent({
     add({
       shortcut,
       url,
-      team,
+      team_slug,
       on_success,
     }: {
       shortcut: string;
       url: string;
-      team: string;
+      team_slug: string;
       on_success: () => void;
     }) {
-      axios.put(`/${shortcut}?team=${team}`, { url }).then((res) => {
+      axios.put(`/${shortcut}?team=${team_slug}`, { url }).then((res) => {
         if (res.status === 200) {
           const shortcuts = this.shortcuts.filter(
-            (s) => s.shortcut !== shortcut || s.team_slug !== team
+            (s) => s.shortcut !== shortcut || s.team_slug !== team_slug
           );
-          shortcuts.unshift({ shortcut, url, team_slug: team, new: true });
+          shortcuts.unshift({ shortcut, url, team_slug: team_slug, new: true });
           this.shortcuts = shortcuts;
           this.fuse.setCollection(this.shortcuts);
           on_success();

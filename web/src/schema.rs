@@ -35,6 +35,7 @@ table! {
         team_slug -> Text,
         is_admin -> Bool,
         is_accepted -> Bool,
+        rank -> SmallInt,
     }
 }
 
