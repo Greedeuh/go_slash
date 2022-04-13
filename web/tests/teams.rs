@@ -5,7 +5,7 @@ use rocket::tokio::sync::Mutex;
 use rocket::{async_test, http};
 use serde_json::json;
 use serial_test::serial;
-use thirtyfour::prelude::*;
+use thirtyfour_sync::prelude::*;
 
 mod utils;
 use go_web::guards::SESSION_COOKIE;
@@ -25,92 +25,77 @@ fn feature_team_disable() {
 async fn list_teams_with_icons() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
-            async move {
-                let con = con.lock().await;
-                team("slug1", "team1", false, true, &con);
-                team("slug2", "team2", true, true, &con);
-                team("slug3", "team3", true, false, &con);
-                team("slug4", "team4", false, false, &con);
-                user(
-                    "some_mail@mail.com",
-                    "pwd",
-                    true,
-                    &[
-                        ("slug1", false, 0),
-                        ("slug2", false, 0),
-                        ("slug3", false, 0),
-                        ("slug4", false, 0),
-                    ],
-                    &con,
-                );
+        |driver: &WebDriver, con: SqliteConnection| {
+            team("slug1", "team1", false, true, &con);
+            team("slug2", "team2", true, true, &con);
+            team("slug3", "team3", true, false, &con);
+            team("slug4", "team4", false, false, &con);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                true,
+                &[
+                    ("slug1", false, 0),
+                    ("slug2", false, 0),
+                    ("slug3", false, 0),
+                    ("slug4", false, 0),
+                ],
+                &con,
+            );
 
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
+            global_features(
+                &Features {
+                    login: LoginFeature {
+                        simple: true,
+                        ..Default::default()
                     },
-                    &con,
+                    teams: true,
+                },
+                &con,
+            );
+            driver
+                .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                .unwrap();
+            let texts_sorted = vec!["Global", "team1", "team2", "team3", "team4"];
+            let href_sorted = vec![
+                "/go/teams/",
+                "/go/teams/slug1",
+                "/go/teams/slug2",
+                "/go/teams/slug3",
+                "/go/teams/slug4",
+            ];
+            let locks = vec![false, false, true, true, false];
+            let checks = vec![true, true, true, false, false];
+
+            driver.get("http://localhost:8001/go/teams").unwrap();
+
+            let articles = driver.find_elements(By::Css("[role='listitem']")).unwrap();
+
+            for i in 0..texts_sorted.len() {
+                let article = &articles[i];
+                print!("{}", i);
+                assert!(article.text().unwrap().starts_with(texts_sorted[i]));
+                assert_eq!(
+                    article.get_attribute("href").unwrap(),
+                    Some(href_sorted[i].to_owned())
                 );
-                driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
-                    .await
-                    .unwrap();
-                let texts_sorted = vec!["Global", "team1", "team2", "team3", "team4"];
-                let href_sorted = vec![
-                    "/go/teams/",
-                    "/go/teams/slug1",
-                    "/go/teams/slug2",
-                    "/go/teams/slug3",
-                    "/go/teams/slug4",
-                ];
-                let locks = vec![false, false, true, true, false];
-                let checks = vec![true, true, true, false, false];
 
-                driver.get("http://localhost:8001/go/teams").await.unwrap();
-
-                let articles = driver
-                    .find_elements(By::Css("[role='listitem']"))
-                    .await
-                    .unwrap();
-
-                for i in 0..texts_sorted.len() {
-                    let article = &articles[i];
-                    print!("{}", i);
-                    assert!(article.text().await.unwrap().starts_with(texts_sorted[i]));
-                    assert_eq!(
-                        article.get_attribute("href").await.unwrap(),
-                        Some(href_sorted[i].to_owned())
-                    );
-
-                    println!("{}", i);
-                    if locks[i] {
-                        article.find_element(By::Css(".icon-lock")).await.unwrap();
-                    } else {
-                        assert!(article.find_element(By::Css(".icon-lock")).await.is_err());
-                    }
-                    if checks[i] {
-                        article.find_element(By::Css(".icon-check")).await.unwrap();
-                        assert!(article
-                            .find_element(By::Css(".icon-check-empty"))
-                            .await
-                            .is_err());
-                    } else {
-                        assert!(article.find_element(By::Css(".icon-check")).await.is_err());
-                        article
-                            .find_element(By::Css(".icon-check-empty"))
-                            .await
-                            .unwrap();
-                    }
+                println!("{}", i);
+                if locks[i] {
+                    article.find_element(By::Css(".icon-lock")).unwrap();
+                } else {
+                    assert!(article.find_element(By::Css(".icon-lock")).is_err());
+                }
+                if checks[i] {
+                    article.find_element(By::Css(".icon-check")).unwrap();
+                    assert!(article.find_element(By::Css(".icon-check-empty")).is_err());
+                } else {
+                    assert!(article.find_element(By::Css(".icon-check")).is_err());
+                    article.find_element(By::Css(".icon-check-empty")).unwrap();
                 }
             }
-            .boxed()
         },
-    )
-    .await;
+    );
 }
 
 #[async_test]
@@ -118,62 +103,53 @@ async fn list_teams_with_icons() {
 async fn action_on_teams_list() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
-            async move {
-                let con = con.lock().await;
-                team("slug1", "team1", false, true, &con);
-                team("slug2", "team2", true, true, &con);
-                team("slug3", "team3", true, false, &con);
-                team("slug4", "team4", false, false, &con);
-                user(
-                    "some_mail@mail.com",
-                    "pwd",
-                    false,
-                    &[("slug1", false, 0)],
-                    &con,
-                );
-                // another user should not change the behaviour
-                user(
-                    "another@mail.com",
-                    "pwd",
-                    false,
-                    &[("slug2", false, 0), ("slug3", true, 0)],
-                    &con,
-                );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
+        |driver: &WebDriver, con: SqliteConnection| {
+            team("slug1", "team1", false, true, &con);
+            team("slug2", "team2", true, true, &con);
+            team("slug3", "team3", true, false, &con);
+            team("slug4", "team4", false, false, &con);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                false,
+                &[("slug1", false, 0)],
+                &con,
+            );
+            // another user should not change the behaviour
+            user(
+                "another@mail.com",
+                "pwd",
+                false,
+                &[("slug2", false, 0), ("slug3", true, 0)],
+                &con,
+            );
+            global_features(
+                &Features {
+                    login: LoginFeature {
+                        simple: true,
+                        ..Default::default()
                     },
-                    &con,
-                );
+                    teams: true,
+                },
+                &con,
+            );
 
-                let texts_sorted = vec!["Global", "team1", "team2", "team3", "team4"];
+            let texts_sorted = vec!["Global", "team1", "team2", "team3", "team4"];
 
-                driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
-                    .await
-                    .unwrap();
+            driver
+                .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                .unwrap();
 
-                driver.get("http://localhost:8001/go/teams").await.unwrap();
+            driver.get("http://localhost:8001/go/teams").unwrap();
 
-                let articles = driver
-                    .find_elements(By::Css("[role='listitem']"))
-                    .await
-                    .unwrap();
+            let articles = driver.find_elements(By::Css("[role='listitem']")).unwrap();
 
-                for i in 0..texts_sorted.len() {
-                    let article = &articles[i];
-                    assert!(article.text().await.unwrap().starts_with(texts_sorted[i]));
-                }
+            for i in 0..texts_sorted.len() {
+                let article = &articles[i];
+                assert!(article.text().unwrap().starts_with(texts_sorted[i]));
             }
-            .boxed()
         },
-    )
-    .await;
+    );
 }
 
 #[test]
@@ -284,98 +260,82 @@ fn delete_user_team() {
 async fn action_on_teams() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
-            async move {
-                let con = con.lock().await;
-                team("slug1", "team1", false, false, &con);
-                user(
-                    "some_mail@mail.com",
-                    "pwd",
-                    false,
-                    &[("slug1", false, 0)],
-                    &con,
-                );
-                // another user should not change the behaviour
-                user(
-                    "another@mail.com",
-                    "pwd",
-                    false,
-                    &[("slug2", false, 0), ("slug3", true, 0)],
-                    &con,
-                );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
+        |driver: &WebDriver, con: SqliteConnection| {
+            team("slug1", "team1", false, false, &con);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                false,
+                &[("slug1", false, 0)],
+                &con,
+            );
+            // another user should not change the behaviour
+            user(
+                "another@mail.com",
+                "pwd",
+                false,
+                &[("slug2", false, 0), ("slug3", true, 0)],
+                &con,
+            );
+            global_features(
+                &Features {
+                    login: LoginFeature {
+                        simple: true,
+                        ..Default::default()
                     },
-                    &con,
-                );
+                    teams: true,
+                },
+                &con,
+            );
 
+            driver
+                .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                .unwrap();
+
+            driver.get("http://localhost:8001/go/teams").unwrap();
+
+            let article = driver.find_element(By::Css("[role='listitem']")).unwrap();
+
+            let button = article.find_element(By::Css("button")).unwrap();
+            assert_eq!(button.text().unwrap(), "Join");
+            button.click().unwrap();
+
+            assert_eq!(
+                article
+                    .find_element(By::Css("button"))
+                    .unwrap()
+                    .text()
+                    .unwrap(),
+                "Leave"
+            );
+
+            driver.get("http://localhost:8001/go/teams").unwrap();
+
+            let leave = driver
+                .find_element(By::Css("[role='listitem'] button"))
+                .unwrap();
+            assert_eq!(leave.text().unwrap(), "Leave");
+            leave.click().unwrap();
+
+            assert_eq!(
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
-                    .await
-                    .unwrap();
-
-                driver.get("http://localhost:8001/go/teams").await.unwrap();
-
-                let article = driver
-                    .find_element(By::Css("[role='listitem']"))
-                    .await
-                    .unwrap();
-
-                let button = article.find_element(By::Css("button")).await.unwrap();
-                assert_eq!(button.text().await.unwrap(), "Join");
-                button.click().await.unwrap();
-
-                assert_eq!(
-                    article
-                        .find_element(By::Css("button"))
-                        .await
-                        .unwrap()
-                        .text()
-                        .await
-                        .unwrap(),
-                    "Leave"
-                );
-
-                driver.get("http://localhost:8001/go/teams").await.unwrap();
-
-                let leave = driver
                     .find_element(By::Css("[role='listitem'] button"))
-                    .await
-                    .unwrap();
-                assert_eq!(leave.text().await.unwrap(), "Leave");
-                leave.click().await.unwrap();
+                    .unwrap()
+                    .text()
+                    .unwrap(),
+                "Join"
+            );
 
-                assert_eq!(
-                    driver
-                        .find_element(By::Css("[role='listitem'] button"))
-                        .await
-                        .unwrap()
-                        .text()
-                        .await
-                        .unwrap(),
-                    "Join"
-                );
+            driver.get("http://localhost:8001/go/teams").unwrap();
 
-                driver.get("http://localhost:8001/go/teams").await.unwrap();
-
-                assert_eq!(
-                    driver
-                        .find_element(By::Css("[role='listitem'] button"))
-                        .await
-                        .unwrap()
-                        .text()
-                        .await
-                        .unwrap(),
-                    "Join"
-                );
-            }
-            .boxed()
+            assert_eq!(
+                driver
+                    .find_element(By::Css("[role='listitem'] button"))
+                    .unwrap()
+                    .text()
+                    .unwrap(),
+                "Join"
+            );
         },
-    )
-    .await;
+    );
 }
