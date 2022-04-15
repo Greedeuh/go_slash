@@ -233,8 +233,6 @@ async fn index_user_can_delete_shortcuts() {
             let delete_btn = driver.find_element(By::Id("btn-delete")).await?;
             delete_btn.click().await?;
 
-            sleep();
-
             let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
             assert_eq!(articles.len(), 0);
 
@@ -335,8 +333,6 @@ async fn index_user_can_add_shortcuts() {
                 .await?
                 .click()
                 .await?;
-
-            sleep();
 
             let article = driver.find_element(By::Css("[role='listitem']")).await?;
             assert_eq!(

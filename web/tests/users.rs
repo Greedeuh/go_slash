@@ -179,8 +179,6 @@ async fn simple_login() {
                 .click()
                 .await?;
 
-            sleep();
-
             assert_eq!(
                 driver
                     .find_element(By::Css("[role='alert']"))
