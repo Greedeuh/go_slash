@@ -6,7 +6,6 @@ mod utils;
 use rocket::http::{Cookie, Header, Status};
 use rocket::tokio::sync::Mutex;
 use serde_json::json;
-use serial_test::serial;
 use std::default::Default;
 use thirtyfour::prelude::*;
 use utils::*;
@@ -14,55 +13,61 @@ use utils::*;
 use go_web::guards::SESSION_COOKIE;
 
 #[async_test]
-#[serial]
 async fn features_should_list_editable_features() {
-    in_browser("", |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
-        async {
-            driver.get("http://localhost:8001/go/features").await?;
+    in_browser(
+        "",
+        |driver: &WebDriver, _con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                driver
+                    .get(format!("http://localhost:{}/go/features", port))
+                    .await?;
 
-            let features = driver.find_elements(By::Css("[role='article']")).await?;
+                let features = driver.find_elements(By::Css("[role='article']")).await?;
 
-            assert!(!features.is_empty());
+                assert!(!features.is_empty());
 
-            for feature in features {
-                let switch = feature.find_element(By::Css("[role='switch']")).await?;
-                assert_eq!(
-                    switch.get_property("checked").await?,
-                    Some("false".to_owned())
-                );
-                // switch.click().await?;
-                // assert_eq!(
-                //     switch.get_property("checked").await?,
-                //     Some("true".to_owned())
-                // );
+                for feature in features {
+                    let switch = feature.find_element(By::Css("[role='switch']")).await?;
+                    assert_eq!(
+                        switch.get_property("checked").await?,
+                        Some("false".to_owned())
+                    );
+                    // switch.click().await?;
+                    // assert_eq!(
+                    //     switch.get_property("checked").await?,
+                    //     Some("true".to_owned())
+                    // );
+                }
+
+                driver
+                    .get(format!("http://localhost:{}/go/features", port))
+                    .await?;
+
+                // TODO re-use when having another feature
+                // let features = driver
+                //     .find_elements(By::Css("[role='article']"))
+                //     .await
+                //     ?;
+
+                // assert!(!features.is_empty());
+
+                // for feature in features {
+                //     assert_eq!(feature.text().await?, "simple");
+                //     let switch = feature
+                //         .find_element(By::Css("[role='switch']"))
+                //         .await
+                //         ?;
+                //     assert_eq!(
+                //         switch.get_property("checked").await?,
+                //         Some("true".to_owned())
+                //     );
+                // }
+
+                Ok(())
             }
-
-            driver.get("http://localhost:8001/go/features").await?;
-
-            // TODO re-use when having another feature
-            // let features = driver
-            //     .find_elements(By::Css("[role='article']"))
-            //     .await
-            //     ?;
-
-            // assert!(!features.is_empty());
-
-            // for feature in features {
-            //     assert_eq!(feature.text().await?, "simple");
-            //     let switch = feature
-            //         .find_element(By::Css("[role='switch']"))
-            //         .await
-            //         ?;
-            //     assert_eq!(
-            //         switch.get_property("checked").await?,
-            //         Some("true".to_owned())
-            //     );
-            // }
-
-            Ok(())
-        }
-        .boxed()
-    })
+            .boxed()
+        },
+    )
     .await;
 }
 

@@ -4,7 +4,6 @@ use rocket::http::Status;
 use rocket::tokio::sync::Mutex;
 use rocket::{async_test, http};
 use serde_json::json;
-use serial_test::serial;
 use thirtyfour::prelude::*;
 
 mod utils;
@@ -21,11 +20,10 @@ fn feature_team_disable() {
 }
 
 #[async_test]
-#[serial]
 async fn list_teams_with_infos() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 team("slug1", "team1", false, true, &con);
@@ -58,7 +56,9 @@ async fn list_teams_with_infos() {
                 let locks = vec![false, false, true, true, false];
                 let checks = vec![true, true, true, false, false];
 
-                driver.get("http://localhost:8001/go/teams").await?;
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
 
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
 
@@ -98,11 +98,10 @@ async fn list_teams_with_infos() {
 }
 
 #[async_test]
-#[serial]
 async fn teams_user_team_then_others() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 team("slug1", "team1", false, true, &con);
@@ -139,7 +138,9 @@ async fn teams_user_team_then_others() {
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
 
-                driver.get("http://localhost:8001/go/teams").await?;
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
 
                 let user_team = driver
                     .find_element(By::Css("[aria-label='User teams'] [role='listitem']"))
@@ -267,11 +268,10 @@ fn delete_user_team() {
 }
 
 #[async_test]
-#[serial]
 async fn action_on_teams() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 user("some_mail@mail.com", "pwd", false, &[(" ", false, 0)], &con);
@@ -290,7 +290,9 @@ async fn action_on_teams() {
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
 
-                driver.get("http://localhost:8001/go/teams").await?;
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
 
                 let button = driver
                     .find_element(By::Css(
@@ -311,7 +313,9 @@ async fn action_on_teams() {
                     "Leave"
                 );
 
-                driver.get("http://localhost:8001/go/teams").await?;
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
 
                 let leave = driver
                     .find_element(By::Css(
@@ -332,7 +336,9 @@ async fn action_on_teams() {
                     "Join"
                 );
 
-                driver.get("http://localhost:8001/go/teams").await?;
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
 
                 assert_eq!(
                     driver

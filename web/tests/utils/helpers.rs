@@ -4,6 +4,7 @@ pub use no_dead_code::*;
 mod no_dead_code {
     use diesel::{Connection, SqliteConnection};
     use go_web::{models::users::Sessions, server, AppConfig};
+    use lazy_static::lazy_static;
     use rocket::{
         futures::{future::BoxFuture, FutureExt},
         local::blocking::Client,
@@ -20,6 +21,10 @@ mod no_dead_code {
 
     const PORT: u16 = 8001;
     const ADDR: &str = "127.0.0.1";
+
+    lazy_static! {
+        static ref AVAILABLE_PORTS: Mutex<Vec<u16>> = Mutex::new((8001..9000).collect());
+    }
 
     #[allow(unused_must_use)]
     fn gen_file_path(content: &str) -> String {
@@ -78,6 +83,7 @@ mod no_dead_code {
         F: for<'a> FnOnce(
             &'a WebDriver,
             Mutex<SqliteConnection>,
+            u16,
         ) -> BoxFuture<'a, Result<(), WebDriverError>>,
     {
         in_browser_with(sessions, f, true, true).await;
@@ -90,6 +96,7 @@ mod no_dead_code {
         F: for<'a> FnOnce(
             &'a WebDriver,
             Mutex<SqliteConnection>,
+            u16,
         ) -> BoxFuture<'a, Result<(), WebDriverError>>,
     {
         in_browser_with(sessions, f, false, true).await;
@@ -102,6 +109,7 @@ mod no_dead_code {
         F: for<'a> FnOnce(
             &'a WebDriver,
             Mutex<SqliteConnection>,
+            u16,
         ) -> BoxFuture<'a, Result<(), WebDriverError>>,
     {
         in_browser_with(sessions, f, false, false).await;
@@ -112,6 +120,7 @@ mod no_dead_code {
         F: for<'a> FnOnce(
             &'a WebDriver,
             Mutex<SqliteConnection>,
+            u16,
         ) -> BoxFuture<'a, Result<(), WebDriverError>>,
     {
         let do_not_close_browser = close_browser;
@@ -131,8 +140,13 @@ mod no_dead_code {
 
         let db_conn = SqliteConnection::establish(&db_path).unwrap();
 
+        let port;
+        {
+            port = AVAILABLE_PORTS.lock().await.remove(0);
+        }
+
         spawn(async move {
-            server(PORT, ADDR, &srv_db_path, sessions, conf(), true, true)
+            server(port, ADDR, &srv_db_path, sessions, conf(), true, true)
                 .launch()
                 .await
                 .unwrap()
@@ -148,7 +162,12 @@ mod no_dead_code {
             .expect("Driver build failed");
 
         let mut count = 0;
-        while driver.get("http://localhost:8001/go/health").await.is_err() && count < 50 {
+        while driver
+            .get(format!("http://localhost:{}/go/health", port))
+            .await
+            .is_err()
+            && count < 50
+        {
             count += 1;
             if count == 50 {
                 log::error!("Waiting for test server timeout.",)
@@ -157,9 +176,13 @@ mod no_dead_code {
         }
 
         let db_conn = Mutex::new(db_conn);
-        let may_panic = AssertUnwindSafe(async { f(&driver, db_conn).await.unwrap() });
+        let may_panic = AssertUnwindSafe(async { f(&driver, db_conn, port).await.unwrap() });
 
         let maybe_panicked = may_panic.catch_unwind().await;
+
+        {
+            AVAILABLE_PORTS.lock().await.push(port);
+        }
 
         if !do_not_close_browser {
             driver.quit().await.expect("Driver quit failed");

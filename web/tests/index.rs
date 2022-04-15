@@ -9,377 +9,437 @@ use std::thread;
 use std::time::Duration;
 use thirtyfour::components::select::SelectElement;
 mod utils;
-use serial_test::serial;
 use thirtyfour::prelude::*;
 use utils::*;
 
 #[async_test]
-#[serial]
 async fn index_should_list_shortcuts() {
-    in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
-        async move {
-            let con = con.lock().await;
-            team("team1", "Team 1", false, true, &con);
-            shortcut("newShortcut", "http://localhost:8001/newShortcut", "", &con);
-            shortcut(
-                "aShortcut",
-                "http://localhost:8001/aShortcut",
-                "team1",
-                &con,
-            );
-            shortcut("ssshortcut", "http://localhost:8001/ssshortcut", "", &con);
-
-            let texts_sorted = vec![
-                "aShortcut http://localhost:8001/aShortcut team1",
-                "newShortcut http://localhost:8001/newShortcut",
-                "ssshortcut http://localhost:8001/ssshortcut",
-            ];
-            let href_sorted = vec![
-                "http://localhost:8001/aShortcut",
-                "http://localhost:8001/newShortcut",
-                "http://localhost:8001/ssshortcut",
-            ];
-
-            driver.get("http://localhost:8001").await?;
-
-            let login_link = driver.find_element(By::Css("a.nav-link")).await?;
-            assert_eq!(
-                login_link.get_attribute("href").await?,
-                Some("/go/login".to_owned())
-            );
-            assert_eq!(login_link.text().await?, "Login");
-
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-
-            for i in 0..texts_sorted.len() {
-                assert_eq!(&articles[i].text().await?, texts_sorted[i]);
-                assert_eq!(
-                    articles[i].get_attribute("href").await?,
-                    Some(href_sorted[i].to_owned())
+    in_browser(
+        "",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                team("team1", "Team 1", false, true, &con);
+                shortcut(
+                    "newShortcut",
+                    &format!("http://localhost:{}/newShortcut", port),
+                    "",
+                    &con,
                 );
+                shortcut(
+                    "aShortcut",
+                    &format!("http://localhost:{}/aShortcut", port),
+                    "team1",
+                    &con,
+                );
+                shortcut(
+                    "ssshortcut",
+                    &format!("http://localhost:{}/ssshortcut", port),
+                    "",
+                    &con,
+                );
+
+                let texts_sorted = vec![
+                    format!("aShortcut http://localhost:{}/aShortcut team1", port),
+                    format!("newShortcut http://localhost:{}/newShortcut", port),
+                    format!("ssshortcut http://localhost:{}/ssshortcut", port),
+                ];
+                let href_sorted = vec![
+                    format!("http://localhost:{}/aShortcut", port),
+                    format!("http://localhost:{}/newShortcut", port),
+                    format!("http://localhost:{}/ssshortcut", port),
+                ];
+
+                driver.get(format!("http://localhost:{}", port)).await?;
+
+                let login_link = driver.find_element(By::Css("a.nav-link")).await?;
+                assert_eq!(
+                    login_link.get_attribute("href").await?,
+                    Some("/go/login".to_owned())
+                );
+                assert_eq!(login_link.text().await?, "Login");
+
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+
+                for i in 0..texts_sorted.len() {
+                    assert_eq!(articles[i].text().await?, texts_sorted[i]);
+                    assert_eq!(
+                        articles[i].get_attribute("href").await?,
+                        Some(href_sorted[i].to_owned())
+                    );
+                }
+                Ok(())
             }
-            Ok(())
-        }
-        .boxed()
-    })
+            .boxed()
+        },
+    )
     .await;
 }
 
 #[async_test]
-#[serial]
 async fn index_user_as_sugestions_when_typing() {
-    in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
-        async move {
-            let con = con.lock().await;
-            team("team1", "Team 1", false, true, &con);
-            shortcut("newShortcut", "http://localhost:8001/newShortcut", "", &con);
-            shortcut("jeanLuc", "http://localhost:8001/aShortcut", "slug1", &con);
-            shortcut("tadadam", "http://localhost:8001/ssshortcut", "", &con);
+    in_browser(
+        "",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                team("team1", "Team 1", false, true, &con);
+                shortcut(
+                    "newShortcut",
+                    &format!("http://localhost:{}/newShortcut", port),
+                    "",
+                    &con,
+                );
+                shortcut(
+                    "jeanLuc",
+                    &format!("http://localhost:{}/aShortcut", port),
+                    "slug1",
+                    &con,
+                );
+                shortcut(
+                    "tadadam",
+                    &format!("http://localhost:{}/ssshortcut", port),
+                    "",
+                    &con,
+                );
 
-            driver.get("http://localhost:8001").await?;
+                driver.get(format!("http://localhost:{}", port)).await?;
 
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-            // initial state
-            assert_eq!(3, articles.len());
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                // initial state
+                assert_eq!(3, articles.len());
 
-            let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
-            search_bar.send_keys("t").await?;
+                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
+                search_bar.send_keys("t").await?;
 
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
 
-            // type in t should suggest tadadam first
-            assert_eq!(
-                articles[0].text().await?,
-                "tadadam http://localhost:8001/ssshortcut"
-            );
-            assert_eq!(articles.len(), 3);
+                // type in t should suggest tadadam first
+                assert_eq!(
+                    articles[0].text().await?,
+                    format!("tadadam http://localhost:{}/ssshortcut", port)
+                );
+                assert_eq!(articles.len(), 3);
 
-            search_bar.send_keys("uc").await?;
+                search_bar.send_keys("uc").await?;
 
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
 
-            // type in tuc should suggest jeanLuc and newShortcut but not tadam
-            assert_eq!(
-                articles[0].text().await?,
-                "jeanLuc http://localhost:8001/aShortcut slug1"
-            );
-            assert_eq!(
-                articles[1].text().await?,
-                "newShortcut http://localhost:8001/newShortcut"
-            );
-            assert_eq!(articles.len(), 2);
-            Ok(())
-        }
-        .boxed()
-    })
+                // type in tuc should suggest jeanLuc and newShortcut but not tadam
+                assert_eq!(
+                    articles[0].text().await?,
+                    format!("jeanLuc http://localhost:{}/aShortcut slug1", port)
+                );
+                assert_eq!(
+                    articles[1].text().await?,
+                    format!("newShortcut http://localhost:{}/newShortcut", port)
+                );
+                assert_eq!(articles.len(), 2);
+                Ok(())
+            }
+            .boxed()
+        },
+    )
     .await;
 }
 
 #[async_test]
-#[serial]
 async fn index_user_can_search() {
-    in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
-        async move {
-            let con = con.lock().await;
-            shortcut("newShortcut", "http://localhost:8001/newShortcut", "", &con);
-            shortcut("jeanLuc", "http://localhost:8001/aShortcut1", "", &con);
-            shortcut("tadadam", "http://localhost:8001/ssshortcut", "", &con);
+    in_browser(
+        "",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                shortcut(
+                    "newShortcut",
+                    &format!("http://localhost:{}/newShortcut", port),
+                    "",
+                    &con,
+                );
+                shortcut(
+                    "jeanLuc",
+                    &format!("http://localhost:{}/aShortcut1", port),
+                    "",
+                    &con,
+                );
+                shortcut(
+                    "tadadam",
+                    &format!("http://localhost:{}/ssshortcut", port),
+                    "",
+                    &con,
+                );
 
-            driver.get("http://localhost:8001").await?;
+                driver.get(format!("http://localhost:{}", port)).await?;
 
-            let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
-            search_bar.send_keys(Keys::Down).await?;
+                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
+                search_bar.send_keys(Keys::Down).await?;
 
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
 
-            // down arrow select first
-            assert_eq!(
-                articles[0].text().await?,
-                "jeanLuc http://localhost:8001/aShortcut1"
-            );
-            assert!(articles[0].class_name().await?.unwrap().contains("active"));
+                // down arrow select first
+                assert_eq!(
+                    articles[0].text().await?,
+                    format!("jeanLuc http://localhost:{}/aShortcut1", port)
+                );
+                assert!(articles[0].class_name().await?.unwrap().contains("active"));
 
-            search_bar.send_keys(Keys::Down).await?;
+                search_bar.send_keys(Keys::Down).await?;
 
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
 
-            // down arrow again select snd & unselect first
-            assert_eq!(
-                articles[0].text().await?,
-                "jeanLuc http://localhost:8001/aShortcut1"
-            );
-            assert!(!articles[0].class_name().await?.unwrap().contains("active"));
-            assert_eq!(
-                articles[1].text().await?,
-                "newShortcut http://localhost:8001/newShortcut"
-            );
-            assert!(articles[1].class_name().await?.unwrap().contains("active"));
+                // down arrow again select snd & unselect first
+                assert_eq!(
+                    articles[0].text().await?,
+                    format!("jeanLuc http://localhost:{}/aShortcut1", port)
+                );
+                assert!(!articles[0].class_name().await?.unwrap().contains("active"));
+                assert_eq!(
+                    articles[1].text().await?,
+                    format!("newShortcut http://localhost:{}/newShortcut", port)
+                );
+                assert!(articles[1].class_name().await?.unwrap().contains("active"));
 
-            search_bar.send_keys(Keys::Up).await?;
+                search_bar.send_keys(Keys::Up).await?;
 
-            // up arrow select first & unselect first
-            assert_eq!(
-                articles[0].text().await?,
-                "jeanLuc http://localhost:8001/aShortcut1"
-            );
-            assert!(articles[0].class_name().await?.unwrap().contains("active"));
-            assert_eq!(
-                articles[1].text().await?,
-                "newShortcut http://localhost:8001/newShortcut"
-            );
-            assert!(!articles[1].class_name().await?.unwrap().contains("active"));
+                // up arrow select first & unselect first
+                assert_eq!(
+                    articles[0].text().await?,
+                    format!("jeanLuc http://localhost:{}/aShortcut1", port)
+                );
+                assert!(articles[0].class_name().await?.unwrap().contains("active"));
+                assert_eq!(
+                    articles[1].text().await?,
+                    format!("newShortcut http://localhost:{}/newShortcut", port)
+                );
+                assert!(!articles[1].class_name().await?.unwrap().contains("active"));
 
-            search_bar.send_keys(Keys::Tab).await?;
+                search_bar.send_keys(Keys::Tab).await?;
 
-            // Tab take first
-            assert_eq!(
-                search_bar.get_property("value").await?,
-                Some("jeanLuc".to_owned())
-            );
+                // Tab take first
+                assert_eq!(
+                    search_bar.get_property("value").await?,
+                    Some("jeanLuc".to_owned())
+                );
 
-            search_bar.send_keys(Keys::Enter).await?;
-            sleep();
+                search_bar.send_keys(Keys::Enter).await?;
+                sleep();
 
-            // Enter launch search
-            assert_eq!(
-                driver.current_url().await?,
-                "http://localhost:8001/aShortcut1"
-            );
+                // Enter launch search
+                assert_eq!(
+                    driver.current_url().await?,
+                    format!("http://localhost:{}/aShortcut1", port)
+                );
 
-            driver.get("http://localhost:8001").await?;
-            // arow down then enter go to the first line shortcut
+                driver.get(format!("http://localhost:{}", port)).await?;
+                // arow down then enter go to the first line shortcut
 
-            let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
-            search_bar.send_keys(Keys::Down).await?;
-            search_bar.send_keys(Keys::Enter).await?;
+                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
+                search_bar.send_keys(Keys::Down).await?;
+                search_bar.send_keys(Keys::Enter).await?;
 
-            sleep();
+                sleep();
 
-            assert_eq!(
-                driver.current_url().await?,
-                "http://localhost:8001/aShortcut1"
-            );
-            Ok(())
-        }
-        .boxed()
-    })
+                assert_eq!(
+                    driver.current_url().await?,
+                    format!("http://localhost:{}/aShortcut1", port)
+                );
+                Ok(())
+            }
+            .boxed()
+        },
+    )
     .await;
 }
 
 #[async_test]
-#[serial]
 async fn index_user_can_delete_shortcuts() {
-    in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
-        async move {
-            let con = con.lock().await;
-            shortcut("newShortcut", "http://localhost:8001/newShortcut", "", &con);
+    in_browser(
+        "",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                shortcut(
+                    "newShortcut",
+                    &format!("http://localhost:{}/newShortcut", port),
+                    "",
+                    &con,
+                );
 
-            driver.get("http://localhost:8001").await?;
+                driver.get(format!("http://localhost:{}", port)).await?;
 
-            let administer_btn = driver.find_element(By::Id("btn-administer")).await?;
-            assert_eq!(
-                administer_btn.class_name().await?,
-                Some("btn-light btn".to_owned())
-            );
-            administer_btn.click().await?;
+                let administer_btn = driver.find_element(By::Id("btn-administer")).await?;
+                assert_eq!(
+                    administer_btn.class_name().await?,
+                    Some("btn-light btn".to_owned())
+                );
+                administer_btn.click().await?;
 
-            let delete_btn = driver.find_element(By::Id("btn-delete")).await?;
+                let delete_btn = driver.find_element(By::Id("btn-delete")).await?;
 
-            // Escape should quit the admin mode
-            administer_btn.send_keys(Keys::Escape).await?;
-            assert!(!delete_btn.is_present().await?);
+                // Escape should quit the admin mode
+                administer_btn.send_keys(Keys::Escape).await?;
+                assert!(!delete_btn.is_present().await?);
 
-            administer_btn.click().await?;
-            let delete_btn = driver.find_element(By::Id("btn-delete")).await?;
-            delete_btn.click().await?;
+                administer_btn.click().await?;
+                let delete_btn = driver.find_element(By::Id("btn-delete")).await?;
+                delete_btn.click().await?;
 
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-            assert_eq!(articles.len(), 0);
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                assert_eq!(articles.len(), 0);
 
-            let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
-            search_bar.send_keys("newShortcut").await?;
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-            assert_eq!(articles.len(), 0);
+                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
+                search_bar.send_keys("newShortcut").await?;
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                assert_eq!(articles.len(), 0);
 
-            driver.get("http://localhost:8001").await?;
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-            assert_eq!(articles.len(), 0);
-            Ok(())
-        }
-        .boxed()
-    })
+                driver.get(format!("http://localhost:{}", port)).await?;
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                assert_eq!(articles.len(), 0);
+                Ok(())
+            }
+            .boxed()
+        },
+    )
     .await;
 }
 
 #[async_test]
-#[serial]
 async fn index_user_can_delete_shortcuts_with_team() {
-    in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
-        async move {
-            let con = con.lock().await;
-            team("team1", "Team 1", false, true, &con);
-            shortcut("jeanLuc", "http://localhost:8001/aShortcut1", "team1", &con);
-            global_features(
-                &Features {
-                    login: LoginFeature {
-                        simple: true,
-                        ..Default::default()
+    in_browser(
+        "",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                team("team1", "Team 1", false, true, &con);
+                shortcut(
+                    "jeanLuc",
+                    &format!("http://localhost:{}/aShortcut1", port),
+                    "team1",
+                    &con,
+                );
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
+                        teams: true,
                     },
-                    teams: true,
-                },
-                &con,
-            );
+                    &con,
+                );
 
-            driver.get("http://localhost:8001").await?;
+                driver.get(format!("http://localhost:{}", port)).await?;
 
-            let administer_btn = driver.find_element(By::Id("btn-administer")).await?;
-            assert_eq!(
-                administer_btn.class_name().await?,
-                Some("btn-light btn".to_owned())
-            );
+                let administer_btn = driver.find_element(By::Id("btn-administer")).await?;
+                assert_eq!(
+                    administer_btn.class_name().await?,
+                    Some("btn-light btn".to_owned())
+                );
 
-            administer_btn.click().await?;
-            driver
-                .find_element(By::Id("btn-delete"))
-                .await?
-                .click()
-                .await?;
+                administer_btn.click().await?;
+                driver
+                    .find_element(By::Id("btn-delete"))
+                    .await?
+                    .click()
+                    .await?;
 
-            sleep();
+                sleep();
 
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-            assert_eq!(articles.len(), 0);
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                assert_eq!(articles.len(), 0);
 
-            driver.get("http://localhost:8001").await?;
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-            assert_eq!(articles.len(), 0);
-            Ok(())
-        }
-        .boxed()
-    })
+                driver.get(format!("http://localhost:{}", port)).await?;
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                assert_eq!(articles.len(), 0);
+                Ok(())
+            }
+            .boxed()
+        },
+    )
     .await;
 }
 
 #[async_test]
-#[serial]
 async fn index_user_can_add_shortcuts() {
-    in_browser("", |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
-        async {
-            driver.get("http://localhost:8001").await?;
+    in_browser(
+        "",
+        |driver: &WebDriver, _con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                driver.get(format!("http://localhost:{}", port)).await?;
 
-            let administer_btn = driver.find_element(By::Id("btn-administer")).await?;
-            assert_eq!(
-                administer_btn.class_name().await?,
-                Some("btn-light btn".to_owned())
-            );
-            administer_btn.click().await?;
+                let administer_btn = driver.find_element(By::Id("btn-administer")).await?;
+                assert_eq!(
+                    administer_btn.class_name().await?,
+                    Some("btn-light btn".to_owned())
+                );
+                administer_btn.click().await?;
 
-            driver
-                .find_element(By::Css("[name='shortcut']"))
-                .await?
-                .send_keys("jeanLuc")
-                .await?;
-            driver
-                .find_element(By::Css("[name='url']"))
-                .await?
-                .send_keys("http://localhost:8001/aShortcut")
-                .await?;
-
-            // no team feature
-            assert!(driver.find_element(By::Css("[name='team']")).await.is_err());
-
-            driver
-                .find_element(By::Id("btn-add"))
-                .await?
-                .click()
-                .await?;
-
-            let article = driver.find_element(By::Css("[role='listitem']")).await?;
-            assert_eq!(
-                article.text().await?,
-                "jeanLuc http://localhost:8001/aShortcut NEW"
-            );
-
-            assert_eq!(
-                article.get_property("href").await?,
-                Some("http://localhost:8001/jeanLuc?no_redirect".to_owned())
-            );
-
-            assert_eq!(
                 driver
                     .find_element(By::Css("[name='shortcut']"))
                     .await?
-                    .get_property("value")
-                    .await?,
-                Some("".to_owned())
-            );
-            assert_eq!(
+                    .send_keys("jeanLuc")
+                    .await?;
                 driver
                     .find_element(By::Css("[name='url']"))
                     .await?
-                    .get_property("value")
-                    .await?,
-                Some("".to_owned())
-            );
+                    .send_keys(format!("http://localhost:{}/aShortcut", port))
+                    .await?;
 
-            administer_btn.click().await?;
-            assert_eq!(
-                article.get_property("href").await?,
-                Some("http://localhost:8001/aShortcut".to_owned())
-            );
-            Ok(())
-        }
-        .boxed()
-    })
+                // no team feature
+                assert!(driver.find_element(By::Css("[name='team']")).await.is_err());
+
+                driver
+                    .find_element(By::Id("btn-add"))
+                    .await?
+                    .click()
+                    .await?;
+
+                let article = driver.find_element(By::Css("[role='listitem']")).await?;
+                assert_eq!(
+                    article.text().await?,
+                    format!("jeanLuc http://localhost:{}/aShortcut NEW", port)
+                );
+
+                assert_eq!(
+                    article.get_property("href").await?,
+                    Some(format!("http://localhost:{}/jeanLuc?no_redirect", port))
+                );
+
+                assert_eq!(
+                    driver
+                        .find_element(By::Css("[name='shortcut']"))
+                        .await?
+                        .get_property("value")
+                        .await?,
+                    Some("".to_owned())
+                );
+                assert_eq!(
+                    driver
+                        .find_element(By::Css("[name='url']"))
+                        .await?
+                        .get_property("value")
+                        .await?,
+                    Some("".to_owned())
+                );
+
+                administer_btn.click().await?;
+                assert_eq!(
+                    article.get_property("href").await?,
+                    Some(format!("http://localhost:{}/aShortcut", port))
+                );
+                Ok(())
+            }
+            .boxed()
+        },
+    )
     .await;
 }
 
 #[async_test]
-#[serial]
 async fn index_user_can_add_shortcuts_for_team() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 team("slug1", "team1", false, false, &con);
@@ -408,7 +468,7 @@ async fn index_user_can_add_shortcuts_for_team() {
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
 
-                driver.get("http://localhost:8001").await?;
+                driver.get(format!("http://localhost:{}", port)).await?;
 
                 let administer_btn = driver.find_element(By::Id("btn-administer")).await?;
                 assert_eq!(
@@ -425,7 +485,7 @@ async fn index_user_can_add_shortcuts_for_team() {
                 driver
                     .find_element(By::Css("[name='url']"))
                     .await?
-                    .send_keys("http://localhost:8001/aShortcut")
+                    .send_keys(format!("http://localhost:{}/aShortcut", port))
                     .await?;
 
                 // no team feature
@@ -454,12 +514,12 @@ async fn index_user_can_add_shortcuts_for_team() {
                 let article = driver.find_element(By::Css("[role='listitem']")).await?;
                 assert_eq!(
                     article.text().await?,
-                    "jeanLuc http://localhost:8001/aShortcut slug1NEW"
+                    format!("jeanLuc http://localhost:{}/aShortcut slug1NEW", port)
                 );
 
                 assert_eq!(
                     article.get_property("href").await?,
-                    Some("http://localhost:8001/jeanLuc?no_redirect".to_owned())
+                    Some(format!("http://localhost:{}/jeanLuc?no_redirect", port))
                 );
 
                 assert_eq!(
@@ -483,14 +543,14 @@ async fn index_user_can_add_shortcuts_for_team() {
                 administer_btn.click().await?;
                 assert_eq!(
                     article.get_property("href").await?,
-                    Some("http://localhost:8001/aShortcut".to_owned())
+                    Some(format!("http://localhost:{}/aShortcut", port))
                 );
 
-                driver.get("http://localhost:8001").await?;
+                driver.get(format!("http://localhost:{}", port)).await?;
                 let article = driver.find_element(By::Css("[role='listitem']")).await?;
                 assert_eq!(
                     article.text().await?,
-                    "jeanLuc http://localhost:8001/aShortcut slug1"
+                    format!("jeanLuc http://localhost:{}/aShortcut slug1", port)
                 );
                 Ok(())
             }
@@ -501,141 +561,169 @@ async fn index_user_can_add_shortcuts_for_team() {
 }
 
 #[async_test]
-#[serial]
 async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
-    in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
-        async move {
-            let con = con.lock().await;
-            shortcut("newShortcut", "http://localhost:8001/looped", "", &con);
-            shortcut("newShortcut2", "http://localhost:8001/claude", "", &con);
+    in_browser(
+        "",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                shortcut(
+                    "newShortcut",
+                    &format!("http://localhost:{}/looped", port),
+                    "",
+                    &con,
+                );
+                shortcut(
+                    "newShortcut2",
+                    &format!("http://localhost:{}/claude", port),
+                    "",
+                    &con,
+                );
 
-            // create shortcut
-            driver
-                .get("http://localhost:8001/newShortcut?no_redirect=true")
-                .await?;
+                // create shortcut
+                driver
+                    .get(format!(
+                        "http://localhost:{}/newShortcut?no_redirect=true",
+                        port
+                    ))
+                    .await?;
 
-            let login_link = driver.find_element(By::Css("a.nav-link")).await?;
-            assert_eq!(
-                login_link.get_attribute("href").await?,
-                Some("/go/login".to_owned())
-            );
-            assert_eq!(login_link.text().await?, "Login");
+                let login_link = driver.find_element(By::Css("a.nav-link")).await?;
+                assert_eq!(
+                    login_link.get_attribute("href").await?,
+                    Some("/go/login".to_owned())
+                );
+                assert_eq!(login_link.text().await?, "Login");
 
-            let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
-            assert_eq!(
-                search_bar.get_property("value").await?,
-                Some("newShortcut".to_owned())
-            );
+                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
+                assert_eq!(
+                    search_bar.get_property("value").await?,
+                    Some("newShortcut".to_owned())
+                );
 
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-            assert_eq!(
-                articles[0].text().await?,
-                "newShortcut http://localhost:8001/looped"
-            );
-            assert_eq!(articles.len(), 2);
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                assert_eq!(
+                    articles[0].text().await?,
+                    format!("newShortcut http://localhost:{}/looped", port)
+                );
+                assert_eq!(articles.len(), 2);
 
-            let shortcut_edit = driver
-                .find_element(By::Css("input[name='shortcut']"))
-                .await?;
-            assert_eq!(
-                shortcut_edit.get_property("value").await?,
-                Some("newShortcut".to_owned())
-            );
-            assert_eq!(
-                shortcut_edit.get_property("disabled").await?,
-                Some("true".to_owned())
-            );
+                let shortcut_edit = driver
+                    .find_element(By::Css("input[name='shortcut']"))
+                    .await?;
+                assert_eq!(
+                    shortcut_edit.get_property("value").await?,
+                    Some("newShortcut".to_owned())
+                );
+                assert_eq!(
+                    shortcut_edit.get_property("disabled").await?,
+                    Some("true".to_owned())
+                );
 
-            driver
-                .find_element(By::Css("input[name='url']"))
-                .await?
-                .send_keys("2")
-                .await?;
-            driver
-                .find_element(By::Id("btn-add"))
-                .await?
-                .click()
-                .await?;
+                driver
+                    .find_element(By::Css("input[name='url']"))
+                    .await?
+                    .send_keys("2")
+                    .await?;
+                driver
+                    .find_element(By::Id("btn-add"))
+                    .await?
+                    .click()
+                    .await?;
 
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-            assert_eq!(
-                articles[0].text().await?,
-                "newShortcut http://localhost:8001/looped2 NEW"
-            );
-            assert_eq!(articles.len(), 2);
-            Ok(())
-        }
-        .boxed()
-    })
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                assert_eq!(
+                    articles[0].text().await?,
+                    format!("newShortcut http://localhost:{}/looped2 NEW", port)
+                );
+                assert_eq!(articles.len(), 2);
+                Ok(())
+            }
+            .boxed()
+        },
+    )
     .await;
 }
 
 #[async_test]
-#[serial]
 async fn undefined_shortcut_return_search_filled_and_edit_form() {
-    in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
-        async move {
-            let con = con.lock().await;
-            shortcut("newShortcut1", "http://localhost:8001/looped", "", &con);
-            shortcut("newShortcut2", "http://localhost:8001/claude", "", &con);
+    in_browser(
+        "",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                shortcut(
+                    "newShortcut1",
+                    &format!("http://localhost:{}/looped", port),
+                    "",
+                    &con,
+                );
+                shortcut(
+                    "newShortcut2",
+                    &format!("http://localhost:{}/claude", port),
+                    "",
+                    &con,
+                );
 
-            // create shortcut
-            driver.get("http://localhost:8001/newShortcut").await?;
+                // create shortcut
+                driver
+                    .get(format!("http://localhost:{}/newShortcut", port))
+                    .await?;
 
-            let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
-            assert_eq!(
-                search_bar.get_property("value").await?,
-                Some("newShortcut".to_owned())
-            );
+                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
+                assert_eq!(
+                    search_bar.get_property("value").await?,
+                    Some("newShortcut".to_owned())
+                );
 
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-            assert_eq!(
-                articles[0].text().await?,
-                "newShortcut1 http://localhost:8001/looped"
-            );
-            assert_eq!(articles.len(), 2);
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                assert_eq!(
+                    articles[0].text().await?,
+                    format!("newShortcut1 http://localhost:{}/looped", port)
+                );
+                assert_eq!(articles.len(), 2);
 
-            let shortcut_edit = driver
-                .find_element(By::Css("input[name='shortcut']"))
-                .await?;
-            assert_eq!(
-                shortcut_edit.get_property("value").await?,
-                Some("newShortcut".to_owned())
-            );
-            assert_eq!(
-                shortcut_edit.get_property("disabled").await?,
-                Some("true".to_owned())
-            );
+                let shortcut_edit = driver
+                    .find_element(By::Css("input[name='shortcut']"))
+                    .await?;
+                assert_eq!(
+                    shortcut_edit.get_property("value").await?,
+                    Some("newShortcut".to_owned())
+                );
+                assert_eq!(
+                    shortcut_edit.get_property("disabled").await?,
+                    Some("true".to_owned())
+                );
 
-            driver
-                .find_element(By::Css("input[name='url']"))
-                .await?
-                .send_keys("http://localhost:8001/ring")
-                .await?;
-            driver
-                .find_element(By::Id("btn-add"))
-                .await?
-                .click()
-                .await?;
+                driver
+                    .find_element(By::Css("input[name='url']"))
+                    .await?
+                    .send_keys(format!("http://localhost:{}/ring", port))
+                    .await?;
+                driver
+                    .find_element(By::Id("btn-add"))
+                    .await?
+                    .click()
+                    .await?;
 
-            let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-            assert_eq!(
-                articles[0].text().await?,
-                "newShortcut http://localhost:8001/ring NEW"
-            );
-            Ok(())
-        }
-        .boxed()
-    })
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                assert_eq!(
+                    articles[0].text().await?,
+                    format!("newShortcut http://localhost:{}/ring NEW", port)
+                );
+                Ok(())
+            }
+            .boxed()
+        },
+    )
     .await;
 }
 
 #[async_test]
-#[serial]
 async fn not_logged_in_should_redirect_to_login() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>| {
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
             async move {
                 let conn = con.lock().await;
                 global_features(
@@ -650,18 +738,20 @@ async fn not_logged_in_should_redirect_to_login() {
                     &conn,
                 );
 
-                driver.get("http://localhost:8001").await?;
+                driver.get(format!("http://localhost:{}", port)).await?;
                 thread::sleep(Duration::from_secs_f32(0.6));
                 assert_eq!(
                     driver.current_url().await?,
-                    "http://localhost:8001/go/login"
+                    format!("http://localhost:{}/go/login", port)
                 );
 
-                driver.get("http://localhost:8001/shortcut").await?;
+                driver
+                    .get(format!("http://localhost:{}/shortcut", port))
+                    .await?;
                 thread::sleep(Duration::from_secs_f32(0.6));
                 assert_eq!(
                     driver.current_url().await?,
-                    "http://localhost:8001/go/login?from=/shortcut"
+                    format!("http://localhost:{}/go/login?from=/shortcut", port)
                 );
                 Ok(())
             }
@@ -672,41 +762,45 @@ async fn not_logged_in_should_redirect_to_login() {
 }
 
 #[async_test]
-#[serial]
 async fn logged_in_without_write() {
-    in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
-        async move {
-            let conn = con.lock().await;
-            global_features(
-                &Features {
-                    login: LoginFeature {
-                        simple: true,
-                        write_private: true,
+    in_browser(
+        "",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let conn = con.lock().await;
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            write_private: true,
+                            ..Default::default()
+                        },
                         ..Default::default()
                     },
-                    ..Default::default()
-                },
-                &conn,
-            );
+                    &conn,
+                );
 
-            driver.get("http://localhost:8001").await?;
-            assert_eq!(
-                0,
-                driver.find_elements(By::Id("btn-administer")).await?.len()
-            );
+                driver.get(format!("http://localhost:{}", port)).await?;
+                assert_eq!(
+                    0,
+                    driver.find_elements(By::Id("btn-administer")).await?.len()
+                );
 
-            driver.get("http://localhost:8001/shortcut").await?;
-            assert_eq!(
-                0,
-                driver.find_elements(By::Id("btn-administer")).await?.len()
-            );
-            assert_eq!(
-                0,
-                driver.find_elements(By::Id("btn-administer")).await?.len()
-            );
-            Ok(())
-        }
-        .boxed()
-    })
+                driver
+                    .get(format!("http://localhost:{}/shortcut", port))
+                    .await?;
+                assert_eq!(
+                    0,
+                    driver.find_elements(By::Id("btn-administer")).await?.len()
+                );
+                assert_eq!(
+                    0,
+                    driver.find_elements(By::Id("btn-administer")).await?.len()
+                );
+                Ok(())
+            }
+            .boxed()
+        },
+    )
     .await;
 }

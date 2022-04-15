@@ -7,7 +7,6 @@ use rocket::tokio::sync::Mutex;
 mod utils;
 use rocket::http::Status;
 use serde_json::json;
-use serial_test::serial;
 use thirtyfour::prelude::*;
 use utils::*;
 use uuid::Uuid;
@@ -136,105 +135,110 @@ fn post_simple_login_not_a_mail() {
 }
 
 #[async_test]
-#[serial]
 async fn simple_login() {
-    in_browser("", |driver: &WebDriver, con: Mutex<SqliteConnection>| {
-        async move {
-            let conn = con.lock().await;
-            user(
-                "some_mail@mail.go",
-                "4a4498acaf82759d929a7571b5bcea425c9275854d963e49333bf8056c673f60",
-                false,
-                &[],
-                &conn,
-            );
-            global_features(
-                &Features {
-                    login: LoginFeature {
-                        simple: true,
+    in_browser(
+        "",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let conn = con.lock().await;
+                user(
+                    "some_mail@mail.go",
+                    "4a4498acaf82759d929a7571b5bcea425c9275854d963e49333bf8056c673f60",
+                    false,
+                    &[],
+                    &conn,
+                );
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
                         ..Default::default()
                     },
-                    ..Default::default()
-                },
-                &conn,
-            );
+                    &conn,
+                );
 
-            driver
-                .get("http://localhost:8001/go/login?from=allo")
-                .await?;
-
-            driver
-                .find_element(By::Css("[type='email']"))
-                .await?
-                .send_keys("some_mail@mail.go")
-                .await?;
-            driver
-                .find_element(By::Css("[type='password']"))
-                .await?
-                .send_keys("wrong_pwd")
-                .await?;
-            driver
-                .find_element(By::Css("[type='submit']"))
-                .await?
-                .click()
-                .await?;
-
-            assert_eq!(
                 driver
-                    .find_element(By::Css("[role='alert']"))
-                    .await?
-                    .text()
-                    .await?,
-                "Wrong credentials :/ !"
-            );
+                    .get(format!("http://localhost:{}/go/login?from=allo", port))
+                    .await?;
 
-            driver
-                .get("http://localhost:8001/go/login?from=/allo")
-                .await?;
-
-            driver
-                .find_element(By::Css("[type='email']"))
-                .await?
-                .send_keys("some_mail@mail.go")
-                .await?;
-            driver
-                .find_element(By::Css("[type='password']"))
-                .await?
-                .send_keys("some_pwd")
-                .await?;
-            driver
-                .find_element(By::Css("[type='submit']"))
-                .await?
-                .click()
-                .await?;
-
-            assert_eq!(
                 driver
-                    .find_element(By::Css("[role='alert']"))
+                    .find_element(By::Css("[type='email']"))
                     .await?
-                    .text()
-                    .await?,
-                "Login success !"
-            );
+                    .send_keys("some_mail@mail.go")
+                    .await?;
+                driver
+                    .find_element(By::Css("[type='password']"))
+                    .await?
+                    .send_keys("wrong_pwd")
+                    .await?;
+                driver
+                    .find_element(By::Css("[type='submit']"))
+                    .await?
+                    .click()
+                    .await?;
 
-            std::thread::sleep(std::time::Duration::from_millis(500));
+                assert_eq!(
+                    driver
+                        .find_element(By::Css("[role='alert']"))
+                        .await?
+                        .text()
+                        .await?,
+                    "Wrong credentials :/ !"
+                );
 
-            assert_eq!(driver.current_url().await?, "http://localhost:8001/allo");
-            let login_link = driver.find_element(By::Css(".navbar-text")).await?;
-            assert_eq!(login_link.text().await?, "some_mail@mail.go");
+                driver
+                    .get(format!("http://localhost:{}/go/login?from=/allo", port))
+                    .await?;
 
-            driver
-                .get("http://localhost:8001/another?no_redirect")
-                .await?;
-            let login_link = driver.find_element(By::Css(".navbar-text")).await?;
-            assert_eq!(login_link.text().await?, "some_mail@mail.go");
+                driver
+                    .find_element(By::Css("[type='email']"))
+                    .await?
+                    .send_keys("some_mail@mail.go")
+                    .await?;
+                driver
+                    .find_element(By::Css("[type='password']"))
+                    .await?
+                    .send_keys("some_pwd")
+                    .await?;
+                driver
+                    .find_element(By::Css("[type='submit']"))
+                    .await?
+                    .click()
+                    .await?;
 
-            driver.get("http://localhost:8001").await?;
-            let login_link = driver.find_element(By::Css(".navbar-text")).await?;
-            assert_eq!(login_link.text().await?, "some_mail@mail.go");
-            Ok(())
-        }
-        .boxed()
-    })
+                assert_eq!(
+                    driver
+                        .find_element(By::Css("[role='alert']"))
+                        .await?
+                        .text()
+                        .await?,
+                    "Login success !"
+                );
+
+                std::thread::sleep(std::time::Duration::from_millis(500));
+
+                assert_eq!(
+                    driver.current_url().await?,
+                    format!("http://localhost:{}/allo", port)
+                );
+                let login_link = driver.find_element(By::Css(".navbar-text")).await?;
+                assert_eq!(login_link.text().await?, "some_mail@mail.go");
+
+                driver
+                    .get(format!("http://localhost:{}/another?no_redirect", port))
+                    .await?;
+                let login_link = driver.find_element(By::Css(".navbar-text")).await?;
+                assert_eq!(login_link.text().await?, "some_mail@mail.go");
+
+                driver.get(format!("http://localhost:{}", port)).await?;
+                let login_link = driver.find_element(By::Css(".navbar-text")).await?;
+                assert_eq!(login_link.text().await?, "some_mail@mail.go");
+                Ok(())
+            }
+            .boxed()
+        },
+    )
     .await;
 }
