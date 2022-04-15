@@ -18,58 +18,48 @@ use go_web::guards::SESSION_COOKIE;
 async fn features_should_list_editable_features() {
     in_browser("", |driver: &WebDriver, _con: Mutex<SqliteConnection>| {
         async {
-            driver
-                .get("http://localhost:8001/go/features")
-                .await
-                .unwrap();
+            driver.get("http://localhost:8001/go/features").await?;
 
-            let features = driver
-                .find_elements(By::Css("[role='article']"))
-                .await
-                .unwrap();
+            let features = driver.find_elements(By::Css("[role='article']")).await?;
 
             assert!(!features.is_empty());
 
             for feature in features {
-                let switch = feature
-                    .find_element(By::Css("[role='switch']"))
-                    .await
-                    .unwrap();
+                let switch = feature.find_element(By::Css("[role='switch']")).await?;
                 assert_eq!(
-                    switch.get_property("checked").await.unwrap(),
+                    switch.get_property("checked").await?,
                     Some("false".to_owned())
                 );
-                // switch.click().await.unwrap();
+                // switch.click().await?;
                 // assert_eq!(
-                //     switch.get_property("checked").await.unwrap(),
+                //     switch.get_property("checked").await?,
                 //     Some("true".to_owned())
                 // );
             }
 
-            driver
-                .get("http://localhost:8001/go/features")
-                .await
-                .unwrap();
+            driver.get("http://localhost:8001/go/features").await?;
 
             // TODO re-use when having another feature
             // let features = driver
             //     .find_elements(By::Css("[role='article']"))
             //     .await
-            //     .unwrap();
+            //     ?;
 
             // assert!(!features.is_empty());
 
             // for feature in features {
-            //     assert_eq!(feature.text().await.unwrap(), "simple");
+            //     assert_eq!(feature.text().await?, "simple");
             //     let switch = feature
             //         .find_element(By::Css("[role='switch']"))
             //         .await
-            //         .unwrap();
+            //         ?;
             //     assert_eq!(
-            //         switch.get_property("checked").await.unwrap(),
+            //         switch.get_property("checked").await?,
             //         Some("true".to_owned())
             //     );
             // }
+
+            Ok(())
         }
         .boxed()
     })

@@ -46,8 +46,7 @@ async fn list_teams_with_infos() {
                 );
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
-                    .await
-                    .unwrap();
+                    .await?;
                 let texts_sorted = vec!["Global", "team1", "team2", "team3", "team4"];
                 let href_sorted = vec![
                     "/go/teams/",
@@ -59,42 +58,38 @@ async fn list_teams_with_infos() {
                 let locks = vec![false, false, true, true, false];
                 let checks = vec![true, true, true, false, false];
 
-                driver.get("http://localhost:8001/go/teams").await.unwrap();
+                driver.get("http://localhost:8001/go/teams").await?;
 
-                let articles = driver
-                    .find_elements(By::Css("[role='listitem']"))
-                    .await
-                    .unwrap();
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
 
                 for i in 0..texts_sorted.len() {
                     let article = &articles[i];
                     print!("{}", i);
-                    assert!(article.text().await.unwrap().starts_with(texts_sorted[i]));
+                    assert!(article.text().await?.starts_with(texts_sorted[i]));
                     assert_eq!(
-                        article.get_attribute("href").await.unwrap(),
+                        article.get_attribute("href").await?,
                         Some(href_sorted[i].to_owned())
                     );
 
                     println!("{}", i);
                     if locks[i] {
-                        article.find_element(By::Css(".icon-lock")).await.unwrap();
+                        article.find_element(By::Css(".icon-lock")).await?;
                     } else {
                         assert!(article.find_element(By::Css(".icon-lock")).await.is_err());
                     }
                     if checks[i] {
-                        article.find_element(By::Css(".icon-check")).await.unwrap();
+                        article.find_element(By::Css(".icon-check")).await?;
                         assert!(article
                             .find_element(By::Css(".icon-check-empty"))
                             .await
                             .is_err());
                     } else {
                         assert!(article.find_element(By::Css(".icon-check")).await.is_err());
-                        article
-                            .find_element(By::Css(".icon-check-empty"))
-                            .await
-                            .unwrap();
+                        article.find_element(By::Css(".icon-check-empty")).await?;
                     }
                 }
+
+                Ok(())
             }
             .boxed()
         },
@@ -142,29 +137,25 @@ async fn teams_user_team_then_others() {
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
-                    .await
-                    .unwrap();
+                    .await?;
 
-                driver.get("http://localhost:8001/go/teams").await.unwrap();
+                driver.get("http://localhost:8001/go/teams").await?;
 
                 let user_team = driver
                     .find_element(By::Css("[aria-label='User teams'] [role='listitem']"))
-                    .await
-                    .unwrap();
-                assert!(dbg!(user_team.text().await.unwrap()).starts_with("team1"));
+                    .await?;
+                assert!(dbg!(user_team.text().await?).starts_with("team1"));
 
                 let other_teams = driver
                     .find_elements(By::Css("[aria-label='Other teams'] [role='listitem']"))
-                    .await
-                    .unwrap();
+                    .await?;
 
                 let texts_sorted = vec!["Global", "team2", "team3", "team4"];
                 for i in 0..texts_sorted.len() {
                     let article = &other_teams[i];
-                    assert!(dbg!(article.text().await)
-                        .unwrap()
-                        .starts_with(dbg!(texts_sorted[i])));
+                    assert!(dbg!(article.text().await)?.starts_with(dbg!(texts_sorted[i])));
                 }
+                Ok(())
             }
             .boxed()
         },
@@ -297,71 +288,63 @@ async fn action_on_teams() {
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
-                    .await
-                    .unwrap();
+                    .await?;
 
-                driver.get("http://localhost:8001/go/teams").await.unwrap();
+                driver.get("http://localhost:8001/go/teams").await?;
 
                 let button = driver
                     .find_element(By::Css(
                         "[aria-label='Other teams'] [role='listitem'] button",
                     ))
-                    .await
-                    .unwrap();
-                assert_eq!(button.text().await.unwrap(), "Join");
-                button.click().await.unwrap();
+                    .await?;
+                assert_eq!(button.text().await?, "Join");
+                button.click().await?;
 
                 assert_eq!(
                     driver
                         .find_element(By::Css(
                             "[aria-label='User teams'] [role='listitem'] button"
                         ))
-                        .await
-                        .unwrap()
+                        .await?
                         .text()
-                        .await
-                        .unwrap(),
+                        .await?,
                     "Leave"
                 );
 
-                driver.get("http://localhost:8001/go/teams").await.unwrap();
+                driver.get("http://localhost:8001/go/teams").await?;
 
                 let leave = driver
                     .find_element(By::Css(
                         "[aria-label='User teams'] [role='listitem'] button",
                     ))
-                    .await
-                    .unwrap();
-                assert_eq!(leave.text().await.unwrap(), "Leave");
-                leave.click().await.unwrap();
+                    .await?;
+                assert_eq!(leave.text().await?, "Leave");
+                leave.click().await?;
 
                 assert_eq!(
                     driver
                         .find_element(By::Css(
                             "[aria-label='Other teams'] [role='listitem'] button"
                         ))
-                        .await
-                        .unwrap()
+                        .await?
                         .text()
-                        .await
-                        .unwrap(),
+                        .await?,
                     "Join"
                 );
 
-                driver.get("http://localhost:8001/go/teams").await.unwrap();
+                driver.get("http://localhost:8001/go/teams").await?;
 
                 assert_eq!(
                     driver
                         .find_element(By::Css(
                             "[aria-label='Other teams'] [role='listitem'] button"
                         ))
-                        .await
-                        .unwrap()
+                        .await?
                         .text()
-                        .await
-                        .unwrap(),
+                        .await?,
                     "Join"
                 );
+                Ok(())
             }
             .boxed()
         },

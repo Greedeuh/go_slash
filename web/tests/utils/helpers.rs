@@ -11,7 +11,7 @@ use std::{
     panic::{resume_unwind, AssertUnwindSafe},
     time::Duration,
 };
-use thirtyfour::{DesiredCapabilities, WebDriver};
+use thirtyfour::{error::WebDriverError, DesiredCapabilities, WebDriver};
 use uuid::Uuid;
 
 const PORT: u16 = 8001;
@@ -74,7 +74,10 @@ fn conf() -> AppConfig {
 #[allow(dead_code)]
 pub async fn in_browser<F>(sessions: &str, f: F)
 where
-    F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
+    F: for<'a> FnOnce(
+        &'a WebDriver,
+        Mutex<SqliteConnection>,
+    ) -> BoxFuture<'a, Result<(), WebDriverError>>,
 {
     in_browser_with(sessions, f, true, true).await;
 }
@@ -84,7 +87,10 @@ where
 #[deprecated(note = "Should only be used in local")]
 pub async fn in_browserr<F>(sessions: &str, f: F)
 where
-    F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
+    F: for<'a> FnOnce(
+        &'a WebDriver,
+        Mutex<SqliteConnection>,
+    ) -> BoxFuture<'a, Result<(), WebDriverError>>,
 {
     in_browser_with(sessions, f, false, true).await;
 }
@@ -94,14 +100,20 @@ where
 #[deprecated(note = "Should only be used in local")]
 pub async fn in_browserrr<F>(sessions: &str, f: F)
 where
-    F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
+    F: for<'a> FnOnce(
+        &'a WebDriver,
+        Mutex<SqliteConnection>,
+    ) -> BoxFuture<'a, Result<(), WebDriverError>>,
 {
     in_browser_with(sessions, f, false, false).await;
 }
 
 async fn in_browser_with<'b, F>(sessions: &str, f: F, headless: bool, close_browser: bool)
 where
-    F: for<'a> FnOnce(&'a WebDriver, Mutex<SqliteConnection>) -> BoxFuture<'a, ()>,
+    F: for<'a> FnOnce(
+        &'a WebDriver,
+        Mutex<SqliteConnection>,
+    ) -> BoxFuture<'a, Result<(), WebDriverError>>,
 {
     let do_not_close_browser = close_browser;
     let do_not_close_browser = !match env::var("CLOSE_BROWSER") {
@@ -146,7 +158,7 @@ where
     }
 
     let db_conn = Mutex::new(db_conn);
-    let may_panic = AssertUnwindSafe(async { f(&driver, db_conn).await });
+    let may_panic = AssertUnwindSafe(async { f(&driver, db_conn).await.unwrap() });
 
     let maybe_panicked = may_panic.catch_unwind().await;
 
