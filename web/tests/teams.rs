@@ -22,7 +22,7 @@ fn feature_team_disable() {
 
 #[async_test]
 #[serial]
-async fn list_teams_with_icons() {
+async fn list_teams_with_infos() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<SqliteConnection>| {
@@ -32,18 +32,7 @@ async fn list_teams_with_icons() {
                 team("slug2", "team2", true, true, &con);
                 team("slug3", "team3", true, false, &con);
                 team("slug4", "team4", false, false, &con);
-                user(
-                    "some_mail@mail.com",
-                    "pwd",
-                    true,
-                    &[
-                        ("slug1", false, 0),
-                        ("slug2", false, 0),
-                        ("slug3", false, 0),
-                        ("slug4", false, 0),
-                    ],
-                    &con,
-                );
+                user("some_mail@mail.com", "pwd", true, &[], &con);
 
                 global_features(
                     &Features {
@@ -115,7 +104,7 @@ async fn list_teams_with_icons() {
 
 #[async_test]
 #[serial]
-async fn action_on_teams_list() {
+async fn teams_user_team_then_others() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<SqliteConnection>| {
@@ -151,8 +140,6 @@ async fn action_on_teams_list() {
                     &con,
                 );
 
-                let texts_sorted = vec!["Global", "team1", "team2", "team3", "team4"];
-
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await
@@ -160,14 +147,23 @@ async fn action_on_teams_list() {
 
                 driver.get("http://localhost:8001/go/teams").await.unwrap();
 
-                let articles = driver
-                    .find_elements(By::Css("[role='listitem']"))
+                let user_team = driver
+                    .find_element(By::Css("[aria-label='User teams'] [role='listitem']"))
+                    .await
+                    .unwrap();
+                assert!(dbg!(user_team.text().await.unwrap()).starts_with("team1"));
+
+                let other_teams = driver
+                    .find_elements(By::Css("[aria-label='Other teams'] [role='listitem']"))
                     .await
                     .unwrap();
 
+                let texts_sorted = vec!["Global", "team2", "team3", "team4"];
                 for i in 0..texts_sorted.len() {
-                    let article = &articles[i];
-                    assert!(article.text().await.unwrap().starts_with(texts_sorted[i]));
+                    let article = &other_teams[i];
+                    assert!(dbg!(article.text().await)
+                        .unwrap()
+                        .starts_with(dbg!(texts_sorted[i])));
                 }
             }
             .boxed()
@@ -287,22 +283,7 @@ async fn action_on_teams() {
         |driver: &WebDriver, con: Mutex<SqliteConnection>| {
             async move {
                 let con = con.lock().await;
-                team("slug1", "team1", false, false, &con);
-                user(
-                    "some_mail@mail.com",
-                    "pwd",
-                    false,
-                    &[("slug1", false, 0)],
-                    &con,
-                );
-                // another user should not change the behaviour
-                user(
-                    "another@mail.com",
-                    "pwd",
-                    false,
-                    &[("slug2", false, 0), ("slug3", true, 0)],
-                    &con,
-                );
+                user("some_mail@mail.com", "pwd", false, &[(" ", false, 0)], &con);
                 global_features(
                     &Features {
                         login: LoginFeature {
@@ -321,18 +302,20 @@ async fn action_on_teams() {
 
                 driver.get("http://localhost:8001/go/teams").await.unwrap();
 
-                let article = driver
-                    .find_element(By::Css("[role='listitem']"))
+                let button = driver
+                    .find_element(By::Css(
+                        "[aria-label='Other teams'] [role='listitem'] button",
+                    ))
                     .await
                     .unwrap();
-
-                let button = article.find_element(By::Css("button")).await.unwrap();
                 assert_eq!(button.text().await.unwrap(), "Join");
                 button.click().await.unwrap();
 
                 assert_eq!(
-                    article
-                        .find_element(By::Css("button"))
+                    driver
+                        .find_element(By::Css(
+                            "[aria-label='User teams'] [role='listitem'] button"
+                        ))
                         .await
                         .unwrap()
                         .text()
@@ -344,7 +327,9 @@ async fn action_on_teams() {
                 driver.get("http://localhost:8001/go/teams").await.unwrap();
 
                 let leave = driver
-                    .find_element(By::Css("[role='listitem'] button"))
+                    .find_element(By::Css(
+                        "[aria-label='User teams'] [role='listitem'] button",
+                    ))
                     .await
                     .unwrap();
                 assert_eq!(leave.text().await.unwrap(), "Leave");
@@ -352,7 +337,9 @@ async fn action_on_teams() {
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css("[role='listitem'] button"))
+                        .find_element(By::Css(
+                            "[aria-label='Other teams'] [role='listitem'] button"
+                        ))
                         .await
                         .unwrap()
                         .text()
@@ -365,7 +352,9 @@ async fn action_on_teams() {
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css("[role='listitem'] button"))
+                        .find_element(By::Css(
+                            "[aria-label='Other teams'] [role='listitem'] button"
+                        ))
                         .await
                         .unwrap()
                         .text()
