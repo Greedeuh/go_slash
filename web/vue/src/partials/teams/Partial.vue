@@ -54,22 +54,29 @@ export default defineComponent({
     other_teams(): Team[] {
       return this.teams.filter((team) => !team.user_link);
     },
+    next_rank() {
+      const that = this as { user_teams: Team[] };
+      const length = that.user_teams.length;
+      return length === 0
+        ? 0
+        : (that.user_teams[length - 1].user_link as UserTeamLink).rank + 1;
+    },
   },
   methods: {
     join(slug: string) {
       axios
-        .post("/go/user/teams/" + slug, { rank: 0 })
+        .post("/go/user/teams/" + slug, { rank: this.next_rank })
         .then((res) => {
           let team = this.teams.find((t) => t.slug === slug);
           if (res.status === 201 && team) {
             team.user_link = {
               is_admin: false,
               is_accepted: !team.is_private,
-              rank: 0,
+              rank: this.next_rank,
             };
           }
         })
-        .catch(console.log);
+        .catch(console.error);
     },
     leave(slug: string) {
       axios
@@ -80,15 +87,13 @@ export default defineComponent({
             team.user_link = undefined;
           }
         })
-        .catch(console.log);
+        .catch(console.error);
     },
     change_ranks(new_ranks: any) {
-      console.log(new_ranks);
       const old_teams = this.teams;
       this.teams = this.teams.map((team) => {
         const new_rank = new_ranks[team.slug];
         if (new_rank !== undefined) {
-          console.log(team, new_rank);
           team = _.cloneDeep(team);
           (team.user_link as UserTeamLink).rank = new_rank;
         }
@@ -101,7 +106,7 @@ export default defineComponent({
             this.teams = old_teams;
           }
         })
-        .catch(console.log);
+        .catch(console.error);
     },
   },
 });

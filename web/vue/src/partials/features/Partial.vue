@@ -64,7 +64,7 @@ export default defineComponent({
           }
         })
         .catch((err) => {
-          console.log(err);
+          console.error(err);
           e.rollback_cb();
         });
     },

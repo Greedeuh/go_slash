@@ -434,6 +434,7 @@ async fn user_team_ranks() {
                 let con = con.lock().await;
                 team("slug1", "team1", false, true, &con);
                 team("slug2", "team2", false, true, &con);
+                team("slug3", "team3", false, true, &con);
                 user(
                     "some_mail@mail.com",
                     "pwd",
@@ -473,6 +474,23 @@ async fn user_team_ranks() {
                     .await?;
 
                 let expected_teams_sorted = vec!["team2", "Global", "team1"];
+                for i in 0..expected_teams_sorted.len() {
+                    assert_eq!(expected_teams_sorted[i], teams[i].text().await?);
+                }
+
+                driver
+                    .find_element(By::Css(
+                        "[aria-label='Other teams'] [role='listitem'] button",
+                    ))
+                    .await?
+                    .click()
+                    .await?;
+
+                let teams = driver
+                    .find_elements(By::Css("[aria-label='User teams'] [role='listitem'] span"))
+                    .await?;
+
+                let expected_teams_sorted = vec!["team2", "Global", "team1", "team3"];
                 for i in 0..expected_teams_sorted.len() {
                     assert_eq!(expected_teams_sorted[i], teams[i].text().await?);
                 }

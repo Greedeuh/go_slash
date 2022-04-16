@@ -15,4 +15,5 @@ export interface UserTeamLink {
   is_admin: boolean;
   is_accepted: boolean;
   rank: number;
+  rank_modified?: boolean;
 }

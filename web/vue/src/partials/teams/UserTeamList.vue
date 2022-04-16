@@ -13,6 +13,18 @@ import { defineComponent, PropType } from "vue";
 import draggable from "vuedraggable";
 import { Team, UserTeamLink } from "./main";
 import TeamRow from "./TeamRow.vue";
+import _ from "lodash";
+
+const newLocal = (acc: Team[], team: Team) => {
+  const last_rank = (acc[acc.length - 1].user_link as UserTeamLink).rank;
+  team = _.cloneDeep(team);
+  const link = team.user_link as UserTeamLink;
+  if (link.rank !== last_rank + 1) {
+    link.rank = last_rank + 1;
+    link.rank_modified = true;
+  }
+  return [...acc, team];
+};
 
 export default defineComponent({
   name: "UserTeamList",
@@ -38,6 +50,13 @@ export default defineComponent({
       const moveOperation = oldIndex > newIndex ? 1 : -1;
 
       let new_ranks = this.teams
+        .reduce(newLocal, [
+          {
+            user_link: {
+              rank: -1,
+            },
+          },
+        ] as Team[])
         .map((team) => {
           const link = team.user_link as UserTeamLink;
 
@@ -49,6 +68,8 @@ export default defineComponent({
             return {
               [team.slug]: link.rank + moveOperation,
             };
+          } else if (link.rank_modified) {
+            return { [team.slug]: link.rank };
           }
         })
         .filter((team) => team)
