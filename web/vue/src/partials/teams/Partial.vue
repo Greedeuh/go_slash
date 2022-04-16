@@ -8,7 +8,7 @@
 <script lang="ts">
 import axios from "axios";
 import { defineComponent } from "vue";
-import { Team } from "./main";
+import { Team, UserTeamLink } from "./main";
 import TeamList from "./TeamList.vue";
 
 interface Window {
@@ -32,7 +32,14 @@ export default defineComponent({
   },
   computed: {
     user_teams(): Team[] {
-      return this.teams.filter((team) => team.user_link);
+      return this.teams
+        .filter((team) => team.user_link)
+
+        .sort(
+          (a, b) =>
+            (a.user_link as UserTeamLink).rank -
+            (b.user_link as UserTeamLink).rank
+        );
     },
     other_teams(): Team[] {
       return this.teams.filter((team) => !team.user_link);

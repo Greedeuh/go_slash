@@ -8,9 +8,11 @@ export interface Team {
   title: string;
   is_private: boolean;
   is_accepted: boolean;
-  user_link?: {
-    is_admin: boolean;
-    is_accepted: boolean;
-    rank: number;
-  };
+  user_link?: UserTeamLink;
+}
+
+export interface UserTeamLink {
+  is_admin: boolean;
+  is_accepted: boolean;
+  rank: number;
 }

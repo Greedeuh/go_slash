@@ -424,3 +424,55 @@ fn put_user_teams_ranks_need_feature() {
 
     assert_eq!(response.status(), Status::Conflict);
 }
+
+#[async_test]
+async fn user_team_ranks() {
+    in_browser(
+        "some_session_id: some_mail@mail.com",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                team("slug1", "team1", false, true, &con);
+                team("slug2", "team2", false, true, &con);
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    false,
+                    &[("", false, 1), ("slug1", false, 2), ("slug2", false, 0)],
+                    &con,
+                );
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
+                        teams: true,
+                    },
+                    &con,
+                );
+
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await?;
+
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
+
+                let teams = driver
+                    .find_elements(By::Css("[aria-label='User teams'] [role='listitem'] span"))
+                    .await?;
+
+                let expected_teams_sorted = vec!["team2", "Global", "team1"];
+                for i in 0..expected_teams_sorted.len() {
+                    assert_eq!(expected_teams_sorted[i], teams[i].text().await?);
+                }
+
+                Ok(())
+            }
+            .boxed()
+        },
+    )
+    .await;
+}
