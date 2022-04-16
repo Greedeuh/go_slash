@@ -2,6 +2,7 @@ use go_web::guards::SESSION_COOKIE;
 use go_web::models::features::Features;
 use go_web::models::features::LoginFeature;
 use go_web::models::shortcuts::Shortcut;
+use rocket::http;
 use rocket::http::ContentType;
 use rocket::http::Cookie;
 use rocket::http::Header;
@@ -30,6 +31,68 @@ fn shortcut_redirect_to_target() {
     let mut location = response.headers().get("Location");
 
     assert_eq!(location.next(), Some("https://thetarget.test.go.com"));
+    assert_eq!(location.next(), None);
+}
+
+#[test]
+fn shortcut_redirect_to_target_based_on_team_rank() {
+    let (client, conn) = launch_with(
+        "some_session_id: some_mail@mail.com
+some_other_session_id: some_other_mail@mail.com",
+    );
+    team("slug1", "team1", false, true, &conn);
+    shortcut("myShortCut/hop", "https://thetarget.test.go.com", "", &conn);
+    shortcut(
+        "myShortCut/hop",
+        "https://theothertarget.test.go.com",
+        "slug1",
+        &conn,
+    );
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        false,
+        &[("", false, 0), ("slug1", false, 1)],
+        &conn,
+    );
+    user(
+        "some_other_mail@mail.com",
+        "pwd",
+        false,
+        &[("", false, 1), ("slug1", false, 0)],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let response = client
+        .get("/myShortCut/hop")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::PermanentRedirect);
+    let mut location = response.headers().get("Location");
+
+    assert_eq!(location.next(), Some("https://thetarget.test.go.com"));
+    assert_eq!(location.next(), None);
+
+    let response = client
+        .get("/myShortCut/hop")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_other_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::PermanentRedirect);
+    let mut location = response.headers().get("Location");
+
+    assert_eq!(location.next(), Some("https://theothertarget.test.go.com"));
     assert_eq!(location.next(), None);
 }
 

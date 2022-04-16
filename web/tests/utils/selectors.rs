@@ -10,7 +10,7 @@ mod no_dead_code {
 
     pub fn get_shortcut(shortcut: &str, conn: &SqliteConnection) -> Option<Shortcut> {
         shortcuts::table
-            .find(shortcut)
+            .filter(shortcuts::shortcut.eq(shortcut))
             .first(conn)
             .optional()
             .unwrap()

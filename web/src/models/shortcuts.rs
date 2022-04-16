@@ -8,8 +8,8 @@ use crate::DbConn;
 #[derive(Queryable, Serialize, PartialEq, Eq, Debug)]
 pub struct Shortcut {
     pub shortcut: String,
-    pub url: String,
     pub team_slug: String,
+    pub url: String,
 }
 
 #[derive(Insertable)]

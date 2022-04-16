@@ -5,10 +5,10 @@ table! {
 }
 
 table! {
-    shortcuts (shortcut) {
+    shortcuts (shortcut, team_slug) {
         shortcut -> Text,
-        url -> Text,
         team_slug -> Text,
+        url -> Text,
     }
 }
 
@@ -43,10 +43,4 @@ joinable!(shortcuts -> teams (team_slug));
 joinable!(users_teams -> teams (team_slug));
 joinable!(users_teams -> users (user_mail));
 
-allow_tables_to_appear_in_same_query!(
-    global_features,
-    shortcuts,
-    teams,
-    users,
-    users_teams,
-);
+allow_tables_to_appear_in_same_query!(global_features, shortcuts, teams, users, users_teams,);

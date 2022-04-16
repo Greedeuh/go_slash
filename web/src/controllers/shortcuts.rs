@@ -8,6 +8,7 @@ use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
+use crate::controllers::features;
 use crate::guards::SessionId;
 use crate::models::features::get_global_features;
 use crate::models::shortcuts::{sorted, NewShortcut};
@@ -103,12 +104,32 @@ pub fn get_shortcut(
 
     let conn = pool.get().map_err(AppError::from)?;
 
-    let url = dsl::shortcuts
-        .select(dsl::url)
-        .find(shortcut)
-        .first::<String>(&conn)
-        .optional()
-        .map_err(AppError::from)?;
+    let url = if features.teams {
+        let user_mail = match &user_mail {
+            None => return Err(AppError::Unauthorized.into()),
+            Some(user_mail) => user_mail,
+        };
+
+        dsl::shortcuts
+            .inner_join(
+                users_teams::table.on(dsl::team_slug
+                    .eq(users_teams::team_slug)
+                    .and(users_teams::user_mail.eq(user_mail))),
+            )
+            .filter(dsl::shortcut.eq(shortcut))
+            .select(dsl::url)
+            .order_by(users_teams::rank.asc())
+            .first::<String>(&conn)
+            .optional()
+            .map_err(AppError::from)?
+    } else {
+        dsl::shortcuts
+            .select(dsl::url)
+            .find((shortcut, ""))
+            .first::<String>(&conn)
+            .optional()
+            .map_err(AppError::from)?
+    };
 
     Ok(match url {
         Some(url) => {
