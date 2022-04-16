@@ -2,41 +2,7 @@
   <div role="list" class="list-group" :aria-label="ariaLabel">
     <draggable :list="teams" @change="move" item-key="slug" group="people">
       <template #item="{ element }">
-        <a
-          :href="`/go/teams/${element.slug}`"
-          :key="element.slug"
-          role="listitem"
-          class="list-group-item-action list-group-item d-flex justify-content-between align-items-start"
-        >
-          <div class="ms-2 me-auto content">
-            <i class="icon-reorder"></i>
-            <span class="fw-bold ms-2">
-              {{ element.title }}
-            </span>
-          </div>
-
-          <div>
-            <i v-if="element.is_private" class="icon-lock"></i
-            ><i v-if="!element.is_accepted" class="icon-check-empty ms-2"></i
-            ><i v-if="element.is_accepted" class="icon-check ms-2"></i>
-            <button
-              v-if="element.user_link && !element.user_link.is_accepted"
-              type="button"
-              class="btn btn-secondary"
-              disabled
-            >
-              Waiting
-            </button>
-            <button
-              v-if="element.user_link"
-              @click.prevent="leave(element.slug)"
-              type="button"
-              class="btn btn-danger"
-            >
-              Leave
-            </button>
-          </div>
-        </a>
+        <TeamRow :team="element" @leave="leave" />
       </template>
     </draggable>
   </div>
@@ -46,10 +12,11 @@
 import { defineComponent, PropType } from "vue";
 import draggable from "vuedraggable";
 import { Team, UserTeamLink } from "./main";
+import TeamRow from "./TeamRow.vue";
 
 export default defineComponent({
   name: "UserTeamList",
-  components: { draggable },
+  components: { draggable, TeamRow },
   props: {
     teams: { required: true, type: Object as PropType<Team[]> },
     ariaLabel: String,
