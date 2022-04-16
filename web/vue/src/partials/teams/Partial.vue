@@ -1,6 +1,14 @@
 <template>
   <div>
-    <TeamList aria-label="User teams" :teams="user_teams" @leave="leave" />
+    <div class="alert alert-primary" role="alert">
+      Drag and drop to prioritize team shortcuts in case of duplicates
+    </div>
+    <UserTeamList
+      aria-label="User teams"
+      :teams="user_teams"
+      @leave="leave"
+      @change_ranks="change_ranks"
+    />
     <TeamList aria-label="Other teams" :teams="other_teams" @join="join" />
   </div>
 </template>
@@ -10,6 +18,8 @@ import axios from "axios";
 import { defineComponent } from "vue";
 import { Team, UserTeamLink } from "./main";
 import TeamList from "./TeamList.vue";
+import UserTeamList from "./UserTeamList.vue";
+import _ from "lodash";
 
 interface Window {
   teams: Team[];
@@ -24,7 +34,7 @@ interface Data {
 
 export default defineComponent({
   name: "Partial",
-  components: { TeamList },
+  components: { UserTeamList, TeamList },
   data(): Data {
     return {
       teams: TEAMS,
@@ -68,6 +78,27 @@ export default defineComponent({
           let team = this.teams.find((t) => t.slug === slug);
           if (res.status === 200 && team) {
             team.user_link = undefined;
+          }
+        })
+        .catch(console.log);
+    },
+    change_ranks(new_ranks: any) {
+      console.log(new_ranks);
+      const old_teams = this.teams;
+      this.teams = this.teams.map((team) => {
+        const new_rank = new_ranks[team.slug];
+        if (new_rank !== undefined) {
+          console.log(team, new_rank);
+          team = _.cloneDeep(team);
+          (team.user_link as UserTeamLink).rank = new_rank;
+        }
+        return team;
+      });
+      axios
+        .put("/go/user/teams/ranks", new_ranks)
+        .then((res) => {
+          if (res.status !== 200) {
+            this.teams = old_teams;
           }
         })
         .catch(console.log);

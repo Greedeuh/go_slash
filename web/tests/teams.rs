@@ -460,6 +460,14 @@ async fn user_team_ranks() {
                     .get(format!("http://localhost:{}/go/teams", port))
                     .await?;
 
+                assert_eq!(
+                    driver
+                        .find_element(By::Css("[role='alert']"))
+                        .await?
+                        .text()
+                        .await?,
+                    "Drag and drop to prioritize team shortcuts in case of duplicates"
+                );
                 let teams = driver
                     .find_elements(By::Css("[aria-label='User teams'] [role='listitem'] span"))
                     .await?;
@@ -468,6 +476,40 @@ async fn user_team_ranks() {
                 for i in 0..expected_teams_sorted.len() {
                     assert_eq!(expected_teams_sorted[i], teams[i].text().await?);
                 }
+
+                // drag & drop testing do not work
+                // let teams_rows = driver
+                //     .find_elements(By::Css("[aria-label='User teams'] [role='listitem']"))
+                //     .await?;
+
+                // driver
+                //     .action_chain()
+                //     .drag_and_drop_element(
+                //         &teams_rows[2],
+                //         &driver.find_element(By::Id("draggable")).await?,
+                //     )
+                //     .perform()
+                //     .await?;
+
+                // let teams = driver
+                //     .find_elements(By::Css("[aria-label='User teams'] [role='listitem'] span"))
+                //     .await?;
+
+                // let expected_teams_sorted = vec!["team1", "team2", "Global"];
+                // for i in 0..expected_teams_sorted.len() {
+                //     assert_eq!(expected_teams_sorted[i], teams[i].text().await?);
+                // }
+
+                // driver
+                //     .get(format!("http://localhost:{}/go/teams", port))
+                //     .await?;
+
+                // let teams = driver
+                //     .find_elements(By::Css("[aria-label='User teams'] [role='listitem'] span"))
+                //     .await?;
+                // for i in 0..expected_teams_sorted.len() {
+                //     assert_eq!(expected_teams_sorted[i], teams[i].text().await?);
+                // }
 
                 Ok(())
             }

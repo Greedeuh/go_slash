@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@types/crypto-js": "^4.1.1",
+    "@types/lodash": "^4.14.181",
     "@types/object-hash": "^2.2.1",
     "@types/vue-select": "^3.16.0",
     "axios": "^0.26.0",
@@ -17,9 +18,11 @@
     "crypto-js": "^4.1.1",
     "date-fns": "^2.28.0",
     "fuse.js": "^6.5.3",
+    "lodash": "^4.17.21",
     "vue": "^3.0.0",
     "vue-fuse": "^4.0.3",
-    "vue-select": "^4.0.0-beta.3"
+    "vue-select": "^4.0.0-beta.3",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^4.18.0",
