@@ -1,4 +1,5 @@
 use diesel::SqliteConnection;
+use go_web::models::users::UserTeam;
 use rocket::futures::FutureExt;
 use rocket::http::Status;
 use rocket::tokio::sync::Mutex;
@@ -356,4 +357,70 @@ async fn action_on_teams() {
         },
     )
     .await;
+}
+
+#[test]
+fn put_user_teams_ranks() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, true, &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        false,
+        &[(" ", false, 0), ("slug1", false, 1)],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let response = client
+        .put("/go/user/teams/ranks")
+        .body(json!({ " ": 1, "slug1": 0 }).to_string())
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    let users_teams = get_user_team_links("some_mail@mail.com", &conn);
+
+    assert_eq!(
+        vec![
+            UserTeam {
+                user_mail: "some_mail@mail.com".to_string(),
+                team_slug: " ".to_string(),
+                is_admin: false,
+                is_accepted: true,
+                rank: 1
+            },
+            UserTeam {
+                user_mail: "some_mail@mail.com".to_string(),
+                team_slug: "slug1".to_string(),
+                is_admin: false,
+                is_accepted: true,
+                rank: 0
+            }
+        ],
+        users_teams
+    );
+
+    assert_eq!(response.status(), Status::Ok);
+}
+
+#[test]
+fn put_user_teams_ranks_need_feature() {
+    let (client, conn) = launch_with("");
+    team("slug1", "team1", false, true, &conn);
+
+    let response = client
+        .put("/go/user/teams/ranks")
+        .body(json!({ " ": 1, "slug1": 0 }).to_string())
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Conflict);
 }

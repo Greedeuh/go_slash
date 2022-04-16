@@ -24,7 +24,7 @@ use controllers::{
     features::{features, patch_feature},
     health_check,
     shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut},
-    teams::list_teams,
+    teams::{list_teams, put_user_team_ranks},
     users::{join_global_team, join_team, leave_global_team, leave_team, login, simple_login},
 };
 pub mod guards;
@@ -82,6 +82,7 @@ pub fn server(
                 patch_feature,
                 simple_login,
                 health_check,
+                put_user_team_ranks,
                 list_teams,
                 join_global_team,
                 join_team,
