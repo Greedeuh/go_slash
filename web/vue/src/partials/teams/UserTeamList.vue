@@ -11,11 +11,11 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
 import draggable from "vuedraggable";
-import { Team, UserTeamLink } from "./main";
+import { Team, UserTeamLink, sort_by_rank } from "./main";
 import TeamRow from "./TeamRow.vue";
 import _ from "lodash";
 
-const newLocal = (acc: Team[], team: Team) => {
+const clean_teams_rank = (acc: Team[], team: Team) => {
   const last_rank = (acc[acc.length - 1].user_link as UserTeamLink).rank;
   team = _.cloneDeep(team);
   const link = team.user_link as UserTeamLink;
@@ -49,8 +49,9 @@ export default defineComponent({
       const lowerIndex = oldIndex < newIndex ? oldIndex : newIndex;
       const moveOperation = oldIndex > newIndex ? 1 : -1;
 
-      let new_ranks = this.teams
-        .reduce(newLocal, [
+      let new_ranks = _.clone(this.teams)
+        .sort(sort_by_rank)
+        .reduce(clean_teams_rank, [
           {
             user_link: {
               rank: -1,

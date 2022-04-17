@@ -16,7 +16,7 @@
 <script lang="ts">
 import axios from "axios";
 import { defineComponent } from "vue";
-import { Team, UserTeamLink } from "./main";
+import { Team, UserTeamLink, sort_by_rank } from "./main";
 import TeamList from "./TeamList.vue";
 import UserTeamList from "./UserTeamList.vue";
 import _ from "lodash";
@@ -42,14 +42,7 @@ export default defineComponent({
   },
   computed: {
     user_teams(): Team[] {
-      return this.teams
-        .filter((team) => team.user_link)
-
-        .sort(
-          (a, b) =>
-            (a.user_link as UserTeamLink).rank -
-            (b.user_link as UserTeamLink).rank
-        );
+      return this.teams.filter((team) => team.user_link).sort(sort_by_rank);
     },
     other_teams(): Team[] {
       return this.teams.filter((team) => !team.user_link);
@@ -89,6 +82,7 @@ export default defineComponent({
         })
         .catch(console.error);
     },
+    // eslint-disable-next-line
     change_ranks(new_ranks: any) {
       const old_teams = this.teams;
       this.teams = this.teams.map((team) => {

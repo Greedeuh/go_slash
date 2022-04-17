@@ -17,3 +17,9 @@ export interface UserTeamLink {
   rank: number;
   rank_modified?: boolean;
 }
+
+export function sort_by_rank(a: Team, b: Team): number {
+  return (
+    (a.user_link as UserTeamLink).rank - (b.user_link as UserTeamLink).rank
+  );
+}
