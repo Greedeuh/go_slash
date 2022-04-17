@@ -8,7 +8,7 @@ use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
-use crate::models::features::get_global_features;
+use crate::models::features::Features;
 use crate::models::shortcuts::{sorted, NewShortcut};
 use crate::models::teams::{Team, TEAM_COLUMNS};
 use crate::models::users::{read_or_write, should_be_logged_in_if_features_with, Right, User};
@@ -25,11 +25,14 @@ lazy_static! {
 }
 
 #[get("/")]
-pub fn index(user: Option<User>, pool: &State<DbPool>) -> Result<Template, (Status, Template)> {
-    let conn = pool.get().map_err(AppError::from)?;
-    let features = get_global_features(&conn)?;
-
+pub fn index(
+    user: Option<User>,
+    features: Features,
+    pool: &State<DbPool>,
+) -> Result<Template, (Status, Template)> {
     should_be_logged_in_if_features_with(&Right::Read, &user, &features)?;
+
+    let conn = pool.get().map_err(AppError::from)?;
     let user_mail = user.map(|u| u.mail);
 
     let right = read_or_write(&features, &user_mail)?;
@@ -72,11 +75,9 @@ pub fn get_shortcut(
     shortcut: PathBuf,
     no_redirect: Option<bool>,
     user: Option<User>,
+    features: Features,
     pool: &State<DbPool>,
 ) -> Result<ShortcutRes, (Status, Template)> {
-    let conn = pool.get().map_err(AppError::from)?;
-    let features = get_global_features(&conn)?;
-
     should_be_logged_in_if_features_with(&Right::Read, &user, &features)?;
     let user_mail = user.map(|u| u.mail);
     let right = read_or_write(&features, &user_mail)?;
@@ -159,11 +160,9 @@ pub fn put_shortcut(
     team: Option<String>,
     data: Json<Url>,
     user: Option<User>,
+    features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    let conn = pool.get().map_err(AppError::from)?;
-    let features = get_global_features(&conn)?;
-
     should_be_logged_in_if_features_with(&Right::Write, &user, &features)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
@@ -199,11 +198,9 @@ pub fn delete_shortcut(
     shortcut: PathBuf,
     team: Option<String>,
     user: Option<User>,
+    features: Features,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Value)> {
-    let conn = pool.get().map_err(AppError::from)?;
-    let features = get_global_features(&conn)?;
-
     should_be_logged_in_if_features_with(&Right::Write, &user, &features)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;

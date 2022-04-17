@@ -6,7 +6,7 @@ use std::{cmp::Ordering, collections::HashMap};
 
 use crate::{
     models::{
-        features::get_global_features,
+        features::Features,
         teams::TeamForOptUser,
         users::{should_be_logged_in_with, Right, User},
         AppError,
@@ -18,17 +18,16 @@ use crate::{
 #[get("/go/teams")]
 pub fn list_teams(
     user: Option<User>,
+    features: Features,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
-    let conn = pool.get().map_err(AppError::from)?;
-    let features = get_global_features(&conn)?;
-
     if !features.teams {
         return Err(AppError::Disable.into());
     }
 
     let user = should_be_logged_in_with(&Right::Read, user, &features)?;
 
+    let conn = pool.get().map_err(AppError::from)?;
     let mut teams: Vec<TeamForOptUser> = dsl::teams
         .left_join(
             users_teams::table.on(dsl::slug
@@ -60,17 +59,16 @@ pub fn list_teams(
 pub fn put_user_team_ranks(
     team_ranks: Json<HashMap<String, u16>>,
     user: Option<User>,
+    features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    let conn = pool.get().map_err(AppError::from)?;
-    let features = get_global_features(&conn)?;
-
     if !features.teams {
         return Err(AppError::Disable.into());
     }
 
     let user = should_be_logged_in_with(&Right::Read, user, &features)?;
 
+    let conn = pool.get().map_err(AppError::from)?;
     conn.transaction::<_, diesel::result::Error, _>(|| {
         for (slug, rank) in team_ranks.into_inner() {
             match diesel::update(users_teams::table.find((&user.mail, &slug)))

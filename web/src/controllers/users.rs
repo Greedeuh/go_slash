@@ -9,7 +9,7 @@ use serde_json::{json, Map, Value};
 use sha256::digest;
 use uuid::Uuid;
 
-use crate::models::features::get_global_features;
+use crate::models::features::Features;
 use crate::models::teams::Team;
 use crate::models::users::{should_be_logged_in_with, Right, User, UserTeam};
 use crate::schema::users::dsl;
@@ -26,13 +26,7 @@ lazy_static! {
 }
 
 #[get("/go/login")]
-pub fn login(
-    conf: &State<AppConfig>,
-    pool: &State<DbPool>,
-) -> Result<Template, (Status, Template)> {
-    let conn = pool.get().map_err(AppError::from)?;
-    let features = get_global_features(&conn)?;
-
+pub fn login(conf: &State<AppConfig>, features: Features) -> Result<Template, (Status, Template)> {
     let mut context: Map<String, Value> = Map::new();
     if !features.login.simple {
         return Err(AppError::Disable.into());
@@ -62,11 +56,9 @@ pub fn simple_login(
     credentials: Json<Credentials>,
     sessions: &State<Sessions>,
     config: &State<AppConfig>,
+    features: Features,
     pool: &State<DbPool>,
 ) -> Result<Json<LoginSuccessfull>, (Status, Value)> {
-    let conn = pool.get().map_err(AppError::from)?;
-    let features = get_global_features(&conn)?;
-
     if !features.login.simple {
         return Err(AppError::Disable.into());
     }
@@ -110,9 +102,10 @@ pub struct UserTeamLink {
 pub fn join_global_team(
     user: Option<User>,
     team_user_link: Json<UserTeamLink>,
+    features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    join_team("".to_string(), team_user_link, user, pool)
+    join_team("".to_string(), team_user_link, user, features, pool)
 }
 
 #[post("/go/user/teams/<slug>", data = "<team_user_link>")]
@@ -120,17 +113,16 @@ pub fn join_team(
     slug: String,
     team_user_link: Json<UserTeamLink>,
     user: Option<User>,
+    features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    let conn = pool.get().map_err(AppError::from)?;
-    let features = get_global_features(&conn)?;
-
     if !features.login.simple {
         return Err(AppError::Disable.into());
     }
 
     let user = should_be_logged_in_with(&Right::Read, user, &features)?;
 
+    let conn = pool.get().map_err(AppError::from)?;
     let team: Option<Team> = teams::table
         .find(&slug)
         .first(&conn)
@@ -160,26 +152,26 @@ pub fn join_team(
 #[delete("/go/user/teams")]
 pub fn leave_global_team(
     user: Option<User>,
+    features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    leave_team("".to_string(), user, pool)
+    leave_team("".to_string(), user, features, pool)
 }
 
 #[delete("/go/user/teams/<slug>")]
 pub fn leave_team(
     slug: String,
     user: Option<User>,
+    features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    let conn = pool.get().map_err(AppError::from)?;
-    let features = get_global_features(&conn)?;
-
     if !features.login.simple {
         return Err(AppError::Disable.into());
     }
 
     let user = should_be_logged_in_with(&Right::Read, user, &features)?;
 
+    let conn = pool.get().map_err(AppError::from)?;
     diesel::delete(users_teams::table)
         .filter(
             users_teams::user_mail

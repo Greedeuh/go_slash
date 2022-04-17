@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 
 use crate::{
     models::{
-        features::{get_global_features, patch_features, PatchableFeatures},
+        features::{patch_features, Features, PatchableFeatures},
         users::{should_be_logged_in_if_features_with, Right, User},
         AppError,
     },
@@ -12,10 +12,7 @@ use crate::{
 };
 
 #[get("/go/features")]
-pub fn features(user: Option<User>, pool: &State<DbPool>) -> Result<Template, (Status, Template)> {
-    let conn = pool.get().map_err(AppError::from)?;
-    let features = get_global_features(&conn)?;
-
+pub fn features(user: Option<User>, features: Features) -> Result<Template, (Status, Template)> {
     should_be_logged_in_if_features_with(&Right::Admin, &user, &features)?;
 
     Ok(Template::render(
@@ -28,13 +25,12 @@ pub fn features(user: Option<User>, pool: &State<DbPool>) -> Result<Template, (S
 pub fn patch_feature(
     new_features: Json<PatchableFeatures>,
     user: Option<User>,
+    features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    let conn = pool.get().map_err(AppError::from)?;
-    let features = get_global_features(&conn)?;
-
     should_be_logged_in_if_features_with(&Right::Admin, &user, &features)?;
 
+    let conn = pool.get().map_err(AppError::from)?;
     patch_features(new_features.into_inner(), &conn)?;
 
     Ok(Status::Ok)
