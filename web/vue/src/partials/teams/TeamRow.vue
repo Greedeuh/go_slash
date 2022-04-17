@@ -39,6 +39,16 @@
       >
         Leave
       </button>
+
+      <button
+        v-if="administer"
+        @click.prevent="delete_team(team.slug)"
+        type="button"
+        class="btn btn-danger"
+        aria-label="Delete team"
+      >
+        <i class="icon-trash"></i>
+      </button>
     </div>
   </a>
 </template>
@@ -50,14 +60,18 @@ export default defineComponent({
   name: "TeamRow",
   props: {
     team: Object,
+    administer: Boolean,
   },
-  emits: ["join", "leave"],
+  emits: ["join", "leave", "delete_team"],
   methods: {
     join(slug: string) {
       this.$emit("join", slug);
     },
     leave(slug: string) {
       this.$emit("leave", slug);
+    },
+    delete_team(slug: string) {
+      this.$emit("delete_team", slug);
     },
   },
 });

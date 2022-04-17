@@ -1,15 +1,35 @@
 <template>
   <div>
-    <div class="alert alert-primary" role="alert">
-      Drag and drop to prioritize team shortcuts in case of duplicates
+    <div class="d-flex mb-4">
+      <div class="alert alert-primary flex-fill m-0" role="alert">
+        Drag and drop to prioritize team shortcuts in case of duplicates
+      </div>
+      <div v-if="right === 'write'" class="align-self-center ms-2">
+        <button
+          @click="set_administer"
+          class="btn btn-lg"
+          :class="{ 'btn-light': !administer, 'btn-secondary': administer }"
+          aria-label="Administrate"
+        >
+          <i class="icon-wrench"></i>
+        </button>
+      </div>
     </div>
     <UserTeamList
       aria-label="User teams"
       :teams="user_teams"
       @leave="leave"
       @change_ranks="change_ranks"
+      :administer="administer"
+      @delete_team="delete_team"
     />
-    <TeamList aria-label="Other teams" :teams="other_teams" @join="join" />
+    <TeamList
+      aria-label="Other teams"
+      :teams="other_teams"
+      @join="join"
+      :administer="administer"
+      @delete_team="delete_team"
+    />
   </div>
 </template>
 
@@ -23,6 +43,7 @@ import _ from "lodash";
 
 interface Window {
   teams: Team[];
+  right: string;
 }
 
 let win = window as unknown as Window;
@@ -30,7 +51,11 @@ const TEAMS = win.teams;
 
 interface Data {
   teams: Team[];
+  right: string;
+  administer: boolean;
 }
+
+const RIGHT = win.right;
 
 export default defineComponent({
   name: "Partial",
@@ -38,6 +63,8 @@ export default defineComponent({
   data(): Data {
     return {
       teams: TEAMS,
+      right: RIGHT,
+      administer: false,
     };
   },
   computed: {
@@ -98,6 +125,19 @@ export default defineComponent({
         .then((res) => {
           if (res.status !== 200) {
             this.teams = old_teams;
+          }
+        })
+        .catch(console.error);
+    },
+    set_administer() {
+      this.administer = !this.administer;
+    },
+    delete_team(slug: string) {
+      axios
+        .delete("/go/teams/" + slug)
+        .then((res) => {
+          if (res.status === 200) {
+            this.teams = this.teams.filter((team) => team.slug !== slug);
           }
         })
         .catch(console.error);

@@ -1,6 +1,13 @@
 <template>
   <div role="list" class="list-group" :aria-label="ariaLabel">
-    <TeamRow v-for="team in teams" :key="team.slug" :team="team" @join="join" />
+    <TeamRow
+      v-for="team in teams"
+      :key="team.slug"
+      :team="team"
+      @join="join"
+      :administer="administer"
+      @delete_team="delete_team"
+    />
   </div>
 </template>
 
@@ -16,11 +23,15 @@ export default defineComponent({
   props: {
     teams: Array,
     ariaLabel: String,
+    administer: Boolean,
   },
-  emits: ["join", "leave"],
+  emits: ["join", "leave", "delete_team"],
   methods: {
     join(slug: string) {
       this.$emit("join", slug);
+    },
+    delete_team(slug: string) {
+      this.$emit("delete_team", slug);
     },
   },
 });

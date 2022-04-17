@@ -2,7 +2,12 @@
   <div role="list" class="list-group" :aria-label="ariaLabel">
     <draggable :list="teams" @change="move" item-key="slug" group="people">
       <template #item="{ element }">
-        <TeamRow :team="element" @leave="leave" />
+        <TeamRow
+          :team="element"
+          @leave="leave"
+          :administer="administer"
+          @delete_team="delete_team"
+        />
       </template>
     </draggable>
   </div>
@@ -32,8 +37,9 @@ export default defineComponent({
   props: {
     teams: { required: true, type: Object as PropType<Team[]> },
     ariaLabel: String,
+    administer: Boolean,
   },
-  emits: ["leave", "change_ranks"],
+  emits: ["leave", "change_ranks", "delete_team"],
   methods: {
     leave(slug: string) {
       this.$emit("leave", slug);
@@ -85,6 +91,9 @@ export default defineComponent({
           return { ...acc, ...value };
         });
       this.$emit("change_ranks", new_ranks);
+    },
+    delete_team(slug: string) {
+      this.$emit("delete_team", slug);
     },
   },
 });

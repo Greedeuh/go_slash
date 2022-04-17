@@ -704,3 +704,78 @@ fn delete_team() {
     assert_eq!(response.status(), Status::Ok);
     assert!(get_team("slug1", &conn).is_none());
 }
+
+#[async_test]
+async fn admin_action_on_teams() {
+    in_browser(
+        "some_session_id: some_mail@mail.com",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                team("slug1", "team1", false, true, &con);
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    true,
+                    &[("slug1", false, 1)],
+                    &con,
+                );
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
+                        teams: true,
+                    },
+                    &con,
+                );
+
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await?;
+
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
+
+                assert!(driver
+                    .find_element(By::Css("button[aria-label='Delete team']"))
+                    .await
+                    .is_err());
+
+                let administrate = driver
+                    .find_element(By::Css("button[aria-label='Administrate']"))
+                    .await?;
+                administrate.click().await?;
+
+                assert!(dbg!(
+                    driver
+                        .find_element(By::Css("[role='listitem']"))
+                        .await?
+                        .text()
+                        .await?
+                )
+                .starts_with("team1"));
+
+                let delete_btn = driver
+                    .find_element(By::Css("button[aria-label='Delete team']"))
+                    .await?;
+                delete_btn.click().await?;
+
+                assert!(!dbg!(
+                    driver
+                        .find_element(By::Css("[role='listitem']"))
+                        .await?
+                        .text()
+                        .await?
+                )
+                .starts_with("team1"));
+
+                Ok(())
+            }
+            .boxed()
+        },
+    )
+    .await;
+}

@@ -8,7 +8,7 @@ use crate::{
     models::{
         features::Features,
         teams::TeamForOptUser,
-        users::{should_be_logged_in_with, Right, User},
+        users::{read_or_write, should_be_logged_in_with, Right, User},
         AppError,
     },
     schema::{
@@ -52,9 +52,11 @@ pub fn list_teams(
         },
     );
 
+    let right = read_or_write(&features, &Some(user.mail.clone()))?;
+
     Ok(Template::render(
         "teams",
-        json!({ "teams": json!(teams).to_string(), "mail": &user.mail, "features": json!(features) }),
+        json!({ "teams": json!(teams).to_string(), "mail": &user.mail, "features": json!(features), "right": right  }),
     ))
 }
 
