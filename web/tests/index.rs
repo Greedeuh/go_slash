@@ -306,7 +306,7 @@ async fn index_user_can_delete_shortcuts() {
 #[async_test]
 async fn index_user_can_delete_shortcuts_with_team() {
     in_browser(
-        "",
+        "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
@@ -315,6 +315,13 @@ async fn index_user_can_delete_shortcuts_with_team() {
                     "jeanLuc",
                     &format!("http://localhost:{}/aShortcut1", port),
                     "team1",
+                    &con,
+                );
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    true,
+                    &[("team1", true, 0)],
                     &con,
                 );
                 global_features(
@@ -327,7 +334,9 @@ async fn index_user_can_delete_shortcuts_with_team() {
                     },
                     &con,
                 );
-
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await?;
                 driver.get(format!("http://localhost:{}", port)).await?;
 
                 let administer_btn = driver.find_element(By::Id("btn-administer")).await?;

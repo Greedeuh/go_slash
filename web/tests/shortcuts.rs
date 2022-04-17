@@ -120,7 +120,13 @@ fn shortcut_read_private_should_return_unauthorized() {
 #[test]
 fn shortcut_read_private_should_return_ok_with_session() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        false,
+        &[("slug1", true, 0)],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {
@@ -202,6 +208,7 @@ fn create_a_shortcut_with_team_return_200() {
     let response = client
         .put("/myShortCut/hop?team=slug1")
         .header(ContentType::JSON)
+        .cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
         .body(r#"{"url": "http://localhost"}"#)
         .dispatch();
 
@@ -257,6 +264,13 @@ fn put_shortcut_should_return_unauthorized() {
 #[test]
 fn put_shortcut_should_is_ok_with_auth() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        false,
+        &[("slug1", true, 0)],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {
@@ -356,6 +370,13 @@ fn delete_a_shortcut_return_unauthorized() {
 #[test]
 fn delete_a_shortcut_with_auth_authorized() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        false,
+        &[("slug1", true, 0)],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {

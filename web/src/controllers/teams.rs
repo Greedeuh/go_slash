@@ -5,11 +5,10 @@ use serde_json::json;
 use std::{cmp::Ordering, collections::HashMap};
 
 use crate::{
-    guards::SessionId,
     models::{
         features::get_global_features,
         teams::TeamForOptUser,
-        users::{should_be_logged_in_with, Right, Sessions},
+        users::{should_be_logged_in_with, Right, User},
         AppError,
     },
     schema::{teams::dsl, users_teams},
@@ -18,8 +17,7 @@ use crate::{
 
 #[get("/go/teams")]
 pub fn list_teams(
-    session_id: Option<SessionId>,
-    sessions: &State<Sessions>,
+    user: Option<User>,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
     let conn = pool.get().map_err(AppError::from)?;
@@ -29,7 +27,7 @@ pub fn list_teams(
         return Err(AppError::Disable.into());
     }
 
-    let user = should_be_logged_in_with(&Right::Read, &session_id, sessions, &features, &conn)?;
+    let user = should_be_logged_in_with(&Right::Read, user, &features)?;
 
     let mut teams: Vec<TeamForOptUser> = dsl::teams
         .left_join(
@@ -61,8 +59,7 @@ pub fn list_teams(
 #[put("/go/user/teams/ranks", data = "<team_ranks>")]
 pub fn put_user_team_ranks(
     team_ranks: Json<HashMap<String, u16>>,
-    session_id: Option<SessionId>,
-    sessions: &State<Sessions>,
+    user: Option<User>,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
     let conn = pool.get().map_err(AppError::from)?;
@@ -72,7 +69,7 @@ pub fn put_user_team_ranks(
         return Err(AppError::Disable.into());
     }
 
-    let user = should_be_logged_in_with(&Right::Read, &session_id, sessions, &features, &conn)?;
+    let user = should_be_logged_in_with(&Right::Read, user, &features)?;
 
     conn.transaction::<_, diesel::result::Error, _>(|| {
         for (slug, rank) in team_ranks.into_inner() {

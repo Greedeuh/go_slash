@@ -25,6 +25,10 @@ impl From<AppError> for (Status, Value) {
                 Status::BadRequest,
                 json!({"error": "Wrong shortcut format."}),
             ),
+            AppError::Guard => (
+                Status::InternalServerError,
+                json!({"error": "Wow that's weird :/"}),
+            ),
         }
     }
 }
@@ -38,6 +42,7 @@ impl From<AppError> for (Status, Template) {
                 (Status::Unauthorized, Template::render("redirect_login", ""))
             }
             AppError::BadRequest => (Status::InternalServerError, Template::render("error", "")),
+            AppError::Guard => (Status::InternalServerError, Template::render("error", "")),
         }
     }
 }

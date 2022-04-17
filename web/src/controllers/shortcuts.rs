@@ -8,11 +8,10 @@ use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
-use crate::guards::SessionId;
 use crate::models::features::get_global_features;
 use crate::models::shortcuts::{sorted, NewShortcut};
 use crate::models::teams::{Team, TEAM_COLUMNS};
-use crate::models::users::{read_or_write, should_be_logged_in_if_features_with, Right, Sessions};
+use crate::models::users::{read_or_write, should_be_logged_in_if_features_with, Right, User};
 use crate::models::AppError;
 use crate::schema::shortcuts;
 use crate::schema::shortcuts::dsl;
@@ -26,21 +25,11 @@ lazy_static! {
 }
 
 #[get("/")]
-pub fn index(
-    session_id: Option<SessionId>,
-    sessions: &State<Sessions>,
-    pool: &State<DbPool>,
-) -> Result<Template, (Status, Template)> {
+pub fn index(user: Option<User>, pool: &State<DbPool>) -> Result<Template, (Status, Template)> {
     let conn = pool.get().map_err(AppError::from)?;
     let features = get_global_features(&conn)?;
 
-    let user = should_be_logged_in_if_features_with(
-        &Right::Read,
-        &session_id,
-        sessions,
-        &features,
-        &conn,
-    )?;
+    should_be_logged_in_if_features_with(&Right::Read, &user, &features)?;
     let user_mail = user.map(|u| u.mail);
 
     let right = read_or_write(&features, &user_mail)?;
@@ -82,20 +71,13 @@ pub enum ShortcutRes {
 pub fn get_shortcut(
     shortcut: PathBuf,
     no_redirect: Option<bool>,
-    session_id: Option<SessionId>,
-    sessions: &State<Sessions>,
+    user: Option<User>,
     pool: &State<DbPool>,
 ) -> Result<ShortcutRes, (Status, Template)> {
     let conn = pool.get().map_err(AppError::from)?;
     let features = get_global_features(&conn)?;
 
-    let user = should_be_logged_in_if_features_with(
-        &Right::Read,
-        &session_id,
-        sessions,
-        &features,
-        &conn,
-    )?;
+    should_be_logged_in_if_features_with(&Right::Read, &user, &features)?;
     let user_mail = user.map(|u| u.mail);
     let right = read_or_write(&features, &user_mail)?;
 
@@ -176,14 +158,13 @@ pub fn put_shortcut(
     shortcut: PathBuf,
     team: Option<String>,
     data: Json<Url>,
-    session_id: Option<SessionId>,
-    sessions: &State<Sessions>,
+    user: Option<User>,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
     let conn = pool.get().map_err(AppError::from)?;
     let features = get_global_features(&conn)?;
 
-    should_be_logged_in_if_features_with(&Right::Write, &session_id, sessions, &features, &conn)?;
+    should_be_logged_in_if_features_with(&Right::Write, &user, &features)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
@@ -217,14 +198,13 @@ pub fn put_shortcut(
 pub fn delete_shortcut(
     shortcut: PathBuf,
     team: Option<String>,
-    session_id: Option<SessionId>,
-    sessions: &State<Sessions>,
+    user: Option<User>,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Value)> {
     let conn = pool.get().map_err(AppError::from)?;
     let features = get_global_features(&conn)?;
 
-    should_be_logged_in_if_features_with(&Right::Write, &session_id, sessions, &features, &conn)?;
+    should_be_logged_in_if_features_with(&Right::Write, &user, &features)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 

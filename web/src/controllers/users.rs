@@ -9,10 +9,9 @@ use serde_json::{json, Map, Value};
 use sha256::digest;
 use uuid::Uuid;
 
-use crate::guards::SessionId;
 use crate::models::features::get_global_features;
 use crate::models::teams::Team;
-use crate::models::users::{should_be_logged_in_with, Right, UserTeam};
+use crate::models::users::{should_be_logged_in_with, Right, User, UserTeam};
 use crate::schema::users::dsl;
 use crate::schema::{teams, users_teams};
 use crate::DbPool;
@@ -109,20 +108,18 @@ pub struct UserTeamLink {
 
 #[post("/go/user/teams", data = "<team_user_link>")]
 pub fn join_global_team(
-    session_id: Option<SessionId>,
+    user: Option<User>,
     team_user_link: Json<UserTeamLink>,
-    sessions: &State<Sessions>,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    join_team("".to_string(), team_user_link, session_id, sessions, pool)
+    join_team("".to_string(), team_user_link, user, pool)
 }
 
 #[post("/go/user/teams/<slug>", data = "<team_user_link>")]
 pub fn join_team(
     slug: String,
     team_user_link: Json<UserTeamLink>,
-    session_id: Option<SessionId>,
-    sessions: &State<Sessions>,
+    user: Option<User>,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
     let conn = pool.get().map_err(AppError::from)?;
@@ -132,7 +129,7 @@ pub fn join_team(
         return Err(AppError::Disable.into());
     }
 
-    let user = should_be_logged_in_with(&Right::Read, &session_id, sessions, &features, &conn)?;
+    let user = should_be_logged_in_with(&Right::Read, user, &features)?;
 
     let team: Option<Team> = teams::table
         .find(&slug)
@@ -162,18 +159,16 @@ pub fn join_team(
 
 #[delete("/go/user/teams")]
 pub fn leave_global_team(
-    session_id: Option<SessionId>,
-    sessions: &State<Sessions>,
+    user: Option<User>,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    leave_team("".to_string(), session_id, sessions, pool)
+    leave_team("".to_string(), user, pool)
 }
 
 #[delete("/go/user/teams/<slug>")]
 pub fn leave_team(
     slug: String,
-    session_id: Option<SessionId>,
-    sessions: &State<Sessions>,
+    user: Option<User>,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
     let conn = pool.get().map_err(AppError::from)?;
@@ -183,7 +178,7 @@ pub fn leave_team(
         return Err(AppError::Disable.into());
     }
 
-    let user = should_be_logged_in_with(&Right::Read, &session_id, sessions, &features, &conn)?;
+    let user = should_be_logged_in_with(&Right::Read, user, &features)?;
 
     diesel::delete(users_teams::table)
         .filter(
