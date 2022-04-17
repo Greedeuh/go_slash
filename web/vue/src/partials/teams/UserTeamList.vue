@@ -49,6 +49,27 @@ export default defineComponent({
       const lowerIndex = oldIndex < newIndex ? oldIndex : newIndex;
       const moveOperation = oldIndex > newIndex ? 1 : -1;
 
+      const choose_next_rank = (team: Team) => {
+        const link = team.user_link as UserTeamLink;
+
+        if (link.rank === oldIndex) {
+          // the team moved
+
+          return {
+            [team.slug]: newIndex,
+          };
+        } else if (link.rank >= lowerIndex && link.rank <= upperIndex) {
+          // team between drag & drop
+
+          return {
+            [team.slug]: link.rank + moveOperation,
+          };
+        } else if (link.rank_modified) {
+          // team that clean_teams_rank modified because rank were not perfect at begening
+          return { [team.slug]: link.rank };
+        }
+      };
+
       let new_ranks = _.clone(this.teams)
         .sort(sort_by_rank)
         .reduce(clean_teams_rank, [
@@ -58,21 +79,7 @@ export default defineComponent({
             },
           },
         ] as Team[])
-        .map((team) => {
-          const link = team.user_link as UserTeamLink;
-
-          if (link.rank === oldIndex) {
-            return {
-              [team.slug]: newIndex,
-            };
-          } else if (link.rank >= lowerIndex && link.rank <= upperIndex) {
-            return {
-              [team.slug]: link.rank + moveOperation,
-            };
-          } else if (link.rank_modified) {
-            return { [team.slug]: link.rank };
-          }
-        })
+        .map(choose_next_rank)
         .filter((team) => team)
         .reduce((acc, value) => {
           return { ...acc, ...value };
