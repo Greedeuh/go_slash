@@ -64,7 +64,7 @@ pub fn index(
 
     Ok(Template::render(
         "index",
-        json!({ "shortcuts": json!(sorted(&conn)?).to_string(), "right": right, "mail": user_mail, "admin_teams": admin_teams }),
+        json!({ "shortcuts": json!(sorted(&conn)?).to_string(), "right": right, "mail": user_mail, "features": json!(features), "admin_teams": admin_teams }),
     ))
 }
 
@@ -143,7 +143,8 @@ pub fn get_shortcut(
                         "url": url,
                         "no_redirect": true,
                         "right": right,
-                        "mail": user_mail
+                        "mail": user_mail,
+                        "features": json!(features)
                     }),
                 ))
             } else {
@@ -158,7 +159,8 @@ pub fn get_shortcut(
                                     .to_string(),
                 "not_found": true,
                 "right": right,
-                "mail": user_mail
+                "mail": user_mail,
+                "features": json!(features)
             }),
         )),
     })
@@ -243,7 +245,8 @@ pub fn delete_shortcut(
         "index",
         json!({
             "shortcut":shortcut,
-            "deleted":true
+            "deleted":true,
+            "features": json!(features)
         }),
     ))
 }

@@ -25,7 +25,7 @@ pub fn features(
 
     Ok(Template::render(
         "features",
-        json!({ "features": json!(features).to_string() }),
+        json!({ "features_str": json!(features).to_string(), "features": json!(features) }),
     ))
 }
 

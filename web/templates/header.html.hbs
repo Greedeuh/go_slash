@@ -1,6 +1,11 @@
 <nav class="navbar navbar-light bg-light mb-4">
   <div class="container">
-    <a class="navbar-brand" href="/">GO</a>
+    <div class="d-flex">
+      <a class="navbar-brand" href="/">GO</a>
+      <ul class="navbar-nav">
+        {{#if features.teams }} <li class="nav-item"><a class="nav-link" href="/go/teams">teams</a></li> {{/if}}
+      </ul>
+    </div>
     {{#unless mail }} <a class="nav-link" href="/go/login">Login</a> {{/unless}}
     {{#if mail }} <span class="navbar-text">{{mail}}</span> {{/if}}
 

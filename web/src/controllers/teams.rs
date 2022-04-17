@@ -54,7 +54,7 @@ pub fn list_teams(
 
     Ok(Template::render(
         "teams",
-        json!({ "teams": json!(teams).to_string(), "mail": &user.mail }),
+        json!({ "teams": json!(teams).to_string(), "mail": &user.mail, "features": json!(features) }),
     ))
 }
 

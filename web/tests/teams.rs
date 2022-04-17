@@ -21,6 +21,79 @@ fn feature_team_disable() {
 }
 
 #[async_test]
+async fn layout_with_team_link_if_feature_team() {
+    in_browser(
+        "some_session_id: some_mail@mail.com",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    true,
+                    &[("slug1", false, 0)],
+                    &con,
+                );
+
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
+                        teams: false,
+                    },
+                    &con,
+                );
+
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await?;
+
+                driver.get(format!("http://localhost:{}", port)).await?;
+
+                assert!(driver
+                    .find_element(By::Css("a [href='/go/teams']"))
+                    .await
+                    .is_err());
+
+                let endpoints = vec!["", "go/teams", "go/features", "azdaz"];
+
+                for endpoint in endpoints {
+                    global_features(
+                        &Features {
+                            login: LoginFeature {
+                                simple: true,
+                                ..Default::default()
+                            },
+                            teams: true,
+                        },
+                        &con,
+                    );
+
+                    driver
+                        .get(format!("http://localhost:{}/{}", port, dbg!(endpoint)))
+                        .await?;
+
+                    assert_eq!(
+                        driver
+                            .find_element(By::Css("[href='/go/teams']"))
+                            .await?
+                            .text()
+                            .await?,
+                        "teams"
+                    );
+                }
+
+                Ok(())
+            }
+            .boxed()
+        },
+    )
+    .await;
+}
+
+#[async_test]
 async fn list_teams_with_infos() {
     in_browser(
         "some_session_id: some_mail@mail.com",
