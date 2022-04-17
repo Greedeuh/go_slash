@@ -7,6 +7,7 @@
       @join="join"
       :administer="administer"
       @delete_team="delete_team"
+      @accept="accept"
     />
   </div>
 </template>
@@ -25,13 +26,16 @@ export default defineComponent({
     ariaLabel: String,
     administer: Boolean,
   },
-  emits: ["join", "leave", "delete_team"],
+  emits: ["join", "leave", "delete_team", "accept"],
   methods: {
     join(slug: string) {
       this.$emit("join", slug);
     },
     delete_team(slug: string) {
       this.$emit("delete_team", slug);
+    },
+    accept(slug: string) {
+      this.$emit("accept", slug);
     },
   },
 });

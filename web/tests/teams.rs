@@ -713,7 +713,7 @@ async fn admin_action_on_teams() {
         |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
-                team("slug1", "team1", false, true, &con);
+                team("slug1", "team1", false, false, &con);
                 user(
                     "some_mail@mail.com",
                     "pwd",
@@ -741,14 +741,20 @@ async fn admin_action_on_teams() {
                     .await?;
 
                 assert!(driver
+                    .find_element(By::Css("button[aria-label='Accept team']"))
+                    .await
+                    .is_err());
+
+                assert!(driver
                     .find_element(By::Css("button[aria-label='Delete team']"))
                     .await
                     .is_err());
 
-                let administrate = driver
+                driver
                     .find_element(By::Css("button[aria-label='Administrate']"))
+                    .await?
+                    .click()
                     .await?;
-                administrate.click().await?;
 
                 assert!(dbg!(
                     driver
@@ -758,6 +764,30 @@ async fn admin_action_on_teams() {
                         .await?
                 )
                 .starts_with("team1"));
+
+                let accept_btn = driver
+                    .find_element(By::Css("button[aria-label='Accept team']"))
+                    .await?;
+                accept_btn.click().await?;
+                assert!(driver
+                    .find_element(By::Css("button[aria-label='Accept team']"))
+                    .await
+                    .is_err());
+
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
+
+                driver
+                    .find_element(By::Css("button[aria-label='Administrate']"))
+                    .await?
+                    .click()
+                    .await?;
+
+                assert!(driver
+                    .find_element(By::Css("button[aria-label='Accept team']"))
+                    .await
+                    .is_err());
 
                 let delete_btn = driver
                     .find_element(By::Css("button[aria-label='Delete team']"))

@@ -7,6 +7,7 @@
           @leave="leave"
           :administer="administer"
           @delete_team="delete_team"
+          @accept="accept"
         />
       </template>
     </draggable>
@@ -39,7 +40,7 @@ export default defineComponent({
     ariaLabel: String,
     administer: Boolean,
   },
-  emits: ["leave", "change_ranks", "delete_team"],
+  emits: ["leave", "change_ranks", "delete_team", "accept"],
   methods: {
     leave(slug: string) {
       this.$emit("leave", slug);
@@ -94,6 +95,9 @@ export default defineComponent({
     },
     delete_team(slug: string) {
       this.$emit("delete_team", slug);
+    },
+    accept(slug: string) {
+      this.$emit("accept", slug);
     },
   },
 });

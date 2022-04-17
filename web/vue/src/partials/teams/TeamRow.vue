@@ -39,7 +39,16 @@
       >
         Leave
       </button>
-
+      <button
+        v-if="administer && !team.is_accepted"
+        @click.prevent="accept(team.slug)"
+        type="button"
+        class="btn btn-success"
+        aria-label="Accept team"
+      >
+        Accept
+        <i class="icon-check-sign ms-1"></i>
+      </button>
       <button
         v-if="administer"
         @click.prevent="delete_team(team.slug)"
@@ -62,7 +71,7 @@ export default defineComponent({
     team: Object,
     administer: Boolean,
   },
-  emits: ["join", "leave", "delete_team"],
+  emits: ["join", "leave", "delete_team", "accept"],
   methods: {
     join(slug: string) {
       this.$emit("join", slug);
@@ -72,6 +81,9 @@ export default defineComponent({
     },
     delete_team(slug: string) {
       this.$emit("delete_team", slug);
+    },
+    accept(slug: string) {
+      this.$emit("accept", slug);
     },
   },
 });

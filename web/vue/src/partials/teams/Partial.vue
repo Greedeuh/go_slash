@@ -22,6 +22,7 @@
       @change_ranks="change_ranks"
       :administer="administer"
       @delete_team="delete_team"
+      @accept="accept"
     />
     <TeamList
       aria-label="Other teams"
@@ -29,6 +30,7 @@
       @join="join"
       :administer="administer"
       @delete_team="delete_team"
+      @accept="accept"
     />
   </div>
 </template>
@@ -138,6 +140,17 @@ export default defineComponent({
         .then((res) => {
           if (res.status === 200) {
             this.teams = this.teams.filter((team) => team.slug !== slug);
+          }
+        })
+        .catch(console.error);
+    },
+    accept(slug: string) {
+      axios
+        .patch("/go/teams/" + slug, { is_accepted: true })
+        .then((res) => {
+          if (res.status === 200) {
+            const team = this.teams.find((team) => team.slug == slug);
+            team.is_accepted = true;
           }
         })
         .catch(console.error);
