@@ -26,6 +26,11 @@ impl<'r> FromRequest<'r> for SessionId {
     type Error = serde_json::Value;
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let features = try_outcome!(req.guard::<Features>().await);
+        if !features.login.simple {
+            return Outcome::Failure(AppError::Disable.into());
+        }
+
         if let Some(session_id) = session_from_cookies(req.cookies()) {
             return Outcome::Success(session_id);
         }
@@ -122,6 +127,6 @@ fn get_user(
             error!("Wrong session_id.");
             Err(AppError::Unauthorized)
         }
-        Some(mail) => Ok(users::table.find(&dbg!(mail)).first::<User>(&conn)?),
+        Some(mail) => Ok(users::table.find(&mail).first::<User>(&conn)?),
     }
 }

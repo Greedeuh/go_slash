@@ -11,7 +11,10 @@ use crate::{
         users::{should_be_logged_in_with, Right, User},
         AppError,
     },
-    schema::{teams::dsl, users_teams},
+    schema::{
+        teams::{self, dsl},
+        users_teams,
+    },
     DbPool,
 };
 
@@ -53,6 +56,29 @@ pub fn list_teams(
         "teams",
         json!({ "teams": json!(teams).to_string(), "mail": &user.mail, "features": json!(features) }),
     ))
+}
+
+#[delete("/go/teams/<team>")]
+pub fn delete_team(
+    team: String,
+    user: User,
+    features: Features,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Template)> {
+    if !features.teams {
+        return Err(AppError::Disable.into());
+    }
+
+    if !user.is_admin {
+        return Err(AppError::Unauthorized.into());
+    }
+
+    let conn = pool.get().map_err(AppError::from)?;
+    diesel::delete(teams::table.find(team))
+        .execute(&conn)
+        .map_err(AppError::from)?;
+
+    Ok(Status::Ok)
 }
 
 #[put("/go/user/teams/ranks", data = "<team_ranks>")]

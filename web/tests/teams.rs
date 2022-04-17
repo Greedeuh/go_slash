@@ -609,3 +609,98 @@ async fn user_team_ranks() {
     )
     .await;
 }
+
+#[test]
+fn delete_team_need_feature() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, true, &conn);
+    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: false,
+        },
+        &conn,
+    );
+
+    let response = client
+        .delete("/go/teams/slug1")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Conflict);
+
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: false,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let response = client
+        .delete("/go/teams/slug1")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Conflict);
+}
+
+#[test]
+fn delete_team_user_need_to_be_admin() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, true, &conn);
+    user("some_mail@mail.com", "pwd", false, &[], &conn);
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let response = client.delete("/go/teams/slug1").dispatch();
+
+    assert_eq!(response.status(), Status::Unauthorized);
+
+    let response = client
+        .delete("/go/teams/slug1")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Unauthorized);
+}
+
+#[test]
+fn delete_team() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, true, &conn);
+    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let response = client
+        .delete("/go/teams/slug1")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Ok);
+    assert!(get_team("slug1", &conn).is_none());
+}

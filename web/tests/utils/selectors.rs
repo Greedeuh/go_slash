@@ -4,8 +4,8 @@ pub use no_dead_code::*;
 mod no_dead_code {
     use diesel::prelude::*;
     use go_web::{
-        models::{shortcuts::Shortcut, users::UserTeam},
-        schema::{shortcuts, users_teams},
+        models::{shortcuts::Shortcut, teams::Team, users::UserTeam},
+        schema::{shortcuts, teams, users_teams},
     };
 
     pub fn get_shortcut(shortcut: &str, conn: &SqliteConnection) -> Option<Shortcut> {
@@ -21,5 +21,9 @@ mod no_dead_code {
             .filter(users_teams::user_mail.eq(mail))
             .load(conn)
             .unwrap()
+    }
+
+    pub fn get_team(slug: &str, conn: &SqliteConnection) -> Option<Team> {
+        teams::table.find(slug).first(conn).optional().unwrap()
     }
 }
