@@ -1,6 +1,7 @@
 use diesel::prelude::*;
 use rocket::{http::Status, serde::json::Json, State};
 use rocket_dyn_templates::Template;
+use serde::Deserialize;
 use serde_json::json;
 use std::{cmp::Ordering, collections::HashMap};
 
@@ -77,6 +78,39 @@ pub fn delete_team(
 
     let conn = pool.get().map_err(AppError::from)?;
     diesel::delete(teams::table.find(team))
+        .execute(&conn)
+        .map_err(AppError::from)?;
+
+    Ok(Status::Ok)
+}
+
+#[derive(Deserialize, AsChangeset)]
+#[table_name = "teams"]
+pub struct PatchableTeam {
+    pub title: Option<String>,
+    pub is_private: Option<bool>,
+    pub is_accepted: Option<bool>,
+}
+
+#[patch("/go/teams/<team>", data = "<data>")]
+pub fn patch_team(
+    team: String,
+    data: Json<PatchableTeam>,
+    user: User,
+    features: Features,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Template)> {
+    if !features.teams {
+        return Err(AppError::Disable.into());
+    }
+
+    if !user.is_admin {
+        return Err(AppError::Unauthorized.into());
+    }
+
+    let conn = pool.get().map_err(AppError::from)?;
+    diesel::update(teams::table.find(team))
+        .set(&data.into_inner())
         .execute(&conn)
         .map_err(AppError::from)?;
 

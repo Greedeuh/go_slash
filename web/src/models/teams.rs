@@ -17,7 +17,7 @@ pub const TEAM_COLUMNS: AllColumns = (
     teams::is_accepted,
 );
 
-#[derive(Insertable, Queryable, Serialize, Identifiable)]
+#[derive(Insertable, Queryable, Serialize, Identifiable, Debug, PartialEq, Eq)]
 #[table_name = "teams"]
 #[primary_key(slug)]
 pub struct Team {
