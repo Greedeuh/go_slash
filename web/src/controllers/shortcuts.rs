@@ -8,7 +8,6 @@ use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
-use crate::controllers::features;
 use crate::guards::SessionId;
 use crate::models::features::get_global_features;
 use crate::models::shortcuts::{sorted, NewShortcut};
