@@ -1,13 +1,10 @@
 use diesel::SqliteConnection;
-use go_web::guards::SESSION_COOKIE;
 use go_web::models::features::{Features, LoginFeature};
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
-use serde_json::json;
 use std::thread;
 use std::time::Duration;
-use thirtyfour::components::select::SelectElement;
 mod utils;
 use thirtyfour::prelude::*;
 use utils::*;
