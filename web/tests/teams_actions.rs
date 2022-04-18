@@ -424,3 +424,137 @@ fn patch_team() {
         })
     );
 }
+
+#[test]
+fn create_team_need_feature() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: false,
+        },
+        &conn,
+    );
+
+    let response = client
+        .post("/go/teams/slug1")
+        .json(&json!({ "title": "newTitle", "is_private": true}))
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Conflict);
+
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: false,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let response = client
+        .post("/go/teams/slug1")
+        .json(&json!({ "title": "newTitle", "is_private": true }))
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Conflict);
+}
+
+#[test]
+fn cant_create_already_existing() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, true, &conn);
+    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    client
+        .post("/go/teams/slug1")
+        .json(&json!({ "title": "newTitle", "is_private": true }))
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert!(get_team("", &conn).is_some());
+}
+
+#[test]
+fn create_team_as_admin() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let response = client
+        .post("/go/teams/slug1")
+        .json(&json!({ "title": "newTitle", "is_private": true }))
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(
+        get_team("slug1", &conn),
+        Some(Team {
+            slug: "slug1".to_string(),
+            title: "newTitle".to_string(),
+            is_private: true,
+            is_accepted: true
+        })
+    );
+}
+
+#[test]
+fn create_team_as_user() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user("some_mail@mail.com", "pwd", false, &[], &conn);
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let response = client
+        .post("/go/teams/slug1")
+        .json(&json!({ "title": "newTitle", "is_private": true }))
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(
+        get_team("slug1", &conn),
+        Some(Team {
+            slug: "slug1".to_string(),
+            title: "newTitle".to_string(),
+            is_private: true,
+            is_accepted: false
+        })
+    );
+}

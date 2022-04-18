@@ -8,7 +8,7 @@ use std::{cmp::Ordering, collections::HashMap};
 use crate::{
     models::{
         features::Features,
-        teams::TeamForOptUser,
+        teams::{Team, TeamForOptUser},
         users::{read_or_write, should_be_logged_in_with, Right, User},
         AppError,
     },
@@ -78,6 +78,41 @@ pub fn delete_team(
 
     let conn = pool.get().map_err(AppError::from)?;
     diesel::delete(teams::table.find(team))
+        .execute(&conn)
+        .map_err(AppError::from)?;
+
+    Ok(Status::Ok)
+}
+
+#[derive(Deserialize)]
+pub struct NewTeam {
+    pub title: String,
+    pub is_private: bool,
+}
+
+#[post("/go/teams/<team>", data = "<data>")]
+pub fn create_team(
+    team: String,
+    data: Json<NewTeam>,
+    user: User,
+    features: Features,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Template)> {
+    if !features.teams {
+        return Err(AppError::Disable.into());
+    }
+
+    let NewTeam { title, is_private } = data.into_inner();
+    let team = Team {
+        slug: team,
+        is_accepted: user.is_admin,
+        title,
+        is_private,
+    };
+
+    let conn = pool.get().map_err(AppError::from)?;
+    diesel::insert_into(teams::table)
+        .values(team)
         .execute(&conn)
         .map_err(AppError::from)?;
 
