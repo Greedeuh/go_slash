@@ -55,7 +55,7 @@ fn delete_team_need_feature() {
 }
 
 #[test]
-fn delete_team_user_need_to_be_admin() {
+fn delete_team_need_to_be_admin() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
     user("some_mail@mail.com", "pwd", false, &[], &conn);
@@ -80,6 +80,29 @@ fn delete_team_user_need_to_be_admin() {
         .dispatch();
 
     assert_eq!(response.status(), Status::Unauthorized);
+}
+
+#[test]
+fn cant_delete_global_team() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    client
+        .delete("/go/teams/")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert!(get_team("", &conn).is_some());
 }
 
 #[test]
@@ -283,6 +306,38 @@ fn patch_team_user_need_to_be_admin() {
         .dispatch();
 
     assert_eq!(response.status(), Status::Unauthorized);
+}
+
+#[test]
+fn cant_patch_global_team() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    client
+        .patch("/go/teams/")
+        .json(&json!({ "title": "newTitle", "is_private": true, "is_accepted": true }))
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(
+        get_team("", &conn),
+        Some(Team {
+            slug: "".to_string(),
+            title: "Global".to_string(),
+            is_private: false,
+            is_accepted: true
+        })
+    );
 }
 
 #[test]
