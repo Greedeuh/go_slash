@@ -1,0 +1,385 @@
+use diesel::SqliteConnection;
+use go_web::models::users::UserTeam;
+use rocket::futures::FutureExt;
+use rocket::http::Status;
+use rocket::tokio::sync::Mutex;
+use rocket::{async_test, http};
+use serde_json::json;
+use thirtyfour::prelude::*;
+
+mod utils;
+use go_web::guards::SESSION_COOKIE;
+use go_web::models::features::{Features, LoginFeature};
+use utils::*;
+
+#[test]
+fn post_user_team_need_feature() {
+    let (client, _conn) = launch_with("");
+    let response = client
+        .post("/go/user/teams/slug1")
+        .body(json!({ "rank": 0 }).to_string())
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Conflict);
+}
+
+#[test]
+fn post_user_team_need_user() {
+    let (client, conn) = launch_with("");
+
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+    let response = client
+        .post("/go/user/teams/slug1")
+        .body(json!({ "rank": 0 }).to_string())
+        .dispatch();
+    assert_eq!(response.status(), Status::Unauthorized);
+}
+
+#[test]
+fn post_user_team() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, false, &conn);
+    user("some_mail@mail.com", "pwd", false, &[], &conn);
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+    let response = client
+        .post("/go/user/teams/slug1")
+        .body(json!({ "rank": 0 }).to_string())
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+    assert_eq!(response.status(), Status::Created);
+}
+
+#[test]
+fn delete_user_team_need_user() {
+    let (client, conn) = launch_with("");
+    let response = client.delete("/go/user/teams/slug1").dispatch();
+
+    assert_eq!(response.status(), Status::Conflict);
+
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+    let response = client.delete("/go/user/teams/slug1").dispatch();
+    assert_eq!(response.status(), Status::Unauthorized);
+}
+
+#[test]
+fn delete_user_team() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        false,
+        &[("slug1", false, 0)],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+    let response = client
+        .delete("/go/user/teams/slug1")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+}
+
+#[async_test]
+async fn action_on_teams() {
+    in_browser(
+        "some_session_id: some_mail@mail.com",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                user("some_mail@mail.com", "pwd", false, &[(" ", false, 0)], &con);
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
+                        teams: true,
+                    },
+                    &con,
+                );
+
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await?;
+
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
+
+                let button = driver
+                    .find_element(By::Css(
+                        "[aria-label='Other teams'] [role='listitem'] button",
+                    ))
+                    .await?;
+                assert_eq!(button.text().await?, "Join");
+                button.click().await?;
+
+                assert_eq!(
+                    driver
+                        .find_element(By::Css(
+                            "[aria-label='User teams'] [role='listitem'] button"
+                        ))
+                        .await?
+                        .text()
+                        .await?,
+                    "Leave"
+                );
+
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
+
+                let leave = driver
+                    .find_element(By::Css(
+                        "[aria-label='User teams'] [role='listitem'] button",
+                    ))
+                    .await?;
+                assert_eq!(leave.text().await?, "Leave");
+                leave.click().await?;
+
+                assert_eq!(
+                    driver
+                        .find_element(By::Css(
+                            "[aria-label='Other teams'] [role='listitem'] button"
+                        ))
+                        .await?
+                        .text()
+                        .await?,
+                    "Join"
+                );
+
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
+
+                assert_eq!(
+                    driver
+                        .find_element(By::Css(
+                            "[aria-label='Other teams'] [role='listitem'] button"
+                        ))
+                        .await?
+                        .text()
+                        .await?,
+                    "Join"
+                );
+                Ok(())
+            }
+            .boxed()
+        },
+    )
+    .await;
+}
+
+#[test]
+fn put_user_teams_ranks() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, true, &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        false,
+        &[(" ", false, 0), ("slug1", false, 1)],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let response = client
+        .put("/go/user/teams/ranks")
+        .body(json!({ " ": 1, "slug1": 0 }).to_string())
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    let users_teams = get_user_team_links("some_mail@mail.com", &conn);
+
+    assert_eq!(
+        vec![
+            UserTeam {
+                user_mail: "some_mail@mail.com".to_string(),
+                team_slug: " ".to_string(),
+                is_admin: false,
+                is_accepted: true,
+                rank: 1
+            },
+            UserTeam {
+                user_mail: "some_mail@mail.com".to_string(),
+                team_slug: "slug1".to_string(),
+                is_admin: false,
+                is_accepted: true,
+                rank: 0
+            }
+        ],
+        users_teams
+    );
+
+    assert_eq!(response.status(), Status::Ok);
+}
+
+#[test]
+fn put_user_teams_ranks_need_feature() {
+    let (client, conn) = launch_with("");
+    team("slug1", "team1", false, true, &conn);
+
+    let response = client
+        .put("/go/user/teams/ranks")
+        .body(json!({ " ": 1, "slug1": 0 }).to_string())
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Conflict);
+}
+
+#[async_test]
+async fn user_team_ranks() {
+    in_browser(
+        "some_session_id: some_mail@mail.com",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                team("slug1", "team1", false, true, &con);
+                team("slug2", "team2", false, true, &con);
+                team("slug3", "team3", false, true, &con);
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    false,
+                    &[("", false, 1), ("slug1", false, 2), ("slug2", false, 0)],
+                    &con,
+                );
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
+                        teams: true,
+                    },
+                    &con,
+                );
+
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await?;
+
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
+
+                assert_eq!(
+                    driver
+                        .find_element(By::Css("[role='alert']"))
+                        .await?
+                        .text()
+                        .await?,
+                    "Drag and drop to prioritize team shortcuts in case of duplicates"
+                );
+                let teams = driver
+                    .find_elements(By::Css("[aria-label='User teams'] [role='listitem'] span"))
+                    .await?;
+
+                let expected_teams_sorted = vec!["team2", "Global", "team1"];
+                for i in 0..expected_teams_sorted.len() {
+                    assert_eq!(expected_teams_sorted[i], teams[i].text().await?);
+                }
+
+                driver
+                    .find_element(By::Css(
+                        "[aria-label='Other teams'] [role='listitem'] button",
+                    ))
+                    .await?
+                    .click()
+                    .await?;
+
+                let teams = driver
+                    .find_elements(By::Css("[aria-label='User teams'] [role='listitem'] span"))
+                    .await?;
+
+                let expected_teams_sorted = vec!["team2", "Global", "team1", "team3"];
+                for i in 0..expected_teams_sorted.len() {
+                    assert_eq!(expected_teams_sorted[i], teams[i].text().await?);
+                }
+
+                // drag & drop testing do not work
+                // let teams_rows = driver
+                //     .find_elements(By::Css("[aria-label='User teams'] [role='listitem']"))
+                //     .await?;
+
+                // driver
+                //     .action_chain()
+                //     .drag_and_drop_element(
+                //         &teams_rows[2],
+                //         &driver.find_element(By::Id("draggable")).await?,
+                //     )
+                //     .perform()
+                //     .await?;
+
+                // let teams = driver
+                //     .find_elements(By::Css("[aria-label='User teams'] [role='listitem'] span"))
+                //     .await?;
+
+                // let expected_teams_sorted = vec!["team1", "team2", "Global"];
+                // for i in 0..expected_teams_sorted.len() {
+                //     assert_eq!(expected_teams_sorted[i], teams[i].text().await?);
+                // }
+
+                // driver
+                //     .get(format!("http://localhost:{}/go/teams", port))
+                //     .await?;
+
+                // let teams = driver
+                //     .find_elements(By::Css("[aria-label='User teams'] [role='listitem'] span"))
+                //     .await?;
+                // for i in 0..expected_teams_sorted.len() {
+                //     assert_eq!(expected_teams_sorted[i], teams[i].text().await?);
+                // }
+
+                Ok(())
+            }
+            .boxed()
+        },
+    )
+    .await;
+}
