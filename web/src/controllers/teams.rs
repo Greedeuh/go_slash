@@ -120,7 +120,7 @@ pub fn create_team(
         .execute(&conn)
         .map_err(AppError::from)?;
 
-    Ok(Status::Ok)
+    Ok(Status::Created)
 }
 
 #[derive(Deserialize, AsChangeset)]

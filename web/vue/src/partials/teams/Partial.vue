@@ -4,10 +4,19 @@
       <div class="alert alert-primary flex-fill m-0" role="alert">
         Drag and drop to prioritize team shortcuts in case of duplicates
       </div>
-      <div v-if="right === 'write'" class="align-self-center ms-2">
+      <div v-if="right === 'write'" class="align-self-center">
+        <button
+          class="btn btn-lg btn-primary ms-2"
+          aria-label="Start creating team"
+          data-bs-toggle="modal"
+          data-bs-target="#create_modal"
+        >
+          Create
+          <i class="icon-plus ms-1"></i>
+        </button>
         <button
           @click="set_administer"
-          class="btn btn-lg"
+          class="btn btn-lg ms-2"
           :class="{ 'btn-light': !administer, 'btn-secondary': administer }"
           aria-label="Administrate"
         >
@@ -32,6 +41,7 @@
       @delete_team="delete_team"
       @accept="accept"
     />
+    <CreateTeamModal />
   </div>
 </template>
 
@@ -42,6 +52,7 @@ import { Team, UserTeamLink, sort_by_rank } from "./main";
 import TeamList from "./TeamList.vue";
 import UserTeamList from "./UserTeamList.vue";
 import _ from "lodash";
+import CreateTeamModal from "./CreateTeamModal.vue";
 
 interface Window {
   teams: Team[];
@@ -61,7 +72,7 @@ const RIGHT = win.right;
 
 export default defineComponent({
   name: "Partial",
-  components: { UserTeamList, TeamList },
+  components: { UserTeamList, TeamList, CreateTeamModal },
   data(): Data {
     return {
       teams: TEAMS,
@@ -150,7 +161,9 @@ export default defineComponent({
         .then((res) => {
           if (res.status === 200) {
             const team = this.teams.find((team) => team.slug == slug);
-            team.is_accepted = true;
+            if (team) {
+              team.is_accepted = true;
+            }
           }
         })
         .catch(console.error);

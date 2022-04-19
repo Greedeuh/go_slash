@@ -514,7 +514,7 @@ fn create_team_as_admin() {
         .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
 
-    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.status(), Status::Created);
     assert_eq!(
         get_team("slug1", &conn),
         Some(Team {
@@ -547,7 +547,7 @@ fn create_team_as_user() {
         .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
 
-    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.status(), Status::Created);
     assert_eq!(
         get_team("slug1", &conn),
         Some(Team {
