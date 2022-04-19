@@ -1,4 +1,4 @@
-use diesel::prelude::*;
+use diesel::{dsl::max, prelude::*};
 use rocket::{http::Status, serde::json::Json, State};
 use rocket_dyn_templates::Template;
 use serde::Deserialize;
@@ -9,7 +9,7 @@ use crate::{
     models::{
         features::Features,
         teams::{Team, TeamForOptUser},
-        users::{read_or_write, should_be_logged_in_with, Right, User},
+        users::{read_or_write, should_be_logged_in_with, Right, User, UserTeam},
         AppError,
     },
     schema::{
@@ -102,23 +102,42 @@ pub fn create_team(
         return Err(AppError::Disable.into());
     }
 
-    let NewTeam {
-        slug,
-        title,
-        is_private,
-    } = data.into_inner();
-    let team = Team {
-        slug,
-        is_accepted: user.is_admin,
-        title,
-        is_private,
-    };
-
     let conn = pool.get().map_err(AppError::from)?;
-    diesel::insert_into(teams::table)
-        .values(team)
-        .execute(&conn)
-        .map_err(AppError::from)?;
+    conn.transaction::<_, diesel::result::Error, _>(|| {
+        let NewTeam {
+            slug,
+            title,
+            is_private,
+        } = data.into_inner();
+        let team = Team {
+            slug: slug.clone(),
+            is_accepted: user.is_admin,
+            title,
+            is_private,
+        };
+        diesel::insert_into(teams::table)
+            .values(team)
+            .execute(&conn)?;
+
+        let previous_rank = (users_teams::table
+            .select(max(users_teams::rank))
+            .filter(users_teams::user_mail.eq(&user.mail))
+            .first::<Option<i16>>(&conn)?)
+        .unwrap_or(0);
+
+        let user_team = UserTeam {
+            user_mail: user.mail,
+            team_slug: slug,
+            is_admin: true,
+            is_accepted: true,
+            rank: previous_rank as i16 + 1,
+        };
+        diesel::insert_into(users_teams::table)
+            .values(user_team)
+            .execute(&conn)?;
+        Ok(())
+    })
+    .map_err(AppError::from)?;
 
     Ok(Status::Created)
 }

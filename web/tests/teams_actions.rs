@@ -1,5 +1,6 @@
 use diesel::SqliteConnection;
 use go_web::models::teams::Team;
+use go_web::models::users::UserTeam;
 use rocket::futures::FutureExt;
 use rocket::http::Status;
 use rocket::tokio::sync::Mutex;
@@ -556,6 +557,56 @@ fn create_team_as_user() {
             is_private: true,
             is_accepted: false
         })
+    );
+}
+
+#[test]
+fn create_team_creator_should_be_in_team_as_admin_with_higher_rank() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug", "title", true, false, &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        false,
+        &[("slug", false, 0)],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let response = client
+        .post("/go/teams")
+        .json(&json!({ "slug": "slug1", "title": "newTitle", "is_private": true }))
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Created);
+    assert_eq!(
+        get_user_team_links("some_mail@mail.com", &conn),
+        vec![
+            UserTeam {
+                user_mail: "some_mail@mail.com".to_string(),
+                team_slug: "slug".to_string(),
+                is_admin: false,
+                is_accepted: true,
+                rank: 0
+            },
+            UserTeam {
+                user_mail: "some_mail@mail.com".to_string(),
+                team_slug: "slug1".to_string(),
+                is_admin: true,
+                is_accepted: true,
+                rank: 1
+            }
+        ]
     );
 }
 
