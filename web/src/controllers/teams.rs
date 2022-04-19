@@ -86,13 +86,13 @@ pub fn delete_team(
 
 #[derive(Deserialize)]
 pub struct NewTeam {
+    pub slug: String,
     pub title: String,
     pub is_private: bool,
 }
 
-#[post("/go/teams/<team>", data = "<data>")]
+#[post("/go/teams", data = "<data>")]
 pub fn create_team(
-    team: String,
     data: Json<NewTeam>,
     user: User,
     features: Features,
@@ -102,9 +102,13 @@ pub fn create_team(
         return Err(AppError::Disable.into());
     }
 
-    let NewTeam { title, is_private } = data.into_inner();
+    let NewTeam {
+        slug,
+        title,
+        is_private,
+    } = data.into_inner();
     let team = Team {
-        slug: team,
+        slug,
         is_accepted: user.is_admin,
         title,
         is_private,

@@ -441,8 +441,8 @@ fn create_team_need_feature() {
     );
 
     let response = client
-        .post("/go/teams/slug1")
-        .json(&json!({ "title": "newTitle", "is_private": true}))
+        .post("/go/teams")
+        .json(&json!({ "slug": "slug1", "title": "newTitle", "is_private": true}))
         .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
 
@@ -460,8 +460,8 @@ fn create_team_need_feature() {
     );
 
     let response = client
-        .post("/go/teams/slug1")
-        .json(&json!({ "title": "newTitle", "is_private": true }))
+        .post("/go/teams")
+        .json(&json!({ "slug": "slug1", "title": "newTitle", "is_private": true }))
         .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
 
@@ -485,8 +485,8 @@ fn cant_create_already_existing() {
     );
 
     client
-        .post("/go/teams/slug1")
-        .json(&json!({ "title": "newTitle", "is_private": true }))
+        .post("/go/teams")
+        .json(&json!({ "slug": "slug1", "title": "newTitle", "is_private": true }))
         .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
 
@@ -509,8 +509,8 @@ fn create_team_as_admin() {
     );
 
     let response = client
-        .post("/go/teams/slug1")
-        .json(&json!({ "title": "newTitle", "is_private": true }))
+        .post("/go/teams")
+        .json(&json!({ "slug": "slug1", "title": "newTitle", "is_private": true }))
         .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
 
@@ -542,8 +542,8 @@ fn create_team_as_user() {
     );
 
     let response = client
-        .post("/go/teams/slug1")
-        .json(&json!({ "title": "newTitle", "is_private": true }))
+        .post("/go/teams")
+        .json(&json!({ "slug": "slug1", "title": "newTitle", "is_private": true }))
         .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
 
@@ -557,4 +557,97 @@ fn create_team_as_user() {
             is_accepted: false
         })
     );
+}
+
+#[async_test]
+async fn create_team_from_teams_page() {
+    in_browser(
+        "some_session_id: some_mail@mail.com",
+        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                user("some_mail@mail.com", "pwd", true, &[], &con);
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
+                        teams: true,
+                    },
+                    &con,
+                );
+
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await?;
+
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
+
+                assert!(
+                    !driver
+                        .find_element(By::Css("[role='dialog']"))
+                        .await?
+                        .is_displayed()
+                        .await?
+                );
+
+                let create_btn = driver
+                    .find_element(By::Css("button[aria-label='Start creating team']"))
+                    .await?;
+                assert_eq!(create_btn.text().await?, "Create");
+                create_btn.click().await?;
+
+                let create_dialog = driver.find_element(By::Css("[role='dialog']")).await?;
+                create_dialog.wait_until().displayed().await?;
+                assert_eq!(
+                    create_dialog
+                        .find_element(By::Tag("h5"))
+                        .await?
+                        .text()
+                        .await?,
+                    "Create team"
+                );
+
+                create_dialog
+                    .find_element(By::Name("slug"))
+                    .await?
+                    .send_keys("slug1")
+                    .await?;
+
+                create_dialog
+                    .find_element(By::Name("title"))
+                    .await?
+                    .send_keys("slug1")
+                    .await?;
+
+                create_dialog
+                    .find_element(By::Name("is_private"))
+                    .await?
+                    .click()
+                    .await?;
+
+                create_dialog
+                    .find_element(By::Css("button[aria-label='Create team']"))
+                    .await?
+                    .click()
+                    .await?;
+
+                assert!(dbg!(
+                    create_dialog
+                        .find_element(By::Css("[aria-label='Create team result']"))
+                        .await?
+                        .text()
+                        .await?
+                )
+                .starts_with("Success ! Your Admins will now have to validate your team."));
+
+                Ok(())
+            }
+            .boxed()
+        },
+    )
+    .await;
 }
