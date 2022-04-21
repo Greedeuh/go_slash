@@ -1,4 +1,4 @@
-use diesel::SqliteConnection;
+use diesel::PgConnection;
 use go_web::controllers::users::LoginSuccessfull;
 use go_web::models::features::{Features, LoginFeature};
 use rocket::async_test;
@@ -138,7 +138,7 @@ fn post_simple_login_not_a_mail() {
 async fn simple_login() {
     in_browser(
         "",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let conn = con.lock().await;
                 user(

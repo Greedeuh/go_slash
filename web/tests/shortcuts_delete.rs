@@ -75,13 +75,7 @@ fn delete_a_shortcut_return_unauthorized() {
 #[test]
 fn delete_a_shortcut_with_auth_authorized() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user(
-        "some_mail@mail.com",
-        "pwd",
-        false,
-        &[("slug1", true, 0)],
-        &conn,
-    );
+    user("some_mail@mail.com", "pwd", false, &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {

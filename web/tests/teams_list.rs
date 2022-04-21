@@ -1,4 +1,4 @@
-use diesel::SqliteConnection;
+use diesel::PgConnection;
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::http::Status;
@@ -23,9 +23,10 @@ fn feature_team_disable() {
 async fn layout_with_team_link_if_feature_team() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
+                team("slug1", "team1", false, true, &con);
                 user(
                     "some_mail@mail.com",
                     "pwd",
@@ -96,7 +97,7 @@ async fn layout_with_team_link_if_feature_team() {
 async fn list_teams_with_infos() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 team("slug1", "team1", false, true, &con);
@@ -174,7 +175,7 @@ async fn list_teams_with_infos() {
 async fn teams_user_team_then_others() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 team("slug1", "team1", false, true, &con);

@@ -9,7 +9,7 @@ use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
 use crate::models::features::Features;
-use crate::models::shortcuts::{sorted, NewShortcut};
+use crate::models::shortcuts::{sorted, NewShortcut, UpdatableShortcut};
 use crate::models::teams::{Team, TEAM_COLUMNS};
 use crate::models::users::{read_or_write, should_be_logged_in_if_features_with, Right, User};
 use crate::models::AppError;
@@ -181,12 +181,17 @@ pub fn put_shortcut(
 
     let conn = pool.get().map_err(AppError::from)?;
 
-    diesel::replace_into(shortcuts::table)
+    diesel::insert_into(shortcuts::table)
         .values(NewShortcut {
             shortcut: shortcut.to_string(),
-            url,
-            team_slug,
+            url: url.to_string(),
+            team_slug: team_slug.to_string(),
         })
+        // .on_conflict(SHORTCUT_COLUMNS)
+        // .do_nothing()
+        .on_conflict((shortcuts::shortcut, shortcuts::team_slug))
+        .do_update()
+        .set(UpdatableShortcut { url, team_slug })
         .execute(&conn)
         .map_err(AppError::from)?;
 

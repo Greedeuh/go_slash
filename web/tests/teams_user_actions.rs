@@ -1,4 +1,4 @@
-use diesel::SqliteConnection;
+use diesel::PgConnection;
 use go_web::models::users::UserTeam;
 use rocket::futures::FutureExt;
 use rocket::http::Status;
@@ -91,6 +91,7 @@ fn delete_user_team_need_user() {
 #[test]
 fn delete_user_team() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, false, &conn);
     user(
         "some_mail@mail.com",
         "pwd",
@@ -119,10 +120,10 @@ fn delete_user_team() {
 async fn action_on_teams() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
-                user("some_mail@mail.com", "pwd", false, &[(" ", false, 0)], &con);
+                user("some_mail@mail.com", "pwd", false, &[], &con);
                 global_features(
                     &Features {
                         login: LoginFeature {
@@ -214,7 +215,7 @@ fn put_user_teams_ranks() {
         "some_mail@mail.com",
         "pwd",
         false,
-        &[(" ", false, 0), ("slug1", false, 1)],
+        &[("", false, 0), ("slug1", false, 1)],
         &conn,
     );
     global_features(
@@ -230,7 +231,7 @@ fn put_user_teams_ranks() {
 
     let response = client
         .put("/go/user/teams/ranks")
-        .body(json!({ " ": 1, "slug1": 0 }).to_string())
+        .body(json!({ "": 1, "slug1": 0 }).to_string())
         .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
 
@@ -240,7 +241,7 @@ fn put_user_teams_ranks() {
         vec![
             UserTeam {
                 user_mail: "some_mail@mail.com".to_string(),
-                team_slug: " ".to_string(),
+                team_slug: "".to_string(),
                 is_admin: false,
                 is_accepted: true,
                 rank: 1
@@ -266,7 +267,7 @@ fn put_user_teams_ranks_need_feature() {
 
     let response = client
         .put("/go/user/teams/ranks")
-        .body(json!({ " ": 1, "slug1": 0 }).to_string())
+        .body(json!({ "": 1, "slug1": 0 }).to_string())
         .dispatch();
 
     assert_eq!(response.status(), Status::Conflict);
@@ -276,7 +277,7 @@ fn put_user_teams_ranks_need_feature() {
 async fn user_team_ranks() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 team("slug1", "team1", false, true, &con);

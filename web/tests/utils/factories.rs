@@ -2,9 +2,10 @@ pub use no_dead_code::*;
 
 #[allow(dead_code)]
 mod no_dead_code {
+    use diesel::pg::PgConnection;
     use diesel::prelude::*;
-    use diesel::sqlite::SqliteConnection;
     use go_web::{
+        guards::SESSION_COOKIE,
         models::{
             features::Features,
             shortcuts::NewShortcut,
@@ -16,8 +17,10 @@ mod no_dead_code {
         schema::users,
         schema::{shortcuts, users_teams},
     };
+    use serde_json::json;
+    use thirtyfour::Cookie;
 
-    pub fn shortcut(shortcut: &str, url: &str, team_slug: &str, db_con: &SqliteConnection) {
+    pub fn shortcut(shortcut: &str, url: &str, team_slug: &str, db_con: &PgConnection) {
         diesel::insert_into(shortcuts::table)
             .values(&NewShortcut {
                 shortcut: shortcut.to_string(),
@@ -33,7 +36,7 @@ mod no_dead_code {
         pwd: &str,
         admin: bool,
         teams: &[(&str, bool, i16)],
-        db_con: &SqliteConnection,
+        db_con: &PgConnection,
     ) {
         diesel::insert_into(users::table)
             .values(&User {
@@ -58,7 +61,7 @@ mod no_dead_code {
         }
     }
 
-    pub fn global_features(features: &Features, db_con: &SqliteConnection) {
+    pub fn global_features(features: &Features, db_con: &PgConnection) {
         diesel::update(global_features::table)
             .set(global_features::features.eq(serde_json::to_string(features).unwrap()))
             .execute(db_con)
@@ -70,7 +73,7 @@ mod no_dead_code {
         title: &str,
         is_private: bool,
         is_accepted: bool,
-        db_con: &SqliteConnection,
+        db_con: &PgConnection,
     ) {
         diesel::insert_into(teams::table)
             .values(&Team {
@@ -81,5 +84,15 @@ mod no_dead_code {
             })
             .execute(db_con)
             .unwrap();
+    }
+
+    pub fn session_cookie(session_id: &str, port: u16) -> Cookie {
+        let mut cookie = Cookie::new(SESSION_COOKIE, json!(session_id));
+        cookie.set_domain(Some(format!("localhost:{}", port)));
+        cookie
+    }
+
+    pub fn session(port: u16) -> Cookie {
+        session_cookie("some_session_id", port)
     }
 }

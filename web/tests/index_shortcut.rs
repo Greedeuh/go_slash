@@ -1,4 +1,4 @@
-use diesel::SqliteConnection;
+use diesel::PgConnection;
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
@@ -10,7 +10,7 @@ use utils::*;
 async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
     in_browser(
         "",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 shortcut(
@@ -95,7 +95,7 @@ async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
 async fn undefined_shortcut_return_search_filled_and_edit_form() {
     in_browser(
         "",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 shortcut(

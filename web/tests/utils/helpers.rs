@@ -2,7 +2,7 @@ pub use no_dead_code::*;
 
 #[allow(dead_code)]
 mod no_dead_code {
-    use diesel::{Connection, SqliteConnection};
+    use diesel::{prelude::*, Connection, PgConnection};
     use go_web::{models::users::Sessions, server, AppConfig};
     use lazy_static::lazy_static;
     use rocket::{
@@ -12,7 +12,6 @@ mod no_dead_code {
     };
     use std::{
         env,
-        fs::{create_dir, write},
         panic::{resume_unwind, AssertUnwindSafe},
         time::Duration,
     };
@@ -26,19 +25,26 @@ mod no_dead_code {
         static ref AVAILABLE_PORTS: Mutex<Vec<u16>> = Mutex::new((8001..9000).collect());
     }
 
-    #[allow(unused_must_use)]
-    fn gen_file_path(content: &str) -> String {
-        create_dir("test_dir");
+    pub fn random_pg_url() -> (String, String) {
+        let uuid = dbg!(format!("go_{}", Uuid::new_v4().to_simple()));
+        (
+            format!("postgres://postgres:postgres@localhost:6543/{}", uuid),
+            uuid,
+        )
+    }
 
-        let path = format!("test_dir/filename_{}.yml", Uuid::new_v4());
-        if !content.is_empty() {
-            write(&path, content).unwrap();
-        }
-        path
+    pub fn setup_db_conn(db_url: &str, db: &str) -> PgConnection {
+        let pg = PgConnection::establish("postgres://postgres:postgres@localhost:6543/postgres")
+            .unwrap();
+        diesel::dsl::sql::<bool>(&format!("CREATE DATABASE {};", db))
+            .execute(&pg)
+            .unwrap();
+        PgConnection::establish(db_url).unwrap()
     }
 
     pub fn launch_empty() -> Client {
-        let db_path = gen_file_path("");
+        let (db_path, db) = random_pg_url();
+        setup_db_conn(&db_path, &db);
 
         Client::tracked(server(
             PORT,
@@ -52,9 +58,9 @@ mod no_dead_code {
         .expect("valid rocket instance")
     }
 
-    pub fn launch_with(sessions: &str) -> (Client, SqliteConnection) {
-        let db_path = gen_file_path("");
-        let db_conn = SqliteConnection::establish(&db_path).unwrap();
+    pub fn launch_with(sessions: &str) -> (Client, PgConnection) {
+        let (db_path, db) = random_pg_url();
+        let db_conn = setup_db_conn(&db_path, &db);
 
         (
             Client::tracked(server(
@@ -82,7 +88,7 @@ mod no_dead_code {
     where
         F: for<'a> FnOnce(
             &'a WebDriver,
-            Mutex<SqliteConnection>,
+            Mutex<PgConnection>,
             u16,
         ) -> BoxFuture<'a, Result<(), WebDriverError>>,
     {
@@ -95,7 +101,7 @@ mod no_dead_code {
     where
         F: for<'a> FnOnce(
             &'a WebDriver,
-            Mutex<SqliteConnection>,
+            Mutex<PgConnection>,
             u16,
         ) -> BoxFuture<'a, Result<(), WebDriverError>>,
     {
@@ -108,7 +114,7 @@ mod no_dead_code {
     where
         F: for<'a> FnOnce(
             &'a WebDriver,
-            Mutex<SqliteConnection>,
+            Mutex<PgConnection>,
             u16,
         ) -> BoxFuture<'a, Result<(), WebDriverError>>,
     {
@@ -119,7 +125,7 @@ mod no_dead_code {
     where
         F: for<'a> FnOnce(
             &'a WebDriver,
-            Mutex<SqliteConnection>,
+            Mutex<PgConnection>,
             u16,
         ) -> BoxFuture<'a, Result<(), WebDriverError>>,
     {
@@ -134,11 +140,11 @@ mod no_dead_code {
             _ => do_not_close_browser || !headless,
         };
 
-        let db_path = gen_file_path("");
+        let (db_path, db) = random_pg_url();
         let srv_db_path = db_path.clone();
         let sessions = Sessions::from(sessions);
 
-        let db_conn = SqliteConnection::establish(&db_path).unwrap();
+        let db_conn = setup_db_conn(&db_path, &db);
 
         let port;
         {
@@ -162,10 +168,12 @@ mod no_dead_code {
             .expect("Driver build failed");
 
         let mut count = 0;
-        while driver
-            .get(format!("http://localhost:{}/go/health", port))
-            .await
-            .is_err()
+        while dbg!(
+            driver
+                .get(format!("http://localhost:{}/go/health", port))
+                .await
+        )
+        .is_err()
             && count < 50
         {
             count += 1;
@@ -175,8 +183,11 @@ mod no_dead_code {
             sleep();
         }
 
-        let db_conn = Mutex::new(db_conn);
-        let may_panic = AssertUnwindSafe(async { f(&driver, db_conn, port).await.unwrap() });
+        let may_panic;
+        {
+            let db_conn = Mutex::new(db_conn);
+            may_panic = AssertUnwindSafe(async { f(&driver, db_conn, port).await.unwrap() });
+        }
 
         let maybe_panicked = may_panic.catch_unwind().await;
 

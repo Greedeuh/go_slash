@@ -121,13 +121,7 @@ fn put_shortcut_should_return_unauthorized() {
 #[test]
 fn put_shortcut_should_is_ok_with_auth() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user(
-        "some_mail@mail.com",
-        "pwd",
-        false,
-        &[("slug1", true, 0)],
-        &conn,
-    );
+    user("some_mail@mail.com", "pwd", false, &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {

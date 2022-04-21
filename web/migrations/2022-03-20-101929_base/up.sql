@@ -11,14 +11,14 @@ CREATE TABLE shortcuts (
   shortcut  VARCHAR NOT NULL,
   team_slug VARCHAR NOT NULL,
   url       VARCHAR NOT NULL,
-  FOREIGN KEY (team_slug) REFERENCES teams(slug),
+  FOREIGN KEY (team_slug) REFERENCES teams(slug) ON DELETE CASCADE,
   PRIMARY KEY (shortcut, team_slug)
 );
 
 CREATE TABLE users (
-  mail VARCHAR NOT NULL PRIMARY KEY,
-  pwd VARCHAR NOT NULL,
-  is_admin BOOLEAN NOT NULL
+  mail      VARCHAR NOT NULL PRIMARY KEY,
+  pwd       VARCHAR NOT NULL,
+  is_admin  BOOLEAN NOT NULL
 );
 
 CREATE TABLE global_features (
@@ -33,7 +33,7 @@ CREATE TABLE users_teams (
   is_admin    BOOLEAN NOT NULL,
   is_accepted BOOLEAN NOT NULL,
   rank        SMALLINT NOT NULL,
-  FOREIGN KEY (user_mail) REFERENCES users(mail),
-  FOREIGN KEY (team_slug) REFERENCES teams(slug),
+  FOREIGN KEY (user_mail) REFERENCES users(mail) ON DELETE CASCADE,
+  FOREIGN KEY (team_slug) REFERENCES teams(slug) ON DELETE CASCADE,
   PRIMARY KEY (user_mail, team_slug)
 );

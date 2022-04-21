@@ -9,7 +9,7 @@ extern crate diesel;
 extern crate diesel_migrations;
 use diesel::{
     r2d2::{ConnectionManager, Pool, PooledConnection},
-    SqliteConnection,
+    PgConnection,
 };
 use rocket::{
     fairing::AdHoc,
@@ -40,8 +40,8 @@ pub struct AppConfig {
     pub simple_login_salt2: String,
 }
 
-pub type DbPool = Pool<ConnectionManager<SqliteConnection>>;
-pub type DbConn = PooledConnection<ConnectionManager<SqliteConnection>>;
+pub type DbPool = Pool<ConnectionManager<PgConnection>>;
+pub type DbConn = PooledConnection<ConnectionManager<PgConnection>>;
 
 pub fn server(
     port: u16,
@@ -54,7 +54,7 @@ pub fn server(
 ) -> Rocket<Build> {
     dotenv().ok();
 
-    let db_manager: ConnectionManager<SqliteConnection> = ConnectionManager::new(db_url);
+    let db_manager: ConnectionManager<PgConnection> = ConnectionManager::new(db_url);
     let db_pool = Pool::builder().max_size(15).build(db_manager).unwrap();
 
     if run_migration {

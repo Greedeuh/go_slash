@@ -1,4 +1,4 @@
-use diesel::SqliteConnection;
+use diesel::PgConnection;
 use go_web::models::teams::Team;
 use go_web::models::users::UserTeam;
 use rocket::futures::FutureExt;
@@ -135,7 +135,7 @@ fn delete_team() {
 async fn admin_action_on_teams() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 team("slug1", "team1", false, false, &con);
@@ -158,7 +158,7 @@ async fn admin_action_on_teams() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(dbg!(Cookie::new(SESSION_COOKIE, json!("some_session_id"))))
                     .await?;
 
                 driver
@@ -614,7 +614,7 @@ fn create_team_creator_should_be_in_team_as_admin_with_higher_rank() {
 async fn create_team_from_teams_page() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 user("some_mail@mail.com", "pwd", true, &[], &con);

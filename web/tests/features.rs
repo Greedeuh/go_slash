@@ -1,4 +1,4 @@
-use diesel::SqliteConnection;
+use diesel::PgConnection;
 use go_web::models::features::{Features, LoginFeature};
 use rocket::async_test;
 use rocket::futures::FutureExt;
@@ -16,7 +16,7 @@ use go_web::guards::SESSION_COOKIE;
 async fn features_should_list_editable_features() {
     in_browser(
         "",
-        |driver: &WebDriver, _con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, _con: Mutex<PgConnection>, port: u16| {
             async move {
                 driver
                     .get(format!("http://localhost:{}/go/features", port))

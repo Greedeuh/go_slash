@@ -1,4 +1,4 @@
-use diesel::SqliteConnection;
+use diesel::PgConnection;
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
@@ -10,7 +10,7 @@ use utils::*;
 async fn index_should_list_shortcuts() {
     in_browser(
         "",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 team("team1", "Team 1", false, true, &con);
@@ -74,10 +74,10 @@ async fn index_should_list_shortcuts() {
 async fn index_user_as_sugestions_when_typing() {
     in_browser(
         "",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
-                team("team1", "Team 1", false, true, &con);
+                team("slug1", "Team 1", false, true, &con);
                 shortcut(
                     "newShortcut",
                     &format!("http://localhost:{}/newShortcut", port),
@@ -141,7 +141,7 @@ async fn index_user_as_sugestions_when_typing() {
 async fn index_user_can_search() {
     in_browser(
         "",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 shortcut(

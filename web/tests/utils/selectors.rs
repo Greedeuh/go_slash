@@ -8,7 +8,7 @@ mod no_dead_code {
         schema::{shortcuts, teams, users_teams},
     };
 
-    pub fn get_shortcut(shortcut: &str, conn: &SqliteConnection) -> Option<Shortcut> {
+    pub fn get_shortcut(shortcut: &str, conn: &PgConnection) -> Option<Shortcut> {
         shortcuts::table
             .filter(shortcuts::shortcut.eq(shortcut))
             .first(conn)
@@ -16,14 +16,14 @@ mod no_dead_code {
             .unwrap()
     }
 
-    pub fn get_user_team_links(mail: &str, conn: &SqliteConnection) -> Vec<UserTeam> {
+    pub fn get_user_team_links(mail: &str, conn: &PgConnection) -> Vec<UserTeam> {
         users_teams::table
             .filter(users_teams::user_mail.eq(mail))
             .load(conn)
             .unwrap()
     }
 
-    pub fn get_team(slug: &str, conn: &SqliteConnection) -> Option<Team> {
+    pub fn get_team(slug: &str, conn: &PgConnection) -> Option<Team> {
         teams::table.find(slug).first(conn).optional().unwrap()
     }
 }

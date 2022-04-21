@@ -1,4 +1,4 @@
-use diesel::SqliteConnection;
+use diesel::PgConnection;
 use go_web::guards::SESSION_COOKIE;
 use go_web::models::features::{Features, LoginFeature};
 use rocket::async_test;
@@ -14,7 +14,7 @@ use utils::*;
 async fn index_user_can_delete_shortcuts() {
     in_browser(
         "",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 shortcut(
@@ -66,7 +66,7 @@ async fn index_user_can_delete_shortcuts() {
 async fn index_user_can_delete_shortcuts_with_team() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 team("team1", "Team 1", false, true, &con);
@@ -131,7 +131,7 @@ async fn index_user_can_delete_shortcuts_with_team() {
 async fn index_user_can_add_shortcuts() {
     in_browser(
         "",
-        |driver: &WebDriver, _con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, _con: Mutex<PgConnection>, port: u16| {
             async move {
                 driver.get(format!("http://localhost:{}", port)).await?;
 
@@ -207,7 +207,7 @@ async fn index_user_can_add_shortcuts() {
 async fn index_user_can_add_shortcuts_for_team() {
     in_browser(
         "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<SqliteConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
                 team("slug1", "team1", false, false, &con);

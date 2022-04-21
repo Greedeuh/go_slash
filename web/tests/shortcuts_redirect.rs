@@ -116,13 +116,7 @@ fn shortcut_read_private_should_return_unauthorized() {
 #[test]
 fn shortcut_read_private_should_return_ok_with_session() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user(
-        "some_mail@mail.com",
-        "pwd",
-        false,
-        &[("slug1", true, 0)],
-        &conn,
-    );
+    user("some_mail@mail.com", "pwd", false, &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
