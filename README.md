@@ -16,7 +16,7 @@ Manage shortcuts at `go/` using the wrench next to the search bar or at `go/your
 
 `var_name=default_value` => required?, description
 
-`DATABASE_URL` => required, sqlite file path eg `DATABASE_URL=go.db`
+`DATABASE_URL` => required, postgres connection url `postgres://user:pwd@localhost/db_name`
 
 `PORT=8000` => listening port
 
@@ -35,11 +35,11 @@ In `web/` run `cargo build -r` then you got in `target\release` you got the app 
 
 eg.
 
-`VARS... go_web` or `DATABASE_URL=go.db SALT1=random1 SALT2=random2 cargo run`
+`VARS... go_web` or `DATABASE_URL=postgres://user:pwd@localhost/db_name SALT1=random1 SALT2=random2 cargo run`
 
 #### Manage DB
 
-For now only sqlite is available.
+For now only postgres is available.
 Use [diesel](https://diesel.rs/) cli to manage db migrations.
 
 ## Contributing
