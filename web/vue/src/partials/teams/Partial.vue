@@ -41,7 +41,7 @@
       @delete_team="delete_team"
       @accept="accept"
     />
-    <CreateTeamModal />
+    <CreateTeamModal @created="team_created" />
   </div>
 </template>
 
@@ -87,12 +87,10 @@ export default defineComponent({
     other_teams(): Team[] {
       return this.teams.filter((team) => !team.user_link);
     },
-    next_rank() {
-      const that = this as { user_teams: Team[] };
-      const length = that.user_teams.length;
-      return length === 0
-        ? 0
-        : (that.user_teams[length - 1].user_link as UserTeamLink).rank + 1;
+    next_rank(): number {
+      return this.user_teams.reduce((rank, team) => {
+        return Math.max(rank ?? 0, team.user_link?.rank ?? 0);
+      }, 0);
     },
   },
   methods: {
@@ -167,6 +165,23 @@ export default defineComponent({
           }
         })
         .catch(console.error);
+    },
+    team_created(team: Team) {
+      let next_rank = this.user_teams.reduce((rank, b) => {
+        return Math.max(rank ?? 0, b.user_link?.rank ?? 0);
+      }, 0);
+
+      this.teams = [
+        ...this.teams,
+        {
+          ...team,
+          user_link: {
+            rank: this.next_rank,
+            is_admin: true,
+            is_accepted: true,
+          },
+        },
+      ];
     },
   },
 });

@@ -36,12 +36,13 @@ export default defineComponent({
   data() {
     return { success: false };
   },
-
+  emits: ["created"],
   methods: {
     create(team: { slug: string; title: string; is_private: string }) {
       axios.post("/go/teams", team).then((res) => {
         if (res.status === 201) {
           this.success = true;
+          this.$emit("created", { ...team, is_accepted: false });
         }
       });
     },

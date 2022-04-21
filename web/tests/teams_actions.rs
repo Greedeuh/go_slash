@@ -671,7 +671,7 @@ async fn create_team_from_teams_page() {
                 create_dialog
                     .find_element(By::Name("title"))
                     .await?
-                    .send_keys("slug1")
+                    .send_keys("title1")
                     .await?;
 
                 create_dialog
@@ -694,6 +694,11 @@ async fn create_team_from_teams_page() {
                         .await?
                 )
                 .starts_with("Success ! Your Admins will now have to validate your team."));
+
+                let teams = driver
+                    .find_elements(By::Css("[aria-label='User teams'] span"))
+                    .await?;
+                assert_eq!(teams.last().unwrap().text().await?, "title1");
 
                 Ok(())
             }

@@ -53,7 +53,7 @@ export default defineComponent({
   data() {
     return { slug: "", title: "", is_private: false };
   },
-  emits: [],
+  emits: ["create"],
   methods: {
     create() {
       this.$emit("create", {
