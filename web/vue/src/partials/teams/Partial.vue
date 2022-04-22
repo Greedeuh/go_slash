@@ -167,10 +167,6 @@ export default defineComponent({
         .catch(console.error);
     },
     team_created(team: Team) {
-      let next_rank = this.user_teams.reduce((rank, b) => {
-        return Math.max(rank ?? 0, b.user_link?.rank ?? 0);
-      }, 0);
-
       this.teams = [
         ...this.teams,
         {
