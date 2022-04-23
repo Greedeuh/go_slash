@@ -65,6 +65,11 @@ impl<'r> FromRequest<'r> for User {
     type Error = serde_json::Value;
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let features = try_outcome!(req.guard::<Features>().await);
+        if !features.login.simple {
+            return Outcome::Success(User::fake_admin());
+        }
+
         let pool: Outcome<&State<DbPool>, Self::Error> = req
             .guard::<&State<DbPool>>()
             .await
@@ -80,7 +85,7 @@ impl<'r> FromRequest<'r> for User {
         let session_id = try_outcome!(req.guard::<SessionId>().await);
 
         match get_user(&session_id, sessions, pool) {
-            Ok(features) => Outcome::Success(features),
+            Ok(user) => Outcome::Success(user),
             Err(err) => Outcome::Failure(err.into()),
         }
     }

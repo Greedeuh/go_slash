@@ -1,13 +1,15 @@
-use diesel::{prelude::*, Associations, Identifiable, Insertable};
-use rocket::State;
-use std::{collections::HashMap, sync::Mutex};
-
-use crate::models::features::Features;
 use crate::schema::users;
 use crate::schema::users::dsl;
 use crate::schema::users_teams;
 use crate::DbConn;
 use crate::{guards::SessionId, models::AppError};
+use diesel::{deserialize, prelude::*, serialize, Associations, Identifiable, Insertable};
+use rocket::State;
+use serde::Deserialize;
+use std::str::FromStr;
+use std::vec;
+use std::{collections::HashMap, sync::Mutex};
+use strum_macros::{Display, EnumString};
 
 #[derive(Insertable, Queryable, Identifiable, Debug)]
 #[table_name = "users"]
@@ -15,7 +17,7 @@ use crate::{guards::SessionId, models::AppError};
 pub struct User {
     pub mail: String,
     pub pwd: String,
-    pub is_admin: bool,
+    pub capabilities: Vec<Capability>,
 }
 
 #[derive(Identifiable, Queryable, Associations, Insertable, PartialEq, Debug, Serialize)]
@@ -36,6 +38,16 @@ pub struct UserTeam {
 #[derive(Default)]
 pub struct Sessions {
     sessions: Mutex<HashMap<String, String>>,
+}
+
+impl User {
+    pub fn fake_admin() -> Self {
+        Self {
+            mail: "fake_admin".to_string(),
+            pwd: "fake_pwd".to_string(),
+            capabilities: Capability::all(),
+        }
+    }
 }
 
 impl Sessions {
@@ -68,74 +80,77 @@ impl From<&str> for Sessions {
     }
 }
 
-pub enum Right {
-    Admin,
-    Read,
-    Write,
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    FromSqlRow,
+    EnumString,
+    AsExpression,
+    Display,
+)]
+#[sql_type = "diesel::sql_types::Text"]
+pub enum Capability {
+    Features,
+    ShortcutsRead,
+    ShortcutsWrite,
+    TeamsRead,
+    TeamsWrite,
+    UsersTeamsRead,
+    UsersTeamsWrite,
 }
 
-pub fn read_or_write(features: &Features, user_mail: &Option<String>) -> Result<String, AppError> {
-    let features = &features.login;
-
-    Ok(
-        if features.simple && features.write_private && user_mail.is_none() {
-            "read".to_string()
-        } else {
-            "write".to_string()
-        },
-    )
-}
-
-pub fn should_be_logged_in_with(
-    right: &Right,
-    user: Option<User>,
-    features: &Features,
-) -> Result<User, AppError> {            
-    should_be_logged_in_if_features_with(right, &user,  features)?;
-    match user {
-        None=> Err(AppError::Unauthorized),
-        Some(user)=> {
-            Ok(user)
-        }
+impl Capability {
+    fn all() -> Vec<Capability> {
+        vec![
+            Capability::Features,
+            Capability::ShortcutsRead,
+            Capability::ShortcutsWrite,
+            Capability::TeamsRead,
+            Capability::TeamsWrite,
+            Capability::UsersTeamsRead,
+            Capability::UsersTeamsWrite,
+        ]
     }
-
 }
 
-pub fn should_be_logged_in_if_features_with(
-    right: &Right,
-    user: &Option<User>,
-    features: &Features,
-) -> Result<(), AppError> {
-    if features.login.simple {
-        match right {
-            Right::Admin => {
-                if let Some(user) = user && user.is_admin {
-                    Ok(())
-                } else {
-                    Err(AppError::Unauthorized)
-                }
-            }
-            Right::Read if features.login.read_private => {
-                if user.is_some() {
-                    Ok(())
-                } else {
-                    Err(AppError::Unauthorized)
-                }            }
-            Right::Write if features.login.write_private => {
-                if user.is_some() {
-                    Ok(())
-                } else {
-                    Err(AppError::Unauthorized)
-                }               }
-            _ => if user.is_some() {
-                    Ok(())
-                } else {
-                    Err(AppError::Unauthorized)
-                }   
-            
-        }
-    } else {
+impl deserialize::FromSql<diesel::sql_types::Text, diesel::pg::Pg> for Capability {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        let s: String =
+            deserialize::FromSql::<diesel::sql_types::Text, diesel::pg::Pg>::from_sql(bytes)?;
+        let r = Capability::from_str(&s)?;
+        Ok(r)
+    }
+}
+
+impl serialize::ToSql<diesel::sql_types::Text, diesel::pg::Pg> for Capability
+where
+    String: serialize::ToSql<diesel::sql_types::Text, diesel::pg::Pg>,
+{
+    fn to_sql<W>(
+        &self,
+        out: &mut diesel::serialize::Output<'_, W, diesel::pg::Pg>,
+    ) -> std::result::Result<
+        diesel::serialize::IsNull,
+        std::boxed::Box<(dyn std::error::Error + std::marker::Send + std::marker::Sync + 'static)>,
+    >
+    where
+        W: std::io::Write,
+    {
+        out.write_all(self.to_string().as_bytes())?;
+        Ok(diesel::types::IsNull::No)
+    }
+}
+
+pub fn should_have_capability(user: &User, capability: Capability) -> Result<(), AppError> {
+    if user.capabilities.contains(&capability) {
         Ok(())
+    } else {
+        Err(AppError::Unauthorized)
     }
 }
 

@@ -48,7 +48,7 @@ fn post_user_team_need_user() {
 fn post_user_team() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, false, &conn);
-    user("some_mail@mail.com", "pwd", false, &[], &conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -95,8 +95,8 @@ fn delete_user_team() {
     user(
         "some_mail@mail.com",
         "pwd",
-        false,
         &[("slug1", false, 0)],
+        &[],
         &conn,
     );
     global_features(
@@ -123,7 +123,7 @@ async fn action_on_teams() {
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
-                user("some_mail@mail.com", "pwd", false, &[], &con);
+                user("some_mail@mail.com", "pwd", &[], &[], &con);
                 global_features(
                     &Features {
                         login: LoginFeature {
@@ -214,8 +214,8 @@ fn put_user_teams_ranks() {
     user(
         "some_mail@mail.com",
         "pwd",
-        false,
         &[("", false, 0), ("slug1", false, 1)],
+        &[],
         &conn,
     );
     global_features(
@@ -286,8 +286,8 @@ async fn user_team_ranks() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    false,
                     &[("", false, 1), ("slug1", false, 2), ("slug2", false, 0)],
+                    &[],
                     &con,
                 );
                 global_features(

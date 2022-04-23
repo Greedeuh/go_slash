@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use diesel::dsl::count;
 use diesel::prelude::*;
 use lazy_static::lazy_static;
@@ -11,7 +13,7 @@ use uuid::Uuid;
 
 use crate::models::features::Features;
 use crate::models::teams::Team;
-use crate::models::users::{should_be_logged_in_with, Right, User, UserTeam};
+use crate::models::users::{should_have_capability, Capability, User, UserTeam};
 use crate::schema::users::dsl;
 use crate::schema::{teams, users_teams};
 use crate::DbPool;
@@ -100,7 +102,7 @@ pub struct UserTeamLink {
 
 #[post("/go/user/teams", data = "<team_user_link>")]
 pub fn join_global_team(
-    user: Option<User>,
+    user: User,
     team_user_link: Json<UserTeamLink>,
     features: Features,
     pool: &State<DbPool>,
@@ -112,7 +114,7 @@ pub fn join_global_team(
 pub fn join_team(
     slug: String,
     team_user_link: Json<UserTeamLink>,
-    user: Option<User>,
+    user: User,
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
@@ -120,7 +122,7 @@ pub fn join_team(
         return Err(AppError::Disable.into());
     }
 
-    let user = should_be_logged_in_with(&Right::Read, user, &features)?;
+    should_have_capability(&user, Capability::UsersTeamsWrite)?;
 
     let conn = pool.get().map_err(AppError::from)?;
     let team: Option<Team> = teams::table
@@ -151,7 +153,7 @@ pub fn join_team(
 
 #[delete("/go/user/teams")]
 pub fn leave_global_team(
-    user: Option<User>,
+    user: User,
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
@@ -161,7 +163,7 @@ pub fn leave_global_team(
 #[delete("/go/user/teams/<slug>")]
 pub fn leave_team(
     slug: String,
-    user: Option<User>,
+    user: User,
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
@@ -169,7 +171,7 @@ pub fn leave_team(
         return Err(AppError::Disable.into());
     }
 
-    let user = should_be_logged_in_with(&Right::Read, user, &features)?;
+    should_have_capability(&user, Capability::UsersTeamsWrite)?;
 
     let conn = pool.get().map_err(AppError::from)?;
     diesel::delete(users_teams::table)
@@ -180,6 +182,43 @@ pub fn leave_team(
         )
         .execute(&conn)
         .map_err(AppError::from)?;
+
+    Ok(Status::Ok)
+}
+
+#[put("/go/user/teams/ranks", data = "<team_ranks>")]
+pub fn put_user_team_ranks(
+    team_ranks: Json<HashMap<String, u16>>,
+    user: User,
+    features: Features,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Template)> {
+    if !features.teams {
+        return Err(AppError::Disable.into());
+    }
+
+    should_have_capability(&user, Capability::UsersTeamsWrite)?;
+
+    let conn = pool.get().map_err(AppError::from)?;
+    conn.transaction::<_, diesel::result::Error, _>(|| {
+        for (slug, rank) in team_ranks.into_inner() {
+            match diesel::update(users_teams::table.find((&user.mail, &slug)))
+                .set(users_teams::rank.eq(rank as i16))
+                .execute(&conn)
+            {
+                Ok(_) => (),
+                Err(e) => {
+                    error!(
+                        "Team rank update failed for {} rank {}, rollback transaction: {:?}",
+                        slug, rank, e
+                    );
+                    return Err(diesel::result::Error::RollbackTransaction);
+                }
+            }
+        }
+        Ok(())
+    })
+    .map_err(AppError::from)?;
 
     Ok(Status::Ok)
 }

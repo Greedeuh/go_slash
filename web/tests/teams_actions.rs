@@ -17,7 +17,7 @@ use utils::*;
 fn delete_team_need_feature() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
-    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -59,7 +59,7 @@ fn delete_team_need_feature() {
 fn delete_team_need_to_be_admin() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
-    user("some_mail@mail.com", "pwd", false, &[], &conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -86,7 +86,7 @@ fn delete_team_need_to_be_admin() {
 #[test]
 fn cant_delete_global_team() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -110,7 +110,7 @@ fn cant_delete_global_team() {
 fn delete_team() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
-    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -142,8 +142,8 @@ async fn admin_action_on_teams() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    true,
                     &[("slug1", false, 1)],
+                    &[],
                     &con,
                 );
                 global_features(
@@ -240,7 +240,7 @@ async fn admin_action_on_teams() {
 fn patch_team_need_feature() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
-    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -284,7 +284,7 @@ fn patch_team_need_feature() {
 fn patch_team_user_need_to_be_admin() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
-    user("some_mail@mail.com", "pwd", false, &[], &conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -312,7 +312,7 @@ fn patch_team_user_need_to_be_admin() {
 #[test]
 fn cant_patch_global_team() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -345,7 +345,7 @@ fn cant_patch_global_team() {
 fn patch_team() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
-    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -429,7 +429,7 @@ fn patch_team() {
 #[test]
 fn create_team_need_feature() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -473,7 +473,7 @@ fn create_team_need_feature() {
 fn cant_create_already_existing() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
-    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -497,7 +497,7 @@ fn cant_create_already_existing() {
 #[test]
 fn create_team_as_admin() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user("some_mail@mail.com", "pwd", true, &[], &conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -530,7 +530,7 @@ fn create_team_as_admin() {
 #[test]
 fn create_team_as_user() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user("some_mail@mail.com", "pwd", false, &[], &conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -567,8 +567,8 @@ fn create_team_creator_should_be_in_team_as_admin_with_higher_rank() {
     user(
         "some_mail@mail.com",
         "pwd",
-        false,
         &[("slug", false, 0)],
+        &[],
         &conn,
     );
     global_features(
@@ -617,7 +617,7 @@ async fn create_team_from_teams_page() {
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
-                user("some_mail@mail.com", "pwd", true, &[], &con);
+                user("some_mail@mail.com", "pwd", &[], &[], &con);
                 global_features(
                     &Features {
                         login: LoginFeature {

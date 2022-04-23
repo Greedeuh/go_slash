@@ -5,15 +5,15 @@ use serde_json::{json, Value};
 use crate::{
     models::{
         features::{patch_features, Features, PatchableFeatures},
-        users::{should_be_logged_in_if_features_with, Right, User},
+        users::{should_have_capability, Capability, User},
         AppError,
     },
     DbPool,
 };
 
 #[get("/go/features")]
-pub fn features(user: Option<User>, features: Features) -> Result<Template, (Status, Template)> {
-    should_be_logged_in_if_features_with(&Right::Admin, &user, &features)?;
+pub fn features(user: User, features: Features) -> Result<Template, (Status, Template)> {
+    should_have_capability(&user, Capability::Features)?;
 
     Ok(Template::render(
         "features",
@@ -24,11 +24,10 @@ pub fn features(user: Option<User>, features: Features) -> Result<Template, (Sta
 #[patch("/go/features", data = "<new_features>")]
 pub fn patch_feature(
     new_features: Json<PatchableFeatures>,
-    user: Option<User>,
-    features: Features,
+    user: User,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    should_be_logged_in_if_features_with(&Right::Admin, &user, &features)?;
+    should_have_capability(&user, Capability::Features)?;
 
     let conn = pool.get().map_err(AppError::from)?;
     patch_features(new_features.into_inner(), &conn)?;

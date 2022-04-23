@@ -3,13 +3,13 @@ use rocket::{http::Status, serde::json::Json, State};
 use rocket_dyn_templates::Template;
 use serde::Deserialize;
 use serde_json::json;
-use std::{cmp::Ordering, collections::HashMap};
+use std::cmp::Ordering;
 
 use crate::{
     models::{
         features::Features,
         teams::{Team, TeamForOptUser},
-        users::{read_or_write, should_be_logged_in_with, Right, User, UserTeam},
+        users::{should_have_capability, Capability, User, UserTeam},
         AppError,
     },
     schema::{
@@ -21,7 +21,7 @@ use crate::{
 
 #[get("/go/teams")]
 pub fn list_teams(
-    user: Option<User>,
+    user: User,
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
@@ -29,7 +29,7 @@ pub fn list_teams(
         return Err(AppError::Disable.into());
     }
 
-    let user = should_be_logged_in_with(&Right::Read, user, &features)?;
+    should_have_capability(&user, Capability::TeamsRead)?;
 
     let conn = pool.get().map_err(AppError::from)?;
     let mut teams: Vec<TeamForOptUser> = dsl::teams
@@ -53,11 +53,9 @@ pub fn list_teams(
         },
     );
 
-    let right = read_or_write(&features, &Some(user.mail.clone()))?;
-
     Ok(Template::render(
         "teams",
-        json!({ "teams": json!(teams).to_string(), "mail": &user.mail, "features": json!(features), "right": right  }),
+        json!({ "teams": json!(teams).to_string(), "mail": &user.mail, "features": json!(features), "capabilities": json!(user.capabilities)  }),
     ))
 }
 
@@ -72,9 +70,7 @@ pub fn delete_team(
         return Err(AppError::Disable.into());
     }
 
-    if !user.is_admin {
-        return Err(AppError::Unauthorized.into());
-    }
+    should_have_capability(&user, Capability::TeamsWrite)?;
 
     let conn = pool.get().map_err(AppError::from)?;
     diesel::delete(teams::table.find(team))
@@ -111,7 +107,7 @@ pub fn create_team(
         } = data.into_inner();
         let team = Team {
             slug: slug.clone(),
-            is_accepted: user.is_admin,
+            is_accepted: user.capabilities.contains(&Capability::TeamsWrite),
             title,
             is_private,
         };
@@ -162,52 +158,13 @@ pub fn patch_team(
         return Err(AppError::Disable.into());
     }
 
-    if !user.is_admin {
-        return Err(AppError::Unauthorized.into());
-    }
+    should_have_capability(&user, Capability::TeamsWrite)?;
 
     let conn = pool.get().map_err(AppError::from)?;
     diesel::update(teams::table.find(team))
         .set(&data.into_inner())
         .execute(&conn)
         .map_err(AppError::from)?;
-
-    Ok(Status::Ok)
-}
-
-#[put("/go/user/teams/ranks", data = "<team_ranks>")]
-pub fn put_user_team_ranks(
-    team_ranks: Json<HashMap<String, u16>>,
-    user: Option<User>,
-    features: Features,
-    pool: &State<DbPool>,
-) -> Result<Status, (Status, Template)> {
-    if !features.teams {
-        return Err(AppError::Disable.into());
-    }
-
-    let user = should_be_logged_in_with(&Right::Read, user, &features)?;
-
-    let conn = pool.get().map_err(AppError::from)?;
-    conn.transaction::<_, diesel::result::Error, _>(|| {
-        for (slug, rank) in team_ranks.into_inner() {
-            match diesel::update(users_teams::table.find((&user.mail, &slug)))
-                .set(users_teams::rank.eq(rank as i16))
-                .execute(&conn)
-            {
-                Ok(_) => (),
-                Err(e) => {
-                    error!(
-                        "Team rank update failed for {} rank {}, rollback transaction: {:?}",
-                        slug, rank, e
-                    );
-                    return Err(diesel::result::Error::RollbackTransaction);
-                }
-            }
-        }
-        Ok(())
-    })
-    .map_err(AppError::from)?;
 
     Ok(Status::Ok)
 }

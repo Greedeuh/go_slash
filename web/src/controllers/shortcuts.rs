@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use crate::models::features::Features;
 use crate::models::shortcuts::{sorted, NewShortcut, UpdatableShortcut};
 use crate::models::teams::{Team, TEAM_COLUMNS};
-use crate::models::users::{read_or_write, should_be_logged_in_if_features_with, Right, User};
+use crate::models::users::{should_have_capability, Capability, User};
 use crate::models::AppError;
 use crate::schema::shortcuts;
 use crate::schema::shortcuts::dsl;
@@ -26,29 +26,27 @@ lazy_static! {
 
 #[get("/")]
 pub fn index(
-    user: Option<User>,
+    user: User,
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
-    should_be_logged_in_if_features_with(&Right::Read, &user, &features)?;
+    should_have_capability(&user, Capability::ShortcutsRead)?;
 
     let conn = pool.get().map_err(AppError::from)?;
-    let user_mail = user.map(|u| u.mail);
 
-    let right = read_or_write(&features, &user_mail)?;
-
-    let admin_teams = if let Some(user_mail) = &user_mail && features.teams {
+    let admin_teams = if features.teams {
         Some(
             json!(teams::table
                 .inner_join(
                     users_teams::table.on(teams::slug
                         .eq(users_teams::team_slug)
-                        .and(users_teams::user_mail.eq(user_mail))
+                        .and(users_teams::user_mail.eq(&user.mail))
                         .and(users_teams::is_admin.eq(true))),
                 )
                 .select(TEAM_COLUMNS)
                 .load::<Team>(&conn)
-                .map_err(AppError::from)?).to_string(),
+                .map_err(AppError::from)?)
+            .to_string(),
         )
     } else {
         None
@@ -56,7 +54,7 @@ pub fn index(
 
     Ok(Template::render(
         "index",
-        json!({ "shortcuts": json!(sorted(&conn)?).to_string(), "right": right, "mail": user_mail, "features": json!(features), "admin_teams": admin_teams }),
+        json!({ "shortcuts": json!(sorted(&conn)?).to_string(), "capabilities": json!(user.capabilities), "mail": user.mail, "features": json!(features), "admin_teams": admin_teams }),
     ))
 }
 
@@ -74,29 +72,22 @@ pub enum ShortcutRes {
 pub fn get_shortcut(
     shortcut: PathBuf,
     no_redirect: Option<bool>,
-    user: Option<User>,
+    user: User,
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<ShortcutRes, (Status, Template)> {
-    should_be_logged_in_if_features_with(&Right::Read, &user, &features)?;
-    let user_mail = user.map(|u| u.mail);
-    let right = read_or_write(&features, &user_mail)?;
+    should_have_capability(&user, Capability::ShortcutsRead)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
     let conn = pool.get().map_err(AppError::from)?;
 
     let url = if features.teams {
-        let user_mail = match &user_mail {
-            None => return Err(AppError::Unauthorized.into()),
-            Some(user_mail) => user_mail,
-        };
-
         dsl::shortcuts
             .inner_join(
                 users_teams::table.on(dsl::team_slug
                     .eq(users_teams::team_slug)
-                    .and(users_teams::user_mail.eq(user_mail))),
+                    .and(users_teams::user_mail.eq(&user.mail))),
             )
             .filter(dsl::shortcut.eq(shortcut))
             .select(dsl::url)
@@ -125,8 +116,8 @@ pub fn get_shortcut(
                             .to_string(),
                         "url": url,
                         "no_redirect": true,
-                        "right": right,
-                        "mail": user_mail,
+                        "capabilities": json!(user.capabilities),
+                        "mail": user.mail,
                         "features": json!(features)
                     }),
                 ))
@@ -141,8 +132,8 @@ pub fn get_shortcut(
                 "shortcuts": json!(sorted(&conn)?)
                                     .to_string(),
                 "not_found": true,
-                "right": right,
-                "mail": user_mail,
+                "capabilities": json!(user.capabilities),
+                "mail": user.mail,
                 "features": json!(features)
             }),
         )),
@@ -159,11 +150,11 @@ pub fn put_shortcut(
     shortcut: PathBuf,
     team: Option<String>,
     data: Json<Url>,
-    user: Option<User>,
+    user: User,
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    should_be_logged_in_if_features_with(&Right::Write, &user, &features)?;
+    should_have_capability(&user, Capability::ShortcutsWrite)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
@@ -202,11 +193,11 @@ pub fn put_shortcut(
 pub fn delete_shortcut(
     shortcut: PathBuf,
     team: Option<String>,
-    user: Option<User>,
+    user: User,
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Value)> {
-    should_be_logged_in_if_features_with(&Right::Write, &user, &features)?;
+    should_have_capability(&user, Capability::ShortcutsWrite)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 

@@ -6,16 +6,16 @@ table! {
 
 table! {
     shortcuts (shortcut, team_slug) {
-        shortcut -> Text,
-        team_slug -> Text,
-        url -> Text,
+        shortcut -> Varchar,
+        team_slug -> Varchar,
+        url -> Varchar,
     }
 }
 
 table! {
     teams (slug) {
-        slug -> Text,
-        title -> Text,
+        slug -> Varchar,
+        title -> Varchar,
         is_private -> Bool,
         is_accepted -> Bool,
     }
@@ -23,19 +23,19 @@ table! {
 
 table! {
     users (mail) {
-        mail -> Text,
-        pwd -> Text,
-        is_admin -> Bool,
+        mail -> Varchar,
+        pwd -> Varchar,
+        capabilities -> Array<Text>,
     }
 }
 
 table! {
     users_teams (user_mail, team_slug) {
-        user_mail -> Text,
-        team_slug -> Text,
+        user_mail -> Varchar,
+        team_slug -> Varchar,
         is_admin -> Bool,
         is_accepted -> Bool,
-        rank -> SmallInt,
+        rank -> Int2,
     }
 }
 

@@ -16,10 +16,10 @@ CREATE TABLE shortcuts (
 );
 
 CREATE TABLE users (
-  mail      VARCHAR NOT NULL PRIMARY KEY,
-  pwd       VARCHAR NOT NULL,
-  is_admin  BOOLEAN NOT NULL
-);
+  mail          VARCHAR NOT NULL PRIMARY KEY,
+  pwd           VARCHAR NOT NULL,
+  capabilities  text[]  NOT NULL DEFAULT ARRAY[]::text[]
+); 
 
 CREATE TABLE global_features (
   features text NOT NULL PRIMARY KEY

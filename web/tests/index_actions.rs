@@ -79,8 +79,8 @@ async fn index_user_can_delete_shortcuts_with_team() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    true,
                     &[("team1", true, 0)],
+                    &[],
                     &con,
                 );
                 global_features(
@@ -215,8 +215,8 @@ async fn index_user_can_add_shortcuts_for_team() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    false,
                     &[("slug1", true, 0), ("slug2", true, 0)],
+                    &[],
                     &con,
                 );
                 global_features(

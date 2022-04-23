@@ -30,8 +30,8 @@ async fn layout_with_team_link_if_feature_team() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    true,
                     &[("slug1", false, 0)],
+                    &[],
                     &con,
                 );
 
@@ -104,7 +104,7 @@ async fn list_teams_with_infos() {
                 team("slug2", "team2", true, true, &con);
                 team("slug3", "team3", true, false, &con);
                 team("slug4", "team4", false, false, &con);
-                user("some_mail@mail.com", "pwd", true, &[], &con);
+                user("some_mail@mail.com", "pwd", &[], &[], &con);
 
                 global_features(
                     &Features {
@@ -185,16 +185,16 @@ async fn teams_user_team_then_others() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    false,
                     &[("slug1", false, 0)],
+                    &[],
                     &con,
                 );
                 // another user should not change the behaviour
                 user(
                     "another@mail.com",
                     "pwd",
-                    false,
                     &[("slug2", false, 0), ("slug3", true, 0)],
+                    &[],
                     &con,
                 );
                 global_features(

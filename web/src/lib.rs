@@ -24,8 +24,11 @@ use controllers::{
     features::{features, patch_feature},
     health_check,
     shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut},
-    teams::{create_team, delete_team, list_teams, patch_team, put_user_team_ranks},
-    users::{join_global_team, join_team, leave_global_team, leave_team, login, simple_login},
+    teams::{create_team, delete_team, list_teams, patch_team},
+    users::{
+        join_global_team, join_team, leave_global_team, leave_team, login, put_user_team_ranks,
+        simple_login,
+    },
 };
 pub mod guards;
 pub mod models;

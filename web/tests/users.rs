@@ -40,7 +40,7 @@ fn post_simple_login_token() {
     user(
         "some_mail@mail.go",
         "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
-        false,
+        &[],
         &[],
         &conn,
     );
@@ -75,7 +75,7 @@ fn post_simple_login_wrong_credentials() {
     user(
         "some_mail@mail.go",
         "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
-        false,
+        &[],
         &[],
         &conn,
     );
@@ -111,7 +111,7 @@ fn post_simple_login_not_a_mail() {
     user(
         "some_mail@mail.go",
         "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
-        false,
+        &[],
         &[],
         &conn,
     );
@@ -144,7 +144,7 @@ async fn simple_login() {
                 user(
                     "some_mail@mail.go",
                     "4a4498acaf82759d929a7571b5bcea425c9275854d963e49333bf8056c673f60",
-                    false,
+                    &[],
                     &[],
                     &conn,
                 );
