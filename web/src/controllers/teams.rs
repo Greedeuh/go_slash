@@ -25,7 +25,7 @@ pub fn list_teams(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
-    if !features.teams {
+    if !features.teams || !features.login.simple {
         return Err(AppError::Disable.into());
     }
 
@@ -55,7 +55,11 @@ pub fn list_teams(
 
     Ok(Template::render(
         "teams",
-        json!({ "teams": json!(teams).to_string(), "mail": &user.mail, "features": json!(features), "capabilities": json!(user.capabilities)  }),
+        json!({ "teams": json!(teams).to_string(),
+            "features": json!(features),
+            "capabilities": json!(user.capabilities).to_string(),
+            "mail": user.mail
+        }),
     ))
 }
 
@@ -66,7 +70,7 @@ pub fn delete_team(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    if !features.teams {
+    if !features.teams || !features.login.simple {
         return Err(AppError::Disable.into());
     }
 
@@ -94,7 +98,7 @@ pub fn create_team(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    if !features.teams {
+    if !features.teams || !features.login.simple {
         return Err(AppError::Disable.into());
     }
 
@@ -154,7 +158,7 @@ pub fn patch_team(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    if !features.teams {
+    if !features.teams || !features.login.simple {
         return Err(AppError::Disable.into());
     }
 

@@ -46,13 +46,6 @@ async fn index_should_list_shortcuts() {
 
                 driver.get(format!("http://localhost:{}", port)).await?;
 
-                let login_link = driver.find_element(By::Css("a.nav-link")).await?;
-                assert_eq!(
-                    login_link.get_attribute("href").await?,
-                    Some("/go/login".to_owned())
-                );
-                assert_eq!(login_link.text().await?, "Login");
-
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
 
                 for i in 0..texts_sorted.len() {

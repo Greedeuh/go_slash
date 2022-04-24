@@ -34,13 +34,6 @@ async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
                     ))
                     .await?;
 
-                let login_link = driver.find_element(By::Css("a.nav-link")).await?;
-                assert_eq!(
-                    login_link.get_attribute("href").await?,
-                    Some("/go/login".to_owned())
-                );
-                assert_eq!(login_link.text().await?, "Login");
-
                 let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
                 assert_eq!(
                     search_bar.get_property("value").await?,

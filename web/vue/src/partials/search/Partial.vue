@@ -6,10 +6,10 @@
       :administer="administer"
       @on-administer="set_administer"
       @enter="go_selected(-1)"
-      :editor="right === 'write'"
+      :editor="capabilities.includes('ShortcutsWrite')"
     />
     <ShortcutInput
-      v-if="shortcut && right === 'write'"
+      v-if="shortcut && capabilities.includes('ShortcutsWrite')"
       @save="add"
       :initial_shortcut="shortcut"
       :initial_url="url"
@@ -32,12 +32,13 @@ import axios from "axios";
 import SearchBar from "./Search.vue";
 import ShortcutList from "./ShortcutList.vue";
 import ShortcutInput from "./ShortcutInput.vue";
+import { Capabilities } from "@/models";
 
 interface Window {
   shortcut?: string;
   url?: string;
   shortcuts: Shortcut[];
-  right: string;
+  capabilities: Capabilities[];
   admin_teams: Team[];
 }
 
@@ -69,7 +70,7 @@ const CONTROL_KEYS = ["ArrowUp", "ArrowDown", "Enter", "Tab", "Escape"];
 const SHORTCUTS = win.shortcuts;
 const SHORTCUT = win.shortcut;
 const URL = win.url;
-const RIGHT = win.right;
+const CAPABILITIES = win.capabilities;
 const ADMIN_TEAMS = win.admin_teams;
 
 let key_press: (e: KeyboardEvent) => void;
@@ -86,7 +87,7 @@ export default defineComponent({
       search: SHORTCUT ? SHORTCUT : "",
       shortcut: SHORTCUT,
       url: URL,
-      right: RIGHT,
+      capabilities: CAPABILITIES ?? [],
       admin_teams: ADMIN_TEAMS,
     };
   },

@@ -1,6 +1,6 @@
 use diesel::PgConnection;
 use go_web::models::teams::Team;
-use go_web::models::users::UserTeam;
+use go_web::models::users::{Capability, UserTeam};
 use rocket::futures::FutureExt;
 use rocket::http::Status;
 use rocket::tokio::sync::Mutex;
@@ -86,7 +86,13 @@ fn delete_team_need_to_be_admin() {
 #[test]
 fn cant_delete_global_team() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::TeamsWrite],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {
@@ -110,7 +116,13 @@ fn cant_delete_global_team() {
 fn delete_team() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
-    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::TeamsWrite],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {
@@ -143,7 +155,7 @@ async fn admin_action_on_teams() {
                     "some_mail@mail.com",
                     "pwd",
                     &[("slug1", false, 1)],
-                    &[],
+                    &[Capability::TeamsRead, Capability::TeamsWrite],
                     &con,
                 );
                 global_features(
@@ -158,7 +170,7 @@ async fn admin_action_on_teams() {
                 );
 
                 driver
-                    .add_cookie(dbg!(Cookie::new(SESSION_COOKIE, json!("some_session_id"))))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
 
                 driver
@@ -240,7 +252,13 @@ async fn admin_action_on_teams() {
 fn patch_team_need_feature() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
-    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::TeamsWrite],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {
@@ -312,7 +330,13 @@ fn patch_team_user_need_to_be_admin() {
 #[test]
 fn cant_patch_global_team() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::TeamsWrite],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {
@@ -345,7 +369,13 @@ fn cant_patch_global_team() {
 fn patch_team() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
-    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::TeamsWrite],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {
@@ -429,7 +459,13 @@ fn patch_team() {
 #[test]
 fn create_team_need_feature() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::TeamsWrite],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {
@@ -473,7 +509,13 @@ fn create_team_need_feature() {
 fn cant_create_already_existing() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
-    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::TeamsWrite],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {
@@ -497,7 +539,13 @@ fn cant_create_already_existing() {
 #[test]
 fn create_team_as_admin() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::TeamsWrite],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {
@@ -617,7 +665,13 @@ async fn create_team_from_teams_page() {
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
-                user("some_mail@mail.com", "pwd", &[], &[], &con);
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    &[],
+                    &[Capability::TeamsRead, Capability::TeamsWrite],
+                    &con,
+                );
                 global_features(
                     &Features {
                         login: LoginFeature {

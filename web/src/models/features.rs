@@ -16,7 +16,6 @@ pub struct Features {
 pub struct LoginFeature {
     pub simple: bool,
     pub read_private: bool,
-    pub write_private: bool,
 }
 
 pub fn get_global_features(conn: &DbConn) -> Result<Features, AppError> {
@@ -40,9 +39,6 @@ pub fn patch_features(new_features: PatchableFeatures, conn: &DbConn) -> Result<
         }
         if let Some(read_private) = login.read_private {
             features.login.read_private = read_private;
-        }
-        if let Some(write_private) = login.write_private {
-            features.login.write_private = write_private;
         }
     }
 

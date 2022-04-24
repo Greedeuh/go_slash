@@ -4,7 +4,7 @@
       <div class="alert alert-primary flex-fill m-0" role="alert">
         Drag and drop to prioritize team shortcuts in case of duplicates
       </div>
-      <div v-if="right === 'write'" class="align-self-center">
+      <div v-if="capabilities.includes('TeamsWrite')" class="align-self-center">
         <button
           class="btn btn-lg btn-primary ms-2"
           aria-label="Start creating team"
@@ -53,10 +53,11 @@ import TeamList from "./TeamList.vue";
 import UserTeamList from "./UserTeamList.vue";
 import _ from "lodash";
 import CreateTeamModal from "./CreateTeamModal.vue";
+import { Capabilities } from "@/models";
 
 interface Window {
   teams: Team[];
-  right: string;
+  capabilities: Capabilities[];
 }
 
 let win = window as unknown as Window;
@@ -64,11 +65,11 @@ const TEAMS = win.teams;
 
 interface Data {
   teams: Team[];
-  right: string;
+  capabilities: Capabilities[];
   administer: boolean;
 }
 
-const RIGHT = win.right;
+const CAPABILITIES = win.capabilities;
 
 export default defineComponent({
   name: "Partial",
@@ -76,7 +77,7 @@ export default defineComponent({
   data(): Data {
     return {
       teams: TEAMS,
-      right: RIGHT,
+      capabilities: CAPABILITIES,
       administer: false,
     };
   },

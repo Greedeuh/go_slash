@@ -168,12 +168,10 @@ mod no_dead_code {
             .expect("Driver build failed");
 
         let mut count = 0;
-        while dbg!(
-            driver
-                .get(format!("http://localhost:{}/go/health", port))
-                .await
-        )
-        .is_err()
+        while driver
+            .get(format!("http://localhost:{}/go/health", port))
+            .await
+            .is_err()
             && count < 50
         {
             count += 1;

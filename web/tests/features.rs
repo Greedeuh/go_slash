@@ -1,5 +1,6 @@
 use diesel::PgConnection;
 use go_web::models::features::{Features, LoginFeature};
+use go_web::models::users::Capability;
 use rocket::async_test;
 use rocket::futures::FutureExt;
 mod utils;
@@ -103,7 +104,13 @@ fn should_be_logged_in_to_manage_features() {
 #[test]
 fn should_be_logged_in_to_manage_features_ok_with_auth() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::Features],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {

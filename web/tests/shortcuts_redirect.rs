@@ -101,7 +101,6 @@ fn shortcut_read_private_should_return_unauthorized() {
             login: LoginFeature {
                 simple: true,
                 read_private: true,
-                ..Default::default()
             },
             ..Default::default()
         },
@@ -122,7 +121,6 @@ fn shortcut_read_private_should_return_ok_with_session() {
             login: LoginFeature {
                 simple: true,
                 read_private: true,
-                ..Default::default()
             },
             ..Default::default()
         },

@@ -2,6 +2,7 @@ use go_web::guards::SESSION_COOKIE;
 use go_web::models::features::Features;
 use go_web::models::features::LoginFeature;
 use go_web::models::shortcuts::Shortcut;
+use go_web::models::users::Capability;
 use rocket::http::ContentType;
 use rocket::http::Cookie;
 use rocket::http::Header;
@@ -48,7 +49,7 @@ fn create_a_shortcut_with_team_return_200() {
         "some_mail@mail.com",
         "pwd",
         &[("slug1", true, 0)],
-        &[],
+        &[Capability::ShortcutsWrite],
         &conn,
     );
     global_features(
@@ -101,7 +102,6 @@ fn put_shortcut_should_return_unauthorized() {
         &Features {
             login: LoginFeature {
                 simple: true,
-                write_private: true,
                 ..Default::default()
             },
             ..Default::default()
@@ -121,12 +121,17 @@ fn put_shortcut_should_return_unauthorized() {
 #[test]
 fn put_shortcut_should_is_ok_with_auth() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::ShortcutsWrite],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {
                 simple: true,
-                write_private: true,
                 ..Default::default()
             },
             ..Default::default()

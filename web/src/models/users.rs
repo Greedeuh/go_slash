@@ -96,7 +96,6 @@ impl From<&str> for Sessions {
 #[sql_type = "diesel::sql_types::Text"]
 pub enum Capability {
     Features,
-    ShortcutsRead,
     ShortcutsWrite,
     TeamsRead,
     TeamsWrite,
@@ -108,7 +107,6 @@ impl Capability {
     fn all() -> Vec<Capability> {
         vec![
             Capability::Features,
-            Capability::ShortcutsRead,
             Capability::ShortcutsWrite,
             Capability::TeamsRead,
             Capability::TeamsWrite,
@@ -150,6 +148,7 @@ pub fn should_have_capability(user: &User, capability: Capability) -> Result<(),
     if user.capabilities.contains(&capability) {
         Ok(())
     } else {
+        error!("User {} miss capability {}", user.mail, capability);
         Err(AppError::Unauthorized)
     }
 }

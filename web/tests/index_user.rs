@@ -21,7 +21,6 @@ async fn not_logged_in_should_redirect_to_login() {
                         login: LoginFeature {
                             simple: true,
                             read_private: true,
-                            ..Default::default()
                         },
                         ..Default::default()
                     },
@@ -42,50 +41,6 @@ async fn not_logged_in_should_redirect_to_login() {
                 assert_eq!(
                     driver.current_url().await?,
                     format!("http://localhost:{}/go/login?from=/shortcut", port)
-                );
-                Ok(())
-            }
-            .boxed()
-        },
-    )
-    .await;
-}
-
-#[async_test]
-async fn logged_in_without_write() {
-    in_browser(
-        "",
-        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
-            async move {
-                let conn = con.lock().await;
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            write_private: true,
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    },
-                    &conn,
-                );
-
-                driver.get(format!("http://localhost:{}", port)).await?;
-                assert_eq!(
-                    0,
-                    driver.find_elements(By::Id("btn-administer")).await?.len()
-                );
-
-                driver
-                    .get(format!("http://localhost:{}/shortcut", port))
-                    .await?;
-                assert_eq!(
-                    0,
-                    driver.find_elements(By::Id("btn-administer")).await?.len()
-                );
-                assert_eq!(
-                    0,
-                    driver.find_elements(By::Id("btn-administer")).await?.len()
                 );
                 Ok(())
             }

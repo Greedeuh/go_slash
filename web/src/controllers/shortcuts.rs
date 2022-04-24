@@ -26,15 +26,17 @@ lazy_static! {
 
 #[get("/")]
 pub fn index(
-    user: User,
+    user: Option<User>,
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
-    should_have_capability(&user, Capability::ShortcutsRead)?;
+    if user.is_none() && features.login.read_private {
+        return Err(AppError::Unauthorized.into());
+    }
 
     let conn = pool.get().map_err(AppError::from)?;
 
-    let admin_teams = if features.teams {
+    let admin_teams = if let Some(user) = &user && features.teams {
         Some(
             json!(teams::table
                 .inner_join(
@@ -54,7 +56,12 @@ pub fn index(
 
     Ok(Template::render(
         "index",
-        json!({ "shortcuts": json!(sorted(&conn)?).to_string(), "capabilities": json!(user.capabilities), "mail": user.mail, "features": json!(features), "admin_teams": admin_teams }),
+        json!({ "shortcuts": json!(sorted(&conn)?).to_string(),
+            "capabilities": json!(user.as_ref().map(|user| &user.capabilities)).to_string(),
+            "mail": user.map(|user| user.mail),
+            "features": json!(features),
+            "admin_teams": admin_teams
+        }),
     ))
 }
 
@@ -72,17 +79,19 @@ pub enum ShortcutRes {
 pub fn get_shortcut(
     shortcut: PathBuf,
     no_redirect: Option<bool>,
-    user: User,
+    user: Option<User>,
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<ShortcutRes, (Status, Template)> {
-    should_have_capability(&user, Capability::ShortcutsRead)?;
+    if user.is_none() && features.login.read_private {
+        return Err(AppError::Unauthorized.into());
+    }
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
     let conn = pool.get().map_err(AppError::from)?;
 
-    let url = if features.teams {
+    let url = if let Some(user) = &user && features.teams {
         dsl::shortcuts
             .inner_join(
                 users_teams::table.on(dsl::team_slug
@@ -116,8 +125,8 @@ pub fn get_shortcut(
                             .to_string(),
                         "url": url,
                         "no_redirect": true,
-                        "capabilities": json!(user.capabilities),
-                        "mail": user.mail,
+                        "capabilities": json!(user.as_ref().map(|user| &user.capabilities)).to_string(),
+                        "mail": user.map(|user| user.mail),
                         "features": json!(features)
                     }),
                 ))
@@ -132,8 +141,8 @@ pub fn get_shortcut(
                 "shortcuts": json!(sorted(&conn)?)
                                     .to_string(),
                 "not_found": true,
-                "capabilities": json!(user.capabilities),
-                "mail": user.mail,
+                "capabilities": json!(user.as_ref().map(|user| &user.capabilities)).to_string(),
+                "mail": user.map(|user| user.mail),
                 "features": json!(features)
             }),
         )),
