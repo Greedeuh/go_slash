@@ -4,7 +4,13 @@
       <div class="alert alert-primary flex-fill m-0" role="alert">
         Drag and drop to prioritize team shortcuts in case of duplicates
       </div>
-      <div v-if="capabilities.includes('TeamsWrite')" class="align-self-center">
+      <div
+        v-if="
+          capabilities.includes('TeamsWrite') ||
+          capabilities.includes('TeamsWriteWithValidation')
+        "
+        class="align-self-center"
+      >
         <button
           class="btn btn-lg btn-primary ms-2"
           aria-label="Start creating team"
@@ -41,7 +47,7 @@
       @delete_team="delete_team"
       @accept="accept"
     />
-    <CreateTeamModal @created="team_created" />
+    <CreateTeamModal @created="team_created" :capabilities="capabilities" />
   </div>
 </template>
 
@@ -53,7 +59,7 @@ import TeamList from "./TeamList.vue";
 import UserTeamList from "./UserTeamList.vue";
 import _ from "lodash";
 import CreateTeamModal from "./CreateTeamModal.vue";
-import { Capabilities } from "@/models";
+import { Capabilities } from "../../models";
 
 interface Window {
   teams: Team[];

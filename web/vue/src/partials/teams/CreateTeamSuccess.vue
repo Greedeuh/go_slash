@@ -1,7 +1,10 @@
 <template>
   <div aria-label="Create team result">
     <div class="modal-body">
-      Success ! Your Admins will now have to validate your team.
+      Success !
+      <span v-if="capabilities.includes('TeamsWriteWithValidation')"
+        >Your Admins will now have to validate your team.</span
+      >
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -16,6 +19,9 @@ import { defineComponent } from "vue";
 
 export default defineComponent({
   name: "CreateTeamSuccess",
+  props: {
+    capabilities: Array,
+  },
 });
 </script>
 

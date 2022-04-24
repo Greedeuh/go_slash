@@ -18,7 +18,7 @@
           ></button>
         </div>
         <CreateTeamForm v-if="!success" @create="create" />
-        <CreateTeamSuccess v-if="success" />
+        <CreateTeamSuccess v-if="success" :capabilities="capabilities" />
       </div>
     </div>
   </div>
@@ -33,6 +33,9 @@ import CreateTeamSuccess from "./CreateTeamSuccess.vue";
 export default defineComponent({
   name: "CreateTeamModal",
   components: { CreateTeamForm, CreateTeamSuccess },
+  props: {
+    capabilities: Array,
+  },
   data() {
     return { success: false };
   },

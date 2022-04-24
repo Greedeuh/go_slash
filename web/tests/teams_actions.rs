@@ -6,6 +6,7 @@ use rocket::http::Status;
 use rocket::tokio::sync::Mutex;
 use rocket::{async_test, http};
 use serde_json::json;
+use thirtyfour::error::WebDriverError;
 use thirtyfour::prelude::*;
 
 mod utils;
@@ -578,7 +579,13 @@ fn create_team_as_admin() {
 #[test]
 fn create_team_as_user() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::TeamsWriteWithValidation],
+        &conn,
+    );
     global_features(
         &Features {
             login: LoginFeature {
@@ -616,7 +623,7 @@ fn create_team_creator_should_be_in_team_as_admin_with_higher_rank() {
         "some_mail@mail.com",
         "pwd",
         &[("slug", false, 0)],
-        &[],
+        &[Capability::TeamsWrite],
         &conn,
     );
     global_features(
@@ -659,7 +666,7 @@ fn create_team_creator_should_be_in_team_as_admin_with_higher_rank() {
 }
 
 #[async_test]
-async fn create_team_from_teams_page() {
+async fn create_team_from_teams_page_as_admin() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -683,63 +690,54 @@ async fn create_team_from_teams_page() {
                     &con,
                 );
 
-                driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
-                    .await?;
-
-                driver
-                    .get(format!("http://localhost:{}/go/teams", port))
-                    .await?;
-
-                assert!(
-                    !driver
-                        .find_element(By::Css("[role='dialog']"))
-                        .await?
-                        .is_displayed()
-                        .await?
-                );
-
-                let create_btn = driver
-                    .find_element(By::Css("button[aria-label='Start creating team']"))
-                    .await?;
-                assert_eq!(create_btn.text().await?, "Create");
-                create_btn.click().await?;
+                create_team(driver, port).await?;
 
                 let create_dialog = driver.find_element(By::Css("[role='dialog']")).await?;
-                create_dialog.wait_until().displayed().await?;
-                assert_eq!(
+                assert!(dbg!(
                     create_dialog
-                        .find_element(By::Tag("h5"))
+                        .find_element(By::Css("[aria-label='Create team result']"))
                         .await?
                         .text()
-                        .await?,
-                    "Create team"
+                        .await?
+                )
+                .starts_with("Success !"));
+
+                Ok(())
+            }
+            .boxed()
+        },
+    )
+    .await;
+}
+
+#[async_test]
+async fn create_team_from_teams_page_as_user() {
+    in_browser(
+        "some_session_id: some_mail@mail.com",
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    &[],
+                    &[Capability::TeamsRead, Capability::TeamsWriteWithValidation],
+                    &con,
+                );
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
+                        teams: true,
+                    },
+                    &con,
                 );
 
-                create_dialog
-                    .find_element(By::Name("slug"))
-                    .await?
-                    .send_keys("slug1")
-                    .await?;
+                create_team(driver, port).await?;
 
-                create_dialog
-                    .find_element(By::Name("title"))
-                    .await?
-                    .send_keys("title1")
-                    .await?;
-
-                create_dialog
-                    .find_element(By::Name("is_private"))
-                    .await?
-                    .click()
-                    .await?;
-
-                create_dialog
-                    .find_element(By::Css("button[aria-label='Create team']"))
-                    .await?
-                    .click()
-                    .await?;
-
+                let create_dialog = driver.find_element(By::Css("[role='dialog']")).await?;
                 assert!(dbg!(
                     create_dialog
                         .find_element(By::Css("[aria-label='Create team result']"))
@@ -749,15 +747,76 @@ async fn create_team_from_teams_page() {
                 )
                 .starts_with("Success ! Your Admins will now have to validate your team."));
 
-                let teams = driver
-                    .find_elements(By::Css("[aria-label='User teams'] span"))
-                    .await?;
-                assert_eq!(teams.last().unwrap().text().await?, "title1");
-
                 Ok(())
             }
             .boxed()
         },
     )
     .await;
+}
+
+async fn create_team(driver: &WebDriver, port: u16) -> Result<(), WebDriverError> {
+    driver
+        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+        .await?;
+
+    driver
+        .get(format!("http://localhost:{}/go/teams", port))
+        .await?;
+
+    assert!(
+        !driver
+            .find_element(By::Css("[role='dialog']"))
+            .await?
+            .is_displayed()
+            .await?
+    );
+
+    let create_btn = driver
+        .find_element(By::Css("button[aria-label='Start creating team']"))
+        .await?;
+    assert_eq!(create_btn.text().await?, "Create");
+    create_btn.click().await?;
+
+    let create_dialog = driver.find_element(By::Css("[role='dialog']")).await?;
+    create_dialog.wait_until().displayed().await?;
+    assert_eq!(
+        create_dialog
+            .find_element(By::Tag("h5"))
+            .await?
+            .text()
+            .await?,
+        "Create team"
+    );
+
+    create_dialog
+        .find_element(By::Name("slug"))
+        .await?
+        .send_keys("slug1")
+        .await?;
+
+    create_dialog
+        .find_element(By::Name("title"))
+        .await?
+        .send_keys("title1")
+        .await?;
+
+    create_dialog
+        .find_element(By::Name("is_private"))
+        .await?
+        .click()
+        .await?;
+
+    create_dialog
+        .find_element(By::Css("button[aria-label='Create team']"))
+        .await?
+        .click()
+        .await?;
+
+    let teams = driver
+        .find_elements(By::Css("[aria-label='User teams'] span"))
+        .await?;
+    assert_eq!(teams.last().unwrap().text().await?, "title1");
+
+    Ok(())
 }

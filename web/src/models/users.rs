@@ -99,6 +99,7 @@ pub enum Capability {
     ShortcutsWrite,
     TeamsRead,
     TeamsWrite,
+    TeamsWriteWithValidation,
     UsersTeamsRead,
     UsersTeamsWrite,
 }
@@ -110,6 +111,7 @@ impl Capability {
             Capability::ShortcutsWrite,
             Capability::TeamsRead,
             Capability::TeamsWrite,
+            Capability::TeamsWriteWithValidation,
             Capability::UsersTeamsRead,
             Capability::UsersTeamsWrite,
         ]
@@ -149,6 +151,24 @@ pub fn should_have_capability(user: &User, capability: Capability) -> Result<(),
         Ok(())
     } else {
         error!("User {} miss capability {}", user.mail, capability);
+        Err(AppError::Unauthorized)
+    }
+}
+
+pub fn should_have_one_of_theses_capabilities(
+    user: &User,
+    capabilities: &[Capability],
+) -> Result<(), AppError> {
+    if capabilities
+        .iter()
+        .any(|capability| user.capabilities.contains(capability))
+    {
+        Ok(())
+    } else {
+        error!(
+            "User {} miss one of theses capabilities {:?}",
+            user.mail, capabilities
+        );
         Err(AppError::Unauthorized)
     }
 }

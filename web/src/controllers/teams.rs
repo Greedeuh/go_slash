@@ -9,7 +9,10 @@ use crate::{
     models::{
         features::Features,
         teams::{Team, TeamForOptUser},
-        users::{should_have_capability, Capability, User, UserTeam},
+        users::{
+            should_have_capability, should_have_one_of_theses_capabilities, Capability, User,
+            UserTeam,
+        },
         AppError,
     },
     schema::{
@@ -101,6 +104,11 @@ pub fn create_team(
     if !features.teams || !features.login.simple {
         return Err(AppError::Disable.into());
     }
+
+    should_have_one_of_theses_capabilities(
+        &user,
+        &[Capability::TeamsWrite, Capability::TeamsWriteWithValidation],
+    )?;
 
     let conn = pool.get().map_err(AppError::from)?;
     conn.transaction::<_, diesel::result::Error, _>(|| {
