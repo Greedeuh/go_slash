@@ -1,10 +1,7 @@
+use crate::models::AppError;
 use crate::schema::users;
-use crate::schema::users::dsl;
 use crate::schema::users_teams;
-use crate::DbConn;
-use crate::{guards::SessionId, models::AppError};
-use diesel::{deserialize, prelude::*, serialize, Associations, Identifiable, Insertable};
-use rocket::State;
+use diesel::{deserialize, serialize, Associations, Identifiable, Insertable};
 use serde::Deserialize;
 use std::str::FromStr;
 use std::vec;
@@ -35,51 +32,6 @@ pub struct UserTeam {
     pub rank: i16,
 }
 
-#[derive(Default)]
-pub struct Sessions {
-    sessions: Mutex<HashMap<String, String>>,
-}
-
-impl User {
-    pub fn fake_admin() -> Self {
-        Self {
-            mail: "fake_admin".to_string(),
-            pwd: "fake_pwd".to_string(),
-            capabilities: Capability::all(),
-        }
-    }
-}
-
-impl Sessions {
-    pub fn put(&self, session_id: &str, mail: &str) {
-        let mut sessions = match self.sessions.lock() {
-            Ok(s) => s,
-            Err(s) => s.into_inner(),
-        };
-        sessions.insert(session_id.to_string(), mail.to_string());
-    }
-
-    pub fn is_logged_in(&self, session_id: &str) -> Option<String> {
-        let sessions = match self.sessions.lock() {
-            Ok(s) => s,
-            Err(s) => s.into_inner(),
-        };
-
-        sessions.get(session_id).cloned()
-    }
-}
-
-impl From<&str> for Sessions {
-    fn from(sessions: &str) -> Self {
-        if sessions.is_empty() {
-            return Sessions::default();
-        }
-        Self {
-            sessions: serde_yaml::from_str(sessions).unwrap(),
-        }
-    }
-}
-
 #[derive(
     Debug,
     Clone,
@@ -102,6 +54,48 @@ pub enum Capability {
     TeamsWriteWithValidation,
     UsersTeamsRead,
     UsersTeamsWrite,
+}
+
+#[derive(Default)]
+pub struct Sessions {
+    sessions: Mutex<HashMap<String, String>>,
+}
+
+impl User {
+    pub fn fake_admin() -> Self {
+        Self {
+            mail: "fake_admin".to_string(),
+            pwd: "fake_pwd".to_string(),
+            capabilities: Capability::all(),
+        }
+    }
+
+    pub fn should_have_capability(&self, capability: Capability) -> Result<(), AppError> {
+        if self.capabilities.contains(&capability) {
+            Ok(())
+        } else {
+            error!("User {} miss capability {}", self.mail, capability);
+            Err(AppError::Unauthorized)
+        }
+    }
+
+    pub fn should_have_one_of_theses_capabilities(
+        &self,
+        capabilities: &[Capability],
+    ) -> Result<(), AppError> {
+        if capabilities
+            .iter()
+            .any(|capability| self.capabilities.contains(capability))
+        {
+            Ok(())
+        } else {
+            error!(
+                "User {} miss one of theses capabilities {:?}",
+                self.mail, capabilities
+            );
+            Err(AppError::Unauthorized)
+        }
+    }
 }
 
 impl Capability {
@@ -146,47 +140,32 @@ where
     }
 }
 
-pub fn should_have_capability(user: &User, capability: Capability) -> Result<(), AppError> {
-    if user.capabilities.contains(&capability) {
-        Ok(())
-    } else {
-        error!("User {} miss capability {}", user.mail, capability);
-        Err(AppError::Unauthorized)
+impl Sessions {
+    pub fn put(&self, session_id: &str, mail: &str) {
+        let mut sessions = match self.sessions.lock() {
+            Ok(s) => s,
+            Err(s) => s.into_inner(),
+        };
+        sessions.insert(session_id.to_string(), mail.to_string());
+    }
+
+    pub fn is_logged_in(&self, session_id: &str) -> Option<String> {
+        let sessions = match self.sessions.lock() {
+            Ok(s) => s,
+            Err(s) => s.into_inner(),
+        };
+
+        sessions.get(session_id).cloned()
     }
 }
 
-pub fn should_have_one_of_theses_capabilities(
-    user: &User,
-    capabilities: &[Capability],
-) -> Result<(), AppError> {
-    if capabilities
-        .iter()
-        .any(|capability| user.capabilities.contains(capability))
-    {
-        Ok(())
-    } else {
-        error!(
-            "User {} miss one of theses capabilities {:?}",
-            user.mail, capabilities
-        );
-        Err(AppError::Unauthorized)
-    }
-}
-
-pub fn should_be_logged_in(
-    session_id: &Option<SessionId>,
-    sessions: &State<Sessions>,
-    conn: &DbConn,
-) -> Result<User, AppError> {
-    if let Some(session_id) = session_id {
-        match sessions.is_logged_in(&session_id.0) {
-            None => {
-                error!("Wrong session_id.");
-                Err(AppError::Unauthorized)
-            }
-            Some(mail) => Ok(dsl::users.find(&mail).first::<User>(conn)?),
+impl From<&str> for Sessions {
+    fn from(sessions: &str) -> Self {
+        if sessions.is_empty() {
+            return Sessions::default();
         }
-    } else {
-        Err(AppError::Unauthorized)
+        Self {
+            sessions: serde_yaml::from_str(sessions).unwrap(),
+        }
     }
 }

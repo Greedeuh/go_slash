@@ -5,7 +5,7 @@ use serde_json::{json, Value};
 use crate::{
     models::{
         features::{patch_features, Features, PatchableFeatures},
-        users::{should_have_capability, Capability, User},
+        users::{Capability, User},
         AppError,
     },
     DbPool,
@@ -13,7 +13,7 @@ use crate::{
 
 #[get("/go/features")]
 pub fn features(user: User, features: Features) -> Result<Template, (Status, Template)> {
-    should_have_capability(&user, Capability::Features)?;
+    user.should_have_capability(Capability::Features)?;
 
     Ok(Template::render(
         "features",
@@ -27,7 +27,7 @@ pub fn patch_feature(
     user: User,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    should_have_capability(&user, Capability::Features)?;
+    user.should_have_capability(Capability::Features)?;
 
     let conn = pool.get().map_err(AppError::from)?;
     patch_features(new_features.into_inner(), &conn)?;

@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use crate::models::features::Features;
 use crate::models::teams::Team;
-use crate::models::users::{should_have_capability, Capability, User, UserTeam};
+use crate::models::users::{Capability, User, UserTeam};
 use crate::schema::users::dsl;
 use crate::schema::{teams, users_teams};
 use crate::DbPool;
@@ -122,7 +122,7 @@ pub fn join_team(
         return Err(AppError::Disable.into());
     }
 
-    should_have_capability(&user, Capability::UsersTeamsWrite)?;
+    user.should_have_capability(Capability::UsersTeamsWrite)?;
 
     let conn = pool.get().map_err(AppError::from)?;
     let team: Option<Team> = teams::table
@@ -171,7 +171,7 @@ pub fn leave_team(
         return Err(AppError::Disable.into());
     }
 
-    should_have_capability(&user, Capability::UsersTeamsWrite)?;
+    user.should_have_capability(Capability::UsersTeamsWrite)?;
 
     let conn = pool.get().map_err(AppError::from)?;
     diesel::delete(users_teams::table)
@@ -197,7 +197,7 @@ pub fn put_user_team_ranks(
         return Err(AppError::Disable.into());
     }
 
-    should_have_capability(&user, Capability::UsersTeamsWrite)?;
+    user.should_have_capability(Capability::UsersTeamsWrite)?;
 
     let conn = pool.get().map_err(AppError::from)?;
     conn.transaction::<_, diesel::result::Error, _>(|| {

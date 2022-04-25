@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use crate::models::features::Features;
 use crate::models::shortcuts::{sorted, NewShortcut, UpdatableShortcut};
 use crate::models::teams::{Team, TEAM_COLUMNS};
-use crate::models::users::{should_have_capability, Capability, User};
+use crate::models::users::{Capability, User};
 use crate::models::AppError;
 use crate::schema::shortcuts;
 use crate::schema::shortcuts::dsl;
@@ -163,7 +163,7 @@ pub fn put_shortcut(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    should_have_capability(&user, Capability::ShortcutsWrite)?;
+    user.should_have_capability(Capability::ShortcutsWrite)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
@@ -206,7 +206,7 @@ pub fn delete_shortcut(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Value)> {
-    should_have_capability(&user, Capability::ShortcutsWrite)?;
+    user.should_have_capability(Capability::ShortcutsWrite)?;
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 

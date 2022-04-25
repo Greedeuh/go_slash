@@ -9,10 +9,7 @@ use crate::{
     models::{
         features::Features,
         teams::{Team, TeamForOptUser},
-        users::{
-            should_have_capability, should_have_one_of_theses_capabilities, Capability, User,
-            UserTeam,
-        },
+        users::{Capability, User, UserTeam},
         AppError,
     },
     schema::{
@@ -32,7 +29,7 @@ pub fn list_teams(
         return Err(AppError::Disable.into());
     }
 
-    should_have_capability(&user, Capability::TeamsRead)?;
+    user.should_have_capability(Capability::TeamsRead)?;
 
     let conn = pool.get().map_err(AppError::from)?;
     let mut teams: Vec<TeamForOptUser> = dsl::teams
@@ -77,7 +74,7 @@ pub fn delete_team(
         return Err(AppError::Disable.into());
     }
 
-    should_have_capability(&user, Capability::TeamsWrite)?;
+    user.should_have_capability(Capability::TeamsWrite)?;
 
     let conn = pool.get().map_err(AppError::from)?;
     diesel::delete(teams::table.find(team))
@@ -105,10 +102,10 @@ pub fn create_team(
         return Err(AppError::Disable.into());
     }
 
-    should_have_one_of_theses_capabilities(
-        &user,
-        &[Capability::TeamsWrite, Capability::TeamsWriteWithValidation],
-    )?;
+    user.should_have_one_of_theses_capabilities(&[
+        Capability::TeamsWrite,
+        Capability::TeamsWriteWithValidation,
+    ])?;
 
     let conn = pool.get().map_err(AppError::from)?;
     conn.transaction::<_, diesel::result::Error, _>(|| {
@@ -170,7 +167,7 @@ pub fn patch_team(
         return Err(AppError::Disable.into());
     }
 
-    should_have_capability(&user, Capability::TeamsWrite)?;
+    user.should_have_capability(Capability::TeamsWrite)?;
 
     let conn = pool.get().map_err(AppError::from)?;
     diesel::update(teams::table.find(team))
