@@ -8,10 +8,22 @@ use std::vec;
 use std::{collections::HashMap, sync::Mutex};
 use strum_macros::{Display, EnumString};
 
-#[derive(Insertable, Queryable, Identifiable, Debug)]
+pub type SafeColumns = (users::mail, users::capabilities);
+
+pub const SAFE_USER_COLUMNS: SafeColumns = (users::mail, users::capabilities);
+
+#[derive(Queryable, Identifiable, Debug)]
 #[table_name = "users"]
 #[primary_key(mail)]
 pub struct User {
+    pub mail: String,
+    pub capabilities: Vec<Capability>,
+}
+
+#[derive(Insertable, Queryable, Identifiable, Debug)]
+#[table_name = "users"]
+#[primary_key(mail)]
+pub struct UserWithPwd {
     pub mail: String,
     pub pwd: String,
     pub capabilities: Vec<Capability>,
@@ -65,7 +77,6 @@ impl User {
     pub fn fake_admin() -> Self {
         Self {
             mail: "fake_admin".to_string(),
-            pwd: "fake_pwd".to_string(),
             capabilities: Capability::all(),
         }
     }

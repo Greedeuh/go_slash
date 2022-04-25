@@ -9,7 +9,7 @@ use rocket::{
 use crate::{
     models::{
         features::{get_global_features, Features},
-        users::{Sessions, User},
+        users::{Sessions, User, SAFE_USER_COLUMNS},
         AppError,
     },
     schema::users,
@@ -132,6 +132,9 @@ fn get_user(
             error!("Wrong session_id.");
             Err(AppError::Unauthorized)
         }
-        Some(mail) => Ok(users::table.find(&mail).first::<User>(&conn)?),
+        Some(mail) => Ok(users::table
+            .find(&mail)
+            .select(SAFE_USER_COLUMNS)
+            .first::<User>(&conn)?),
     }
 }

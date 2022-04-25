@@ -10,7 +10,7 @@ mod no_dead_code {
             features::Features,
             shortcuts::NewShortcut,
             teams::Team,
-            users::{Capability, User, UserTeam},
+            users::{Capability, UserTeam, UserWithPwd},
         },
         schema::global_features,
         schema::teams,
@@ -39,7 +39,7 @@ mod no_dead_code {
         db_con: &PgConnection,
     ) {
         diesel::insert_into(users::table)
-            .values(&User {
+            .values(&UserWithPwd {
                 mail: mail.to_string(),
                 pwd: pwd.to_string(),
                 capabilities: capabilities.to_vec(),
