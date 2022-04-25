@@ -101,7 +101,7 @@ fn delete_user_team() {
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("slug1", false, 0)],
+        &[("slug1", &[], 0)],
         &[Capability::UsersTeamsWrite],
         &conn,
     );
@@ -230,7 +230,7 @@ fn put_user_teams_ranks() {
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("", false, 0), ("slug1", false, 1)],
+        &[("", &[], 0), ("slug1", &[], 1)],
         &[Capability::UsersTeamsWrite],
         &conn,
     );
@@ -258,14 +258,14 @@ fn put_user_teams_ranks() {
             UserTeam {
                 user_mail: "some_mail@mail.com".to_string(),
                 team_slug: "".to_string(),
-                is_admin: false,
+                capabilities: vec![],
                 is_accepted: true,
                 rank: 1
             },
             UserTeam {
                 user_mail: "some_mail@mail.com".to_string(),
                 team_slug: "slug1".to_string(),
-                is_admin: false,
+                capabilities: vec![],
                 is_accepted: true,
                 rank: 0
             }
@@ -302,7 +302,7 @@ async fn user_team_ranks() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    &[("", false, 1), ("slug1", false, 2), ("slug2", false, 0)],
+                    &[("", &[], 1), ("slug1", &[], 2), ("slug2", &[], 0)],
                     &[Capability::TeamsRead, Capability::UsersTeamsWrite],
                     &con,
                 );

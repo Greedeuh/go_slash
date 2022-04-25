@@ -1,3 +1,4 @@
+use crate::models::teams::TeamCapability;
 use crate::models::AppError;
 use crate::schema::users;
 use crate::schema::users_teams;
@@ -39,7 +40,7 @@ pub struct UserTeam {
     pub user_mail: String,
     #[serde(skip)]
     pub team_slug: String,
-    pub is_admin: bool,
+    pub capabilities: Vec<TeamCapability>,
     pub is_accepted: bool,
     pub rank: i16,
 }

@@ -12,7 +12,7 @@ use sha256::digest;
 use uuid::Uuid;
 
 use crate::models::features::Features;
-use crate::models::teams::Team;
+use crate::models::teams::{Team, TeamCapability};
 use crate::models::users::{Capability, User, UserTeam};
 use crate::schema::users::dsl;
 use crate::schema::{teams, users_teams};
@@ -141,7 +141,7 @@ pub fn join_team(
         .values(UserTeam {
             user_mail: user.mail,
             team_slug: slug,
-            is_admin: false,
+            capabilities: vec![TeamCapability::ShortcutsWrite],
             is_accepted: !team.is_private,
             rank: team_user_link.rank,
         })

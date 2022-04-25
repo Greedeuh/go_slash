@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 
 use crate::models::features::Features;
 use crate::models::shortcuts::{sorted, NewShortcut, UpdatableShortcut};
-use crate::models::teams::{Team, TEAM_COLUMNS};
+use crate::models::teams::{Team, TeamCapability, TEAM_COLUMNS};
 use crate::models::users::{Capability, User};
 use crate::models::AppError;
 use crate::schema::shortcuts;
@@ -43,7 +43,7 @@ pub fn index(
                     users_teams::table.on(teams::slug
                         .eq(users_teams::team_slug)
                         .and(users_teams::user_mail.eq(&user.mail))
-                        .and(users_teams::is_admin.eq(true))),
+                        .and(users_teams::capabilities.contains(vec![TeamCapability::ShortcutsWrite.to_string()]))),
                 )
                 .select(TEAM_COLUMNS)
                 .load::<Team>(&conn)

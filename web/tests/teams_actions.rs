@@ -1,5 +1,5 @@
 use diesel::PgConnection;
-use go_web::models::teams::Team;
+use go_web::models::teams::{Team, TeamCapability};
 use go_web::models::users::{Capability, UserTeam};
 use rocket::futures::FutureExt;
 use rocket::http::Status;
@@ -155,7 +155,7 @@ async fn admin_action_on_teams() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    &[("slug1", false, 1)],
+                    &[("slug1", &[], 1)],
                     &[Capability::TeamsRead, Capability::TeamsWrite],
                     &con,
                 );
@@ -622,7 +622,7 @@ fn create_team_creator_should_be_in_team_as_admin_with_higher_rank() {
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("slug", false, 0)],
+        &[("slug", &[], 0)],
         &[Capability::TeamsWrite],
         &conn,
     );
@@ -650,14 +650,14 @@ fn create_team_creator_should_be_in_team_as_admin_with_higher_rank() {
             UserTeam {
                 user_mail: "some_mail@mail.com".to_string(),
                 team_slug: "slug".to_string(),
-                is_admin: false,
+                capabilities: vec![],
                 is_accepted: true,
                 rank: 0
             },
             UserTeam {
                 user_mail: "some_mail@mail.com".to_string(),
                 team_slug: "slug1".to_string(),
-                is_admin: true,
+                capabilities: TeamCapability::all(),
                 is_accepted: true,
                 rank: 1
             }

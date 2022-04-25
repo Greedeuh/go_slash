@@ -47,14 +47,14 @@ some_other_session_id: some_other_mail@mail.com",
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("", false, 0), ("slug1", false, 1)],
+        &[("", &[], 0), ("slug1", &[], 1)],
         &[],
         &conn,
     );
     user(
         "some_other_mail@mail.com",
         "pwd",
-        &[("", false, 1), ("slug1", false, 0)],
+        &[("", &[], 1), ("slug1", &[], 0)],
         &[],
         &conn,
     );

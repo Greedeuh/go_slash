@@ -1,6 +1,7 @@
 use diesel::PgConnection;
 use go_web::guards::SESSION_COOKIE;
 use go_web::models::features::{Features, LoginFeature};
+use go_web::models::teams::TeamCapability;
 use go_web::models::users::Capability;
 use rocket::async_test;
 use rocket::futures::FutureExt;
@@ -80,7 +81,7 @@ async fn index_user_can_delete_shortcuts_with_team() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    &[("team1", true, 0)],
+                    &[("team1", &[TeamCapability::TeamsWrite], 0)],
                     &[Capability::ShortcutsWrite],
                     &con,
                 );
@@ -216,7 +217,10 @@ async fn index_user_can_add_shortcuts_for_team() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    &[("slug1", true, 0), ("slug2", true, 0)],
+                    &[
+                        ("slug1", &[TeamCapability::ShortcutsWrite], 0),
+                        ("slug2", &[TeamCapability::ShortcutsWrite], 0),
+                    ],
                     &[Capability::ShortcutsWrite],
                     &con,
                 );

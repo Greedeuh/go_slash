@@ -25,12 +25,12 @@ CREATE TABLE global_features (
   features text NOT NULL PRIMARY KEY
 );
 
-INSERT INTO global_features(features) VALUES ('{ "login": { "simple": false, "read_private": false, "write_private": false }, "teams": false }');
+INSERT INTO global_features(features) VALUES ('{ "login": { "simple": false, "read_private": false }, "teams": false }');
 
 CREATE TABLE users_teams (
   user_mail   VARCHAR NOT NULL,
   team_slug   VARCHAR NOT NULL,
-  is_admin    BOOLEAN NOT NULL,
+  capabilities  text[]  NOT NULL DEFAULT ARRAY[]::text[],
   is_accepted BOOLEAN NOT NULL,
   rank        SMALLINT NOT NULL,
   FOREIGN KEY (user_mail) REFERENCES users(mail) ON DELETE CASCADE,

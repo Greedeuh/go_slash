@@ -8,7 +8,7 @@ use std::cmp::Ordering;
 use crate::{
     models::{
         features::Features,
-        teams::{Team, TeamForOptUser},
+        teams::{Team, TeamCapability, TeamForOptUser},
         users::{Capability, User, UserTeam},
         AppError,
     },
@@ -133,7 +133,7 @@ pub fn create_team(
         let user_team = UserTeam {
             user_mail: user.mail,
             team_slug: slug,
-            is_admin: true,
+            capabilities: TeamCapability::all(),
             is_accepted: true,
             rank: previous_rank as i16 + 1,
         };

@@ -9,7 +9,7 @@ mod no_dead_code {
         models::{
             features::Features,
             shortcuts::NewShortcut,
-            teams::Team,
+            teams::{Team, TeamCapability},
             users::{Capability, UserTeam, UserWithPwd},
         },
         schema::global_features,
@@ -34,7 +34,7 @@ mod no_dead_code {
     pub fn user(
         mail: &str,
         pwd: &str,
-        teams: &[(&str, bool, i16)],
+        teams: &[(&str, &[TeamCapability], i16)],
         capabilities: &[Capability],
         db_con: &PgConnection,
     ) {
@@ -47,12 +47,12 @@ mod no_dead_code {
             .execute(db_con)
             .unwrap();
 
-        for (team, is_admin, rank) in teams {
+        for (team, team_capabilities, rank) in teams {
             diesel::insert_into(users_teams::table)
                 .values(&UserTeam {
                     user_mail: mail.to_string(),
                     team_slug: team.to_string(),
-                    is_admin: *is_admin,
+                    capabilities: team_capabilities.to_vec(),
                     is_accepted: true,
                     rank: *rank,
                 })

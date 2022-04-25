@@ -1,6 +1,7 @@
 use go_web::guards::SESSION_COOKIE;
 use go_web::models::features::Features;
 use go_web::models::features::LoginFeature;
+use go_web::models::teams::TeamCapability;
 use go_web::models::users::Capability;
 use rocket::http::Cookie;
 use rocket::http::Header;
@@ -24,7 +25,7 @@ fn delete_a_shortcut_with_team_return_200() {
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("slug1", true, 0)],
+        &[("slug1", &[TeamCapability::TeamsWrite], 0)],
         &[Capability::ShortcutsWrite],
         &conn,
     );

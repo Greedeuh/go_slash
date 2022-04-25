@@ -1,4 +1,5 @@
 use diesel::PgConnection;
+use go_web::models::teams::TeamCapability;
 use go_web::models::users::Capability;
 use rocket::async_test;
 use rocket::futures::FutureExt;
@@ -31,7 +32,7 @@ async fn layout_with_team_link_if_feature_team() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    &[("slug1", false, 0)],
+                    &[("slug1", &[], 0)],
                     &[Capability::Features, Capability::TeamsRead],
                     &con,
                 );
@@ -191,7 +192,7 @@ async fn teams_user_team_then_others() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    &[("slug1", false, 0)],
+                    &[("slug1", &[], 0)],
                     &[Capability::TeamsRead],
                     &con,
                 );
@@ -199,7 +200,7 @@ async fn teams_user_team_then_others() {
                 user(
                     "another@mail.com",
                     "pwd",
-                    &[("slug2", false, 0), ("slug3", true, 0)],
+                    &[("slug2", &[], 0), ("slug3", &TeamCapability::all(), 0)],
                     &[Capability::TeamsRead],
                     &con,
                 );
