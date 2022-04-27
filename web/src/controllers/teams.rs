@@ -1,4 +1,7 @@
-use diesel::{dsl::max, prelude::*};
+use diesel::{
+    dsl::{count, max},
+    prelude::*,
+};
 use rocket::{http::Status, serde::json::Json, State};
 use rocket_dyn_templates::Template;
 use serde::Deserialize;
@@ -8,11 +11,13 @@ use std::cmp::Ordering;
 use crate::{
     models::{
         features::Features,
-        teams::{Team, TeamCapability, TeamForOptUser},
+        shortcuts::Shortcut,
+        teams::{admin_teams, Team, TeamCapability, TeamForOptUser, TeamForUserIfSome},
         users::{Capability, User, UserTeam},
         AppError,
     },
     schema::{
+        shortcuts,
         teams::{self, dsl},
         users_teams,
     },
@@ -167,13 +172,82 @@ pub fn patch_team(
         return Err(AppError::Disable.into());
     }
 
-    user.should_have_capability(Capability::TeamsWrite)?;
-
     let conn = pool.get().map_err(AppError::from)?;
+
+    // should be admin or (part of the team but can't change is_accepted)
+    let global_right = user.should_have_capability(Capability::TeamsWrite);
+    if let Err(err) = global_right
+        && (data.is_accepted.is_some() || users_teams::table
+            .find((&user.mail, &team))
+            .filter(users_teams::capabilities.contains(vec![TeamCapability::TeamsWrite]))
+            .select(count(users_teams::user_mail))
+            .first::<i64>(&conn)
+            .map_err(AppError::from)?
+            != 1)
+    {
+        return Err(err.into());
+    }
+
     diesel::update(teams::table.find(team))
         .set(&data.into_inner())
         .execute(&conn)
         .map_err(AppError::from)?;
 
     Ok(Status::Ok)
+}
+
+#[get("/go/teams/<slug>")]
+pub fn show_team(
+    slug: String,
+    user: User,
+    features: Features,
+    pool: &State<DbPool>,
+) -> Result<Template, (Status, Template)> {
+    if !features.teams {
+        return Err(AppError::Disable.into());
+    }
+
+    user.should_have_capability(Capability::TeamsRead)?;
+
+    let conn = pool.get().map_err(AppError::from)?;
+
+    let team_with_user_if_some: Option<TeamForUserIfSome> = teams::table
+        .find(&slug)
+        .left_join(users_teams::table)
+        .first(&conn)
+        .optional()
+        .map_err(AppError::from)?;
+
+    if team_with_user_if_some.is_none()
+        || (!user.have_capability(Capability::TeamsWrite)
+            && team_with_user_if_some.as_ref().unwrap().team.is_private
+            && team_with_user_if_some.as_ref().unwrap().user_link.is_none())
+    {
+        return Err(AppError::NotFound.into());
+    }
+
+    let shortcuts = shortcuts::table
+        .filter(shortcuts::team_slug.eq(&slug))
+        .order(shortcuts::shortcut.asc())
+        .load::<Shortcut>(&conn)
+        .map_err(AppError::from)?;
+
+    let team: Team = teams::table
+        .find(slug)
+        .first(&conn)
+        .map_err(AppError::from)?;
+
+    Ok(Template::render(
+        "index",
+        json!({
+            "shortcuts": json!(shortcuts)
+                .to_string(),
+            "capabilities": json!(user.capabilities).to_string(),
+            "mail":  user.mail,
+            "features": json!(features),
+            "admin_teams": json!(admin_teams(&user, &conn)?)
+            .to_string(),
+            "team": json!(team).to_string()
+        }),
+    ))
 }

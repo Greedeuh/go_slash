@@ -33,7 +33,7 @@ async fn layout_with_team_link_if_feature_team() {
                     "some_mail@mail.com",
                     "pwd",
                     &[("slug1", &[], 0)],
-                    &[Capability::Features, Capability::TeamsRead],
+                    &Capability::all(),
                     &con,
                 );
 

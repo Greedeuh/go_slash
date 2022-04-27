@@ -29,6 +29,10 @@ impl From<AppError> for (Status, Value) {
                 Status::InternalServerError,
                 json!({"error": "Wow that's weird :/"}),
             ),
+            AppError::NotFound => (
+                Status::NotFound,
+                json!({"error": "Can't found what you requested :/"}),
+            ),
         }
     }
 }
@@ -43,6 +47,7 @@ impl From<AppError> for (Status, Template) {
             }
             AppError::BadRequest => (Status::InternalServerError, Template::render("error", "")),
             AppError::Guard => (Status::InternalServerError, Template::render("error", "")),
+            AppError::NotFound => (Status::NotFound, Template::render("error", "")),
         }
     }
 }

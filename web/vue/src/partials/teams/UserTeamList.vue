@@ -17,7 +17,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
 import draggable from "vuedraggable";
-import { Team, UserTeamLink, sort_by_rank } from "./main";
+import { Team, UserTeamLink, sort_by_rank } from "../../models";
 import TeamRow from "./TeamRow.vue";
 import _ from "lodash";
 

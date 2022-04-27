@@ -1,5 +1,6 @@
 <template>
   <div>
+    <TeamEditor v-if="team" :team="team" @save="save_team" />
     <SearchBar
       v-model="search"
       @keydown="reset_index_if_letter"
@@ -32,7 +33,8 @@ import axios from "axios";
 import SearchBar from "./Search.vue";
 import ShortcutList from "./ShortcutList.vue";
 import ShortcutInput from "./ShortcutInput.vue";
-import { Capabilities } from "@/models";
+import TeamEditor from "./TeamEditor.vue";
+import { Capabilities } from "../../models";
 
 interface Window {
   shortcut?: string;
@@ -40,6 +42,7 @@ interface Window {
   shortcuts: Shortcut[];
   capabilities: Capabilities[];
   admin_teams: Team[];
+  team: Team;
 }
 
 export interface Shortcut {
@@ -72,12 +75,13 @@ const SHORTCUT = win.shortcut;
 const URL = win.url;
 const CAPABILITIES = win.capabilities;
 const ADMIN_TEAMS = win.admin_teams;
+const TEAM = win.team;
 
 let key_press: (e: KeyboardEvent) => void;
 
 export default defineComponent({
   name: "Partial",
-  components: { SearchBar, ShortcutList, ShortcutInput },
+  components: { SearchBar, ShortcutList, ShortcutInput, TeamEditor },
   data() {
     return {
       selected_index: -1,
@@ -89,6 +93,7 @@ export default defineComponent({
       url: URL,
       capabilities: CAPABILITIES ?? [],
       admin_teams: ADMIN_TEAMS,
+      team: TEAM,
     };
   },
   computed: {
@@ -186,6 +191,13 @@ export default defineComponent({
           this.shortcuts = shortcuts;
           this.fuse.setCollection(this.shortcuts);
           on_success();
+        }
+      });
+    },
+    save_team({ slug, team }: { slug: string; team: Team }) {
+      axios.patch(`/go/teams/${slug}`, team).then((res) => {
+        if (res.status === 200) {
+          this.team = { ...this.team, ...team };
         }
       });
     },

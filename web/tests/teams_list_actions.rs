@@ -367,6 +367,77 @@ fn cant_patch_global_team() {
 }
 
 #[test]
+fn patch_team_as_a_teamate() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, true, &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[("slug1", &[TeamCapability::TeamsWrite], 0)],
+        &[],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let response = client
+        .patch("/go/teams/slug1")
+        .json(&json!({ "title": "newTitle", "is_private": true }))
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(
+        get_team("slug1", &conn),
+        Some(Team {
+            slug: "slug1".to_string(),
+            title: "newTitle".to_string(),
+            is_private: true,
+            is_accepted: true
+        })
+    );
+}
+
+#[test]
+fn patch_team_as_a_teamate_cant_accept() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, true, &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[("slug1", &[TeamCapability::TeamsWrite], 0)],
+        &[],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let response = client
+        .patch("/go/teams/slug1")
+        .json(&json!({ "is_accepted": true }))
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Unauthorized);
+}
+
+#[test]
 fn patch_team() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);

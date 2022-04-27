@@ -54,7 +54,7 @@
 <script lang="ts">
 import axios from "axios";
 import { defineComponent } from "vue";
-import { Team, UserTeamLink, sort_by_rank } from "./main";
+import { Team, UserTeamLink, sort_by_rank } from "../../models";
 import TeamList from "./TeamList.vue";
 import UserTeamList from "./UserTeamList.vue";
 import _ from "lodash";

@@ -82,8 +82,12 @@ impl User {
         }
     }
 
+    pub fn have_capability(&self, capability: Capability) -> bool {
+        self.capabilities.contains(&capability)
+    }
+
     pub fn should_have_capability(&self, capability: Capability) -> Result<(), AppError> {
-        if self.capabilities.contains(&capability) {
+        if self.have_capability(capability) {
             Ok(())
         } else {
             error!("User {} miss capability {}", self.mail, capability);
@@ -111,7 +115,7 @@ impl User {
 }
 
 impl Capability {
-    fn all() -> Vec<Capability> {
+    pub fn all() -> Vec<Capability> {
         vec![
             Capability::Features,
             Capability::ShortcutsWrite,

@@ -10,12 +10,11 @@ use std::path::{Path, PathBuf};
 
 use crate::models::features::Features;
 use crate::models::shortcuts::{sorted, NewShortcut, UpdatableShortcut};
-use crate::models::teams::{Team, TeamCapability, TEAM_COLUMNS};
+use crate::models::teams::{admin_teams}; 
 use crate::models::users::{Capability, User};
 use crate::models::AppError;
 use crate::schema::shortcuts;
 use crate::schema::shortcuts::dsl;
-use crate::schema::teams;
 use crate::schema::users_teams;
 use crate::DbPool;
 
@@ -38,16 +37,7 @@ pub fn index(
 
     let admin_teams = if let Some(user) = &user && features.teams {
         Some(
-            json!(teams::table
-                .inner_join(
-                    users_teams::table.on(teams::slug
-                        .eq(users_teams::team_slug)
-                        .and(users_teams::user_mail.eq(&user.mail))
-                        .and(users_teams::capabilities.contains(vec![TeamCapability::ShortcutsWrite.to_string()]))),
-                )
-                .select(TEAM_COLUMNS)
-                .load::<Team>(&conn)
-                .map_err(AppError::from)?)
+            json!(admin_teams(user, &conn)?) 
             .to_string(),
         )
     } else {

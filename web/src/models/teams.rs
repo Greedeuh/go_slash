@@ -1,10 +1,16 @@
-use std::str::FromStr;
-
-use diesel::{deserialize, serialize, Identifiable};
+use diesel::{deserialize, prelude::*, serialize, Identifiable};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use strum_macros::{Display, EnumString};
 
-use crate::{models::users::UserTeam, schema::teams};
+use crate::{
+    models::{
+        users::{User, UserTeam},
+        AppError,
+    },
+    schema::{teams, users_teams},
+    DbConn,
+};
 
 pub type AllColumns = (
     teams::slug,
@@ -42,6 +48,13 @@ pub struct TeamForUser {
     #[serde(flatten)]
     pub team: Team,
     pub user_link: UserTeam,
+}
+
+#[derive(Queryable, Serialize)]
+pub struct TeamForUserIfSome {
+    #[serde(flatten)]
+    pub team: Team,
+    pub user_link: Option<UserTeam>,
 }
 
 #[derive(
@@ -95,4 +108,20 @@ where
         out.write_all(self.to_string().as_bytes())?;
         Ok(diesel::types::IsNull::No)
     }
+}
+
+pub fn admin_teams(user: &User, conn: &DbConn) -> Result<Vec<Team>, AppError> {
+    teams::table
+        .inner_join(
+            users_teams::table.on(teams::slug
+                .eq(users_teams::team_slug)
+                .and(users_teams::user_mail.eq(&user.mail))
+                .and(
+                    users_teams::capabilities
+                        .contains(vec![TeamCapability::ShortcutsWrite.to_string()]),
+                )),
+        )
+        .select(TEAM_COLUMNS)
+        .load::<Team>(conn)
+        .map_err(AppError::from)
 }

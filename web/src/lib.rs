@@ -24,7 +24,7 @@ use controllers::{
     features::{features, patch_feature},
     health_check,
     shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut},
-    teams::{create_team, delete_team, list_teams, patch_team},
+    teams::{create_team, delete_team, list_teams, patch_team, show_team},
     users::{
         join_global_team, join_team, leave_global_team, leave_team, login, put_user_team_ranks,
         simple_login,
@@ -93,7 +93,8 @@ pub fn server(
                 leave_team,
                 delete_team,
                 patch_team,
-                create_team
+                create_team,
+                show_team
             ],
         )
         .mount("/public", FileServer::from(relative!("public")))
