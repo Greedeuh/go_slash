@@ -13,6 +13,7 @@
     "@types/lodash": "^4.14.181",
     "@types/object-hash": "^2.2.1",
     "@types/vue-select": "^3.16.0",
+    "@vue/cli-service": "~4.5.15",
     "axios": "^0.26.0",
     "core-js": "^3.6.5",
     "crypto-js": "^4.1.1",
@@ -30,7 +31,7 @@
     "@vue/cli-plugin-babel": "~4.5.15",
     "@vue/cli-plugin-eslint": "~4.5.15",
     "@vue/cli-plugin-typescript": "~4.5.15",
-    "@vue/cli-service": "~4.5.15",
+    
     "@vue/compiler-sfc": "^3.0.0",
     "@vue/eslint-config-prettier": "^6.0.0",
     "@vue/eslint-config-typescript": "^7.0.0",
