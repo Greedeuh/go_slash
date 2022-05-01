@@ -1,3 +1,2 @@
 VERSION=nightly-2022-03-07
 BUILD_PATH="./web"
-RUST_CARGO_BUILD_FLAGS="--release"
