@@ -11,13 +11,8 @@ use diesel::{
     r2d2::{ConnectionManager, Pool, PooledConnection},
     PgConnection,
 };
-use rocket::{
-    fairing::AdHoc,
-    fs::{relative, FileServer},
-    routes, Build, Config, Rocket,
-};
+use rocket::{fairing::AdHoc, fs::FileServer, routes, Build, Config, Rocket};
 use rocket_dyn_templates::Template;
-use std::env;
 
 pub mod controllers;
 use controllers::{
@@ -98,7 +93,7 @@ pub fn server(
                 show_team
             ],
         )
-        .mount("/public", FileServer::from(relative!("public")))
+        .mount("/public", FileServer::from("./public"))
         .manage(features)
         .manage(sessions)
         .manage(config)
