@@ -1,3 +1,4 @@
+#![feature(let_chains)]
 #[macro_use]
 extern crate rocket;
 use std::env;
@@ -6,7 +7,9 @@ use go_web::{models::users::Sessions, server, AppConfig};
 
 #[launch]
 fn rocket() -> _ {
-    dotenv::dotenv().unwrap();
+    if let Ok(dot_env)= env::var("DOT_ENV") && dot_env =="true"  {
+        dotenv::dotenv().unwrap();
+    }
 
     let db_url = env::var("DATABASE_URL").expect("Missing DATABASE_URL env var");
 
