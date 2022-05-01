@@ -21,6 +21,7 @@ use crate::{
         teams::{self, dsl},
         users_teams,
     },
+    views::IndexContext,
     DbPool,
 };
 
@@ -240,14 +241,16 @@ pub fn show_team(
     Ok(Template::render(
         "index",
         json!({
-            "shortcuts": json!(shortcuts)
-                .to_string(),
-            "capabilities": json!(user.capabilities).to_string(),
-            "mail":  user.mail,
+            "mail": &user.mail,
             "features": json!(features),
-            "admin_teams": json!(admin_teams(&user, &conn)?)
-            .to_string(),
-            "team": json!(team).to_string()
+            "context": json!(IndexContext {
+                shortcut: None,
+                shortcuts,
+                features,
+                team: Some(team),
+                teams: Some(admin_teams(&user, &conn)?),
+                user: Some(user)
+            }).to_string()
         }),
     ))
 }

@@ -37,12 +37,15 @@ import TeamEditor from "./TeamEditor.vue";
 import { Capabilities } from "../../models";
 
 interface Window {
-  shortcut?: string;
-  url?: string;
+  context: WindowContext;
+}
+
+interface WindowContext {
+  shortcut?: Shortcut;
   shortcuts: Shortcut[];
-  capabilities: Capabilities[];
-  admin_teams: Team[];
-  team: Team;
+  user?: User;
+  teams?: Team[];
+  team?: Team;
 }
 
 export interface Shortcut {
@@ -59,6 +62,11 @@ interface Team {
   is_accepted: boolean;
 }
 
+interface User {
+  mail: string;
+  capabilities: Capabilities[];
+}
+
 function setup_fuse(shortcuts: Shortcut[]) {
   return new Fuse(shortcuts, {
     keys: [
@@ -70,12 +78,12 @@ function setup_fuse(shortcuts: Shortcut[]) {
 
 let win = window as unknown as Window;
 const CONTROL_KEYS = ["ArrowUp", "ArrowDown", "Enter", "Tab", "Escape"];
-const SHORTCUTS = win.shortcuts;
-const SHORTCUT = win.shortcut;
-const URL = win.url;
-const CAPABILITIES = win.capabilities;
-const ADMIN_TEAMS = win.admin_teams;
-const TEAM = win.team;
+const SHORTCUTS = win.context.shortcuts;
+const SHORTCUT = win.context.shortcut?.shortcut;
+const URL = win.context.shortcut?.url;
+const CAPABILITIES = win.context.user?.capabilities;
+const ADMIN_TEAMS = win.context.teams;
+const TEAM = win.context.team;
 
 let key_press: (e: KeyboardEvent) => void;
 

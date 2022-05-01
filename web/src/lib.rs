@@ -34,6 +34,7 @@ pub mod guards;
 pub mod models;
 use crate::models::users::Sessions;
 pub mod schema;
+mod views;
 use dotenv::dotenv;
 
 embed_migrations!("migrations");

@@ -9,7 +9,7 @@ use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
 use crate::models::features::Features;
-use crate::models::shortcuts::{sorted, NewShortcut, UpdatableShortcut};
+use crate::models::shortcuts::{sorted, NewShortcut, UpdatableShortcut, SHORTCUT_COLUMNS, Shortcut};
 use crate::models::teams::{admin_teams}; 
 use crate::models::users::{Capability, User};
 use crate::models::AppError;
@@ -17,6 +17,7 @@ use crate::schema::shortcuts;
 use crate::schema::shortcuts::dsl;
 use crate::schema::users_teams;
 use crate::DbPool;
+use crate::views::IndexContext;
 
 lazy_static! {
     static ref URL_REGEX: Regex =
@@ -37,8 +38,7 @@ pub fn index(
 
     let admin_teams = if let Some(user) = &user && features.teams {
         Some(
-            json!(admin_teams(user, &conn)?) 
-            .to_string(),
+            admin_teams(user, &conn)?
         )
     } else {
         None
@@ -46,11 +46,17 @@ pub fn index(
 
     Ok(Template::render(
         "index",
-        json!({ "shortcuts": json!(sorted(&conn)?).to_string(),
-            "capabilities": json!(user.as_ref().map(|user| &user.capabilities)).to_string(),
-            "mail": user.map(|user| user.mail),
+        json!({ 
+            "mail": user.as_ref().map(|user| &user.mail),
             "features": json!(features),
-            "admin_teams": admin_teams
+            "context": json!(IndexContext {
+                shortcut: None,
+                shortcuts:  sorted(&conn)?,
+                 user, 
+                features,
+                team: None,
+                teams: admin_teams,
+            }).to_string()
         }),
     ))
 }
@@ -81,7 +87,7 @@ pub fn get_shortcut(
 
     let conn = pool.get().map_err(AppError::from)?;
 
-    let url = if let Some(user) = &user && features.teams {
+    let shortcut_found = if let Some(user) = &user && features.teams {
         dsl::shortcuts
             .inner_join(
                 users_teams::table.on(dsl::team_slug
@@ -89,51 +95,67 @@ pub fn get_shortcut(
                     .and(users_teams::user_mail.eq(&user.mail))),
             )
             .filter(dsl::shortcut.eq(shortcut))
-            .select(dsl::url)
+            .select(SHORTCUT_COLUMNS)
             .order_by(users_teams::rank.asc())
-            .first::<String>(&conn)
+            .first::<Shortcut>(&conn)
             .optional()
             .map_err(AppError::from)?
     } else {
         dsl::shortcuts
-            .select(dsl::url)
             .find((shortcut, ""))
-            .first::<String>(&conn)
+            .first::<Shortcut>(&conn)
             .optional()
             .map_err(AppError::from)?
     };
 
-    Ok(match url {
-        Some(url) => {
+    let admin_teams = if let Some(user) = &user && features.teams {
+        Some(
+            admin_teams(user, &conn)?
+            
+        )
+    } else {
+        None
+    };
+
+    Ok(match shortcut_found {
+        Some(shortcut_found) => {
             if let Some(true) = no_redirect {
                 ShortcutRes::Ok(Template::render(
                     "index",
-                    json!({
-                        "shortcut": shortcut,
-                        "url": url,
-                        "shortcuts": json!(sorted(&conn)?)
-                            .to_string(),
-                        "url": url,
-                        "no_redirect": true,
-                        "capabilities": json!(user.as_ref().map(|user| &user.capabilities)).to_string(),
-                        "mail": user.map(|user| user.mail),
-                        "features": json!(features)
+                    json!({ 
+                        "mail": user.as_ref().map(|user| &user.mail),
+                        "context": json!(IndexContext {
+                            shortcut: Some(shortcut_found),
+                            shortcuts:  sorted(&conn)?,
+                             user, 
+                            features,
+                            team: None,
+                            teams: admin_teams,
+                        }).to_string()
                     }),
                 ))
             } else {
-                ShortcutRes::Redirect(Redirect::permanent(url))
+                ShortcutRes::Redirect(Redirect::permanent(shortcut_found.url))
             }
         }
         None => ShortcutRes::NotFound(Template::render(
             "index",
-            json!({
-                "shortcut": shortcut,
-                "shortcuts": json!(sorted(&conn)?)
-                                    .to_string(),
+            json!({ 
+                "mail": user.as_ref().map(|user| &user.mail),
+                "features": json!(features),
                 "not_found": true,
-                "capabilities": json!(user.as_ref().map(|user| &user.capabilities)).to_string(),
-                "mail": user.map(|user| user.mail),
-                "features": json!(features)
+                "context": json!(IndexContext {
+                    shortcut: Some(Shortcut {
+                        shortcut: shortcut.to_string(),
+                        team_slug:"".to_string(), 
+                        url:"".to_string()
+                    }),
+                    shortcuts:  sorted(&conn)?,
+                     user, 
+                    features,
+                    team: None,
+                    teams: admin_teams,
+                }).to_string()
             }),
         )),
     })
@@ -177,8 +199,6 @@ pub fn put_shortcut(
             url: url.to_string(),
             team_slug: team_slug.to_string(),
         })
-        // .on_conflict(SHORTCUT_COLUMNS)
-        // .do_nothing()
         .on_conflict((shortcuts::shortcut, shortcuts::team_slug))
         .do_update()
         .set(UpdatableShortcut { url, team_slug })

@@ -13,7 +13,7 @@ pub type SafeColumns = (users::mail, users::capabilities);
 
 pub const SAFE_USER_COLUMNS: SafeColumns = (users::mail, users::capabilities);
 
-#[derive(Queryable, Identifiable, Debug)]
+#[derive(Queryable, Identifiable, Serialize, Debug)]
 #[table_name = "users"]
 #[primary_key(mail)]
 pub struct User {

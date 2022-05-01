@@ -2,12 +2,7 @@
 {{#if not_found}} <div role="alert" class="alert alert-warning">Shortcut "{{shortcut}}" does not exist yet.</div> {{/if}}
 
 <script>
-window.shortcuts = {{{shortcuts}}}
-window.capabilities = {{{capabilities}}}
-{{#if (or not_found no_redirect) }} window.shortcut = "{{{shortcut}}}" {{/if}}
-{{#if no_redirect }} window.url = "{{{url}}}" {{/if}}
-{{#if admin_teams }} window.admin_teams = {{{admin_teams}}} {{/if}}
-{{#if team }} window.team = {{{team}}} {{/if}}
+window.context = {{{context}}}
 </script>
 {{> vue_dist/search }}
 {{/inline}}
