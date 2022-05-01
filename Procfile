@@ -1,1 +1,1 @@
-web: cd web && ADDR=0.0.0.0 PORT=$PORT ./target/release/go_web
+web: cd web && ADDR=0.0.0.0 PORT=$PORT RUN_MIGRATIONS=true ./target/release/go_web
