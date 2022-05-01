@@ -1,5 +1,6 @@
 {
     "scripts": {
-        "postinstall": "cd web/vue && npm install && ./node_modules/.bin/vue-cli-service build"
+        "preinstall": "cd web/vue && npm install",
+        "postinstall": "cd web/vue  && ./node_modules/.bin/vue-cli-service build"
       }
 }
