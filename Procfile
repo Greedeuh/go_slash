@@ -1,1 +1,1 @@
-web: cd web && ./target/release/go_web
+web: cd web && ADDR=0.0.0.0 PORT=$PORT ./target/release/go_web
