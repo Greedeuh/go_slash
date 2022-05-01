@@ -1,2 +1,3 @@
 VERSION=nightly-2022-03-07
-RUST_CARGO_BUILD_FLAGS="--release --manifest-path web/Cargo.toml"
+BUILD_PATH="./web"
+RUST_CARGO_BUILD_FLAGS="--release"
