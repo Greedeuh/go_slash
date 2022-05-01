@@ -1,1 +1,1 @@
-web: ./web/target/release/go_web
+web: cd web && ./target/release/go_web

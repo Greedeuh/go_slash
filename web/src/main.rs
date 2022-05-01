@@ -61,7 +61,7 @@ fn logger() {
         })
         .level(log::LevelFilter::Info)
         .chain(std::io::stdout())
-        .chain(fern::log_file("go.log").unwrap())
+        // .chain(fern::log_file("go.log").unwrap()) TO DO see what to do with that
         .apply()
         .unwrap();
 }
