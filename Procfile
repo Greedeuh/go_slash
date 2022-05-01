@@ -1,1 +1,1 @@
-web: cd web && RUN_MIGRATIONS=true cargo run -r
+web: ./web/target/release/go_web
