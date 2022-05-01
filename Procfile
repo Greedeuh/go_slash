@@ -1,1 +1,1 @@
-web: cd web && ADDR=0.0.0.0 PORT=$PORT RUN_MIGRATIONS=true ./target/release/go_web
+web: cd web && yarn install &&  ADDR=0.0.0.0 PORT=$PORT RUN_MIGRATIONS=true ./target/release/go_web
