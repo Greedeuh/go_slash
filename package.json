@@ -1,6 +1,5 @@
 {
     "scripts": {
-        "preinstall": "cd web/vue && npm install",
-        "postinstall": "cd web/vue  && npm run build"
+        "preinstall": "cd web/vue && npm install && npm run build"
       }
 }
