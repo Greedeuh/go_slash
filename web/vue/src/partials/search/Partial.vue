@@ -34,7 +34,7 @@ import SearchBar from "./Search.vue";
 import ShortcutList from "./ShortcutList.vue";
 import ShortcutInput from "./ShortcutInput.vue";
 import TeamEditor from "./TeamEditor.vue";
-import { Capabilities } from "../../models";
+import { User } from "../../models";
 
 interface Window {
   context: WindowContext;
@@ -60,11 +60,6 @@ interface Team {
   title: string;
   is_private: boolean;
   is_accepted: boolean;
-}
-
-interface User {
-  mail: string;
-  capabilities: Capabilities[];
 }
 
 function setup_fuse(shortcuts: Shortcut[]) {

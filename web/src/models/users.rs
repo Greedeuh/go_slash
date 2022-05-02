@@ -67,6 +67,7 @@ pub enum Capability {
     TeamsWriteWithValidation,
     UsersTeamsRead,
     UsersTeamsWrite,
+    UsersAdmin,
 }
 
 #[derive(Default)]

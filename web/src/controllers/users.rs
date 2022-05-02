@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use crate::models::features::Features;
 use crate::models::teams::{Team, TeamCapability};
-use crate::models::users::{Capability, User, UserTeam};
+use crate::models::users::{Capability, User, UserTeam, SAFE_USER_COLUMNS};
 use crate::schema::users::dsl;
 use crate::schema::{teams, users_teams};
 use crate::DbPool;
@@ -221,4 +221,32 @@ pub fn put_user_team_ranks(
     .map_err(AppError::from)?;
 
     Ok(Status::Ok)
+}
+
+#[get("/go/users")]
+pub fn list_users(
+    user: User,
+    features: Features,
+    pool: &State<DbPool>,
+) -> Result<Template, (Status, Value)> {
+    if !features.login.simple {
+        return Err(AppError::Disable.into());
+    }
+
+    let conn = pool.get().map_err(AppError::from)?;
+    let users = dsl::users
+        .select(SAFE_USER_COLUMNS)
+        .load::<User>(&conn)
+        .map_err(AppError::from)?;
+
+    Ok(Template::render(
+        "users",
+        json!({
+            "mail":  &user.mail,
+            "features": json!(features),
+            "context": json!({
+                "users": users
+            }).to_string()
+        }),
+    ))
 }

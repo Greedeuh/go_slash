@@ -20,3 +20,8 @@ export function sort_by_rank(a: Team, b: Team): number {
     (a.user_link as UserTeamLink).rank - (b.user_link as UserTeamLink).rank
   );
 }
+
+export interface User {
+  mail: string;
+  capabilities: Capabilities[];
+}

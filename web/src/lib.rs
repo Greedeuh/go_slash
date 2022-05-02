@@ -21,8 +21,8 @@ use controllers::{
     shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut},
     teams::{create_team, delete_team, list_teams, patch_team, show_team},
     users::{
-        join_global_team, join_team, leave_global_team, leave_team, login, put_user_team_ranks,
-        simple_login,
+        join_global_team, join_team, leave_global_team, leave_team, list_users, login,
+        put_user_team_ranks, simple_login,
     },
 };
 pub mod guards;
@@ -77,6 +77,7 @@ pub fn server(
                 put_shortcut,
                 delete_shortcut,
                 login,
+                list_users,
                 features,
                 patch_feature,
                 simple_login,
