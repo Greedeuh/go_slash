@@ -236,6 +236,7 @@ pub fn list_users(
     let conn = pool.get().map_err(AppError::from)?;
     let users = dsl::users
         .select(SAFE_USER_COLUMNS)
+        .order_by(dsl::mail)
         .load::<User>(&conn)
         .map_err(AppError::from)?;
 

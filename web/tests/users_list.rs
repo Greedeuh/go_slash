@@ -125,17 +125,56 @@ async fn list_users() {
                     .get(format!("http://localhost:{}/go/users", port))
                     .await?;
 
-                let expected_users = vec!["some_mail@mail.com", "another_mail@mail.com"];
+                assert_users(driver, vec!["another_mail@mail.com", "some_mail@mail.com"]).await;
 
-                let users = driver.find_elements(By::Css("[role='listitem']")).await?;
-                for i in 0..expected_users.len() {
-                    assert_eq!(users[i].text().await?, expected_users[i]);
+                let user = driver
+                    .find_elements(By::Css("[role='listitem']"))
+                    .await?
+                    .first()
+                    .unwrap()
+                    .clone();
+
+                let expeted_capabilities = vec![
+                    ("false", Capability::Features),
+                    ("true", Capability::ShortcutsWrite),
+                    ("false", Capability::TeamsRead),
+                    ("false", Capability::TeamsWrite),
+                    ("false", Capability::TeamsWriteWithValidation),
+                    ("false", Capability::UsersAdmin),
+                    ("false", Capability::UsersTeamsRead),
+                    ("false", Capability::UsersTeamsWrite),
+                ];
+
+                user.click().await?;
+
+                let switchs = user.find_elements(By::Css("[role='switch']")).await?;
+                let switchs_label = user.find_elements(By::Tag("label")).await?;
+                for i in 0..expeted_capabilities.len() {
+                    let (checked, label) = expeted_capabilities[i];
+                    switchs_label[i].wait_until().displayed().await?;
+                    assert_eq!(switchs_label[i].text().await.unwrap(), label.to_string());
+                    assert_eq!(
+                        switchs[i].get_property("checked").await?.unwrap(),
+                        checked.to_string()
+                    );
                 }
 
+                switchs[0].click().await?;
+                assert_eq!(switchs[0].get_property("checked").await?.unwrap(), "true");
                 Ok(())
             }
             .boxed()
         },
     )
     .await;
+}
+
+async fn assert_users(driver: &WebDriver, expected_users: Vec<&str>) {
+    let users = driver
+        .find_elements(By::Css("[role='listitem'] h2"))
+        .await
+        .unwrap();
+    for i in 0..expected_users.len() {
+        assert_eq!(users[i].text().await.unwrap(), expected_users[i]);
+    }
 }
