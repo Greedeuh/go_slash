@@ -22,7 +22,7 @@ use controllers::{
     teams::{create_team, delete_team, list_teams, patch_team, show_team},
     users::{
         join_global_team, join_team, leave_global_team, leave_team, list_users, login,
-        put_user_team_ranks, simple_login,
+        put_user_capability, put_user_team_ranks, simple_login,
     },
 };
 pub mod guards;
@@ -91,7 +91,8 @@ pub fn server(
                 delete_team,
                 patch_team,
                 create_team,
-                show_team
+                show_team,
+                put_user_capability
             ],
         )
         .mount("/public", FileServer::from("./public"))

@@ -1,4 +1,12 @@
-export type Capabilities = "ShortcutWrite";
+export type Capability =
+  | "Features"
+  | "ShortcutsWrite"
+  | "TeamsRead"
+  | "TeamsWrite"
+  | "TeamsWriteWithValidation"
+  | "UsersAdmin"
+  | "UsersTeamsRead"
+  | "UsersTeamsWrite";
 
 export interface Team {
   slug: string;
@@ -23,5 +31,16 @@ export function sort_by_rank(a: Team, b: Team): number {
 
 export interface User {
   mail: string;
-  capabilities: Capabilities[];
+  capabilities: Capability[];
 }
+
+export const ALL_CAPABILITIES = [
+  "Features",
+  "ShortcutsWrite",
+  "TeamsRead",
+  "TeamsWrite",
+  "TeamsWriteWithValidation",
+  "UsersAdmin",
+  "UsersTeamsRead",
+  "UsersTeamsWrite",
+].sort();

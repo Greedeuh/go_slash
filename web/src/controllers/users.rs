@@ -1,8 +1,10 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use diesel::dsl::count;
 use diesel::prelude::*;
 use lazy_static::lazy_static;
+use log::warn;
 use regex::Regex;
 use rocket::{http::Status, serde::json::Json, State};
 use rocket_dyn_templates::Template;
@@ -250,4 +252,42 @@ pub fn list_users(
             }).to_string()
         }),
     ))
+}
+
+#[put("/go/users/<mail>/capabilities/<capability>")]
+pub fn put_user_capability(
+    mail: String,
+    capability: String,
+    user: User,
+    features: Features,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Value)> {
+    let capability = Capability::from_str(&capability).map_err(|_| AppError::BadRequest)?;
+
+    let conn = pool.get().map_err(AppError::from)?;
+
+    if !features.login.simple {
+        return Err(AppError::Disable.into());
+    }
+
+    user.should_have_capability(Capability::UsersAdmin)?;
+
+    let user: User = dsl::users
+        .select(SAFE_USER_COLUMNS)
+        .find(&mail)
+        .first(&conn)
+        .map_err(AppError::from)?;
+
+    let mut capabilities = user.capabilities;
+    if !capabilities.contains(&capability) {
+        capabilities.push(capability);
+        diesel::update(dsl::users.find(&mail))
+            .set(dsl::capabilities.eq(capabilities))
+            .execute(&conn)
+            .map_err(AppError::from)?;
+    } else {
+        warn!("User {} already has capability {}", mail, capability);
+    }
+
+    Ok(Status::Ok)
 }

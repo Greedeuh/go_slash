@@ -1,9 +1,9 @@
 use diesel::PgConnection;
 use go_web::models::users::Capability;
-use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::http::Status;
 use rocket::tokio::sync::Mutex;
+use rocket::{async_test, http};
 use serde_json::json;
 use thirtyfour::prelude::*;
 
@@ -161,6 +161,13 @@ async fn list_users() {
 
                 switchs[0].click().await?;
                 assert_eq!(switchs[0].get_property("checked").await?.unwrap(), "true");
+
+                driver
+                    .get(format!("http://localhost:{}/go/users", port))
+                    .await?;
+
+                let switchs = driver.find_elements(By::Css("[role='switch']")).await?;
+                assert_eq!(switchs[0].get_property("checked").await?.unwrap(), "true");
                 Ok(())
             }
             .boxed()
@@ -177,4 +184,97 @@ async fn assert_users(driver: &WebDriver, expected_users: Vec<&str>) {
     for i in 0..expected_users.len() {
         assert_eq!(users[i].text().await.unwrap(), expected_users[i]);
     }
+}
+
+#[test]
+fn put_user_capability_need_feature() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::UsersAdmin],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: false,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        &conn,
+    );
+
+    let response = client
+        .put("/go/users/some_mail@mail.com/capabilities/Features")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Conflict);
+}
+
+#[test]
+fn put_user_capability_user_with_capability() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        &conn,
+    );
+
+    let response = client
+        .put("/go/users/some_mail@mail.com/capabilities/Features")
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Unauthorized);
+
+    let response = client
+        .put("/go/users/some_mail@mail.com/capabilities/Features")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Unauthorized);
+}
+
+#[test]
+fn put_user_capability() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::UsersAdmin],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        &conn,
+    );
+
+    let response = client
+        .put("/go/users/some_mail@mail.com/capabilities/Features")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Ok);
+
+    let user = get_user("some_mail@mail.com", &conn).unwrap();
+    assert_eq!(
+        user.capabilities,
+        &[Capability::UsersAdmin, Capability::Features]
+    )
 }

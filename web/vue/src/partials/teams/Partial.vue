@@ -59,11 +59,11 @@ import TeamList from "./TeamList.vue";
 import UserTeamList from "./UserTeamList.vue";
 import _ from "lodash";
 import CreateTeamModal from "./CreateTeamModal.vue";
-import { Capabilities } from "../../models";
+import { Capability } from "../../models";
 
 interface Window {
   teams: Team[];
-  capabilities: Capabilities[];
+  capabilities: Capability[];
 }
 
 let win = window as unknown as Window;
@@ -71,7 +71,7 @@ const TEAMS = win.teams;
 
 interface Data {
   teams: Team[];
-  capabilities: Capabilities[];
+  capabilities: Capability[];
   administer: boolean;
 }
 

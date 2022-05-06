@@ -8,7 +8,7 @@
     >
       <h2 class="accordion-header">
         <button
-          class="accordion-button"
+          class="accordion-button collapsed"
           type="button"
           data-bs-toggle="collapse"
           :data-bs-target="'#collapse' + index"
@@ -19,24 +19,10 @@
       </h2>
       <div :id="'collapse' + index" class="accordion-collapse collapse">
         <div class="accordion-body">
-          <strong>Capabilities :</strong>
-          <div
-            v-for="capability in capabilities"
-            :key="capability"
-            class="form-check form-switch"
-          >
-            <input
-              class="form-check-input"
-              v-model="is_private"
-              :name="capability"
-              type="checkbox"
-              role="switch"
-              :checked="user.capabilities.includes(capability)"
-            />
-            <label class="form-check-label">
-              {{ capability }}
-            </label>
-          </div>
+          <Capabilities
+            :user_capabilities="user.capabilities"
+            @toggle="(capability) => toggle(user, capability)"
+          />
         </div>
       </div>
     </div>
@@ -44,8 +30,10 @@
 </template>
 
 <script lang="ts">
+import axios from "axios";
 import { defineComponent } from "vue";
-import { User } from "../../models";
+import { Capability, User } from "../../models";
+import Capabilities from "./Capabilities.vue";
 
 interface Window {
   context: {
@@ -59,27 +47,43 @@ const CONTEXT = win.context;
 
 interface Data {
   users: User[];
-  capabilities: string[];
 }
-
-const ALL_CAPABILITIES = [
-  "Features",
-  "ShortcutsWrite",
-  "TeamsRead",
-  "TeamsWrite",
-  "TeamsWriteWithValidation",
-  "UsersAdmin",
-  "UsersTeamsRead",
-  "UsersTeamsWrite",
-].sort();
 
 export default defineComponent({
   name: "Partial",
+  components: {
+    Capabilities,
+  },
   data(): Data {
     return {
       users: CONTEXT.users,
-      capabilities: ALL_CAPABILITIES,
     };
+  },
+  methods: {
+    toggle(
+      user: User,
+      { capability, value }: { capability: Capability; value: boolean }
+    ) {
+      if (value) {
+        axios
+          .put(`/go/users/${user.mail}/capabilities/${capability}`)
+          .then((res) => {
+            if (res.status === 200) {
+              user.capabilities = [...user.capabilities, capability];
+            }
+          });
+      } else {
+        axios
+          .delete(`/go/user/${user.mail}/capabilities/${capability}`)
+          .then((res) => {
+            if (res.status === 200) {
+              user.capabilities = user.capabilities.filter(
+                (c) => c !== capability
+              );
+            }
+          });
+      }
+    },
   },
 });
 </script>

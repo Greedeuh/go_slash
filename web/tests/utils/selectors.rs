@@ -4,8 +4,12 @@ pub use no_dead_code::*;
 mod no_dead_code {
     use diesel::prelude::*;
     use go_web::{
-        models::{shortcuts::Shortcut, teams::Team, users::UserTeam},
-        schema::{shortcuts, teams, users_teams},
+        models::{
+            shortcuts::Shortcut,
+            teams::Team,
+            users::{User, UserTeam, SAFE_USER_COLUMNS},
+        },
+        schema::{shortcuts, teams, users, users_teams},
     };
 
     pub fn get_shortcut(shortcut: &str, conn: &PgConnection) -> Option<Shortcut> {
@@ -25,5 +29,14 @@ mod no_dead_code {
 
     pub fn get_team(slug: &str, conn: &PgConnection) -> Option<Team> {
         teams::table.find(slug).first(conn).optional().unwrap()
+    }
+
+    pub fn get_user(mail: &str, conn: &PgConnection) -> Option<User> {
+        users::table
+            .find(mail)
+            .select(SAFE_USER_COLUMNS)
+            .first(conn)
+            .optional()
+            .unwrap()
     }
 }
