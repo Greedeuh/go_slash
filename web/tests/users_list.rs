@@ -166,8 +166,31 @@ async fn list_users() {
                     .get(format!("http://localhost:{}/go/users", port))
                     .await?;
 
+                driver
+                    .find_elements(By::Css("[role='listitem']"))
+                    .await?
+                    .first()
+                    .unwrap()
+                    .click()
+                    .await?;
+
                 let switchs = driver.find_elements(By::Css("[role='switch']")).await?;
-                assert_eq!(switchs[0].get_property("checked").await?.unwrap(), "true");
+                let switch = &switchs[0];
+
+                switch.wait_until().displayed().await?;
+                assert_eq!(switch.get_property("checked").await?.unwrap(), "true");
+
+                switch.click().await?;
+                assert_eq!(switch.get_property("checked").await?.unwrap(), "false");
+
+                driver
+                    .get(format!("http://localhost:{}/go/users", port))
+                    .await?;
+
+                let switchs = driver.find_elements(By::Css("[role='switch']")).await?;
+                let switch = &switchs[0];
+                assert_eq!(switch.get_property("checked").await?.unwrap(), "false");
+
                 Ok(())
             }
             .boxed()
@@ -277,4 +300,94 @@ fn put_user_capability() {
         user.capabilities,
         &[Capability::UsersAdmin, Capability::Features]
     )
+}
+
+#[test]
+fn delete_user_capability_need_feature() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::UsersAdmin],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: false,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        &conn,
+    );
+
+    let response = client
+        .delete("/go/users/some_mail@mail.com/capabilities/Features")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Conflict);
+}
+
+#[test]
+fn delete_user_capability_user_with_capability() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        &conn,
+    );
+
+    let response = client
+        .delete("/go/users/some_mail@mail.com/capabilities/Features")
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Unauthorized);
+
+    let response = client
+        .delete("/go/users/some_mail@mail.com/capabilities/Features")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Unauthorized);
+}
+
+#[test]
+fn delete_user_capability() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
+        &[Capability::UsersAdmin, Capability::Features],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        &conn,
+    );
+
+    let response = client
+        .delete("/go/users/some_mail@mail.com/capabilities/Features")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Ok);
+
+    let user = get_user("some_mail@mail.com", &conn).unwrap();
+    assert_eq!(user.capabilities, &[Capability::UsersAdmin,])
 }

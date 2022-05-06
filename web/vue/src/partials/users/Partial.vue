@@ -74,7 +74,7 @@ export default defineComponent({
           });
       } else {
         axios
-          .delete(`/go/user/${user.mail}/capabilities/${capability}`)
+          .delete(`/go/users/${user.mail}/capabilities/${capability}`)
           .then((res) => {
             if (res.status === 200) {
               user.capabilities = user.capabilities.filter(

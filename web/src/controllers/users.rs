@@ -291,3 +291,44 @@ pub fn put_user_capability(
 
     Ok(Status::Ok)
 }
+
+#[delete("/go/users/<mail>/capabilities/<capability>")]
+pub fn delete_user_capability(
+    mail: String,
+    capability: String,
+    user: User,
+    features: Features,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Value)> {
+    let capability = Capability::from_str(&capability).map_err(|_| AppError::BadRequest)?;
+
+    let conn = pool.get().map_err(AppError::from)?;
+
+    if !features.login.simple {
+        return Err(AppError::Disable.into());
+    }
+
+    user.should_have_capability(Capability::UsersAdmin)?;
+
+    let user: User = dsl::users
+        .select(SAFE_USER_COLUMNS)
+        .find(&mail)
+        .first(&conn)
+        .map_err(AppError::from)?;
+
+    let mut capabilities = user.capabilities;
+    if capabilities.contains(&capability) {
+        capabilities.retain(|&c| c != capability);
+        diesel::update(dsl::users.find(&mail))
+            .set(dsl::capabilities.eq(capabilities))
+            .execute(&conn)
+            .map_err(AppError::from)?;
+    } else {
+        warn!(
+            "User {} already does not have capability {}",
+            mail, capability
+        );
+    }
+
+    Ok(Status::Ok)
+}
