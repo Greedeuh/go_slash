@@ -223,17 +223,17 @@ async fn simple_login() {
                     driver.current_url().await?,
                     format!("http://localhost:{}/allo", port)
                 );
-                let login_link = driver.find_element(By::Css(".navbar-text")).await?;
+                let login_link = driver.find_element(By::Css("span.navbar-text")).await?;
                 assert_eq!(login_link.text().await?, "some_mail@mail.go");
 
                 driver
                     .get(format!("http://localhost:{}/another?no_redirect", port))
                     .await?;
-                let login_link = driver.find_element(By::Css(".navbar-text")).await?;
+                let login_link = driver.find_element(By::Css("span.navbar-text")).await?;
                 assert_eq!(login_link.text().await?, "some_mail@mail.go");
 
                 driver.get(format!("http://localhost:{}", port)).await?;
-                let login_link = driver.find_element(By::Css(".navbar-text")).await?;
+                let login_link = driver.find_element(By::Css("span.navbar-text")).await?;
                 assert_eq!(login_link.text().await?, "some_mail@mail.go");
                 Ok(())
             }
