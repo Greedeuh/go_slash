@@ -13,6 +13,100 @@ use thirtyfour::prelude::*;
 use utils::*;
 
 #[async_test]
+async fn user_see_admin_if_has_capability_shortcut_write() {
+    in_browser(
+        "session_with_capability: some_mail@mail.com
+session_with_team_capability: other_mail@mail.com
+session_without_capability: again_a_mail@mail.com",
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                shortcut(
+                    "newShortcut",
+                    &format!("http://localhost:{}/newShortcut", port),
+                    "",
+                    &con,
+                );
+                user("again_a_mail@mail.com", "pwd", &[], &[], &con);
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    &[],
+                    &[Capability::ShortcutsWrite],
+                    &con,
+                );
+                user(
+                    "other_mail@mail.com",
+                    "pwd",
+                    &[("", &[TeamCapability::ShortcutsWrite], 0)],
+                    &[],
+                    &con,
+                );
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
+                        teams: true,
+                    },
+                    &con,
+                );
+
+                driver.get(format!("http://localhost:{}", port)).await?;
+
+                assert_no_admin_interface(driver).await;
+
+                refresh_with_session(driver, "session_without_capability").await;
+                assert_no_admin_interface(driver).await;
+
+                refresh_with_session(driver, "session_with_capability").await;
+                assert_admin_interface(driver).await;
+
+                refresh_with_session(driver, "session_with_team_capability").await;
+                assert_admin_interface(driver).await;
+
+                Ok(())
+            }
+            .boxed()
+        },
+    )
+    .await;
+}
+
+async fn assert_no_admin_interface(driver: &WebDriver) {
+    assert!(driver.find_element(By::Id("btn-administer")).await.is_err());
+    assert!(driver.find_element(By::Id("btn-delete")).await.is_err());
+    assert!(driver.find_element(By::Id("btn-administer")).await.is_err());
+    assert!(driver
+        .find_element(By::Css("[name='shortcut']"))
+        .await
+        .is_err());
+    assert!(driver.find_element(By::Css("[name='url']")).await.is_err());
+    assert!(driver.find_element(By::Css("[name='team']")).await.is_err());
+    assert!(driver.find_element(By::Id("btn-add")).await.is_err());
+}
+
+async fn assert_admin_interface(driver: &WebDriver) {
+    driver
+        .find_element(By::Id("btn-administer"))
+        .await
+        .unwrap()
+        .click()
+        .await
+        .unwrap();
+    assert!(driver.find_element(By::Id("btn-delete")).await.is_ok());
+    assert!(driver.find_element(By::Id("btn-administer")).await.is_ok());
+    assert!(driver
+        .find_element(By::Css("[name='shortcut']"))
+        .await
+        .is_ok());
+    assert!(driver.find_element(By::Css("[name='url']")).await.is_ok());
+    assert!(driver.find_element(By::Css("[name='team']")).await.is_ok());
+    assert!(driver.find_element(By::Id("btn-add")).await.is_ok());
+}
+
+#[async_test]
 async fn index_user_can_delete_shortcuts() {
     in_browser(
         "",

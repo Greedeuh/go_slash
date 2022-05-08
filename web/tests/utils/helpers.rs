@@ -19,6 +19,7 @@ mod no_dead_code {
         panic::{resume_unwind, AssertUnwindSafe},
         time::Duration,
     };
+    pub use tf::*;
     use thirtyfour::{error::WebDriverError, DesiredCapabilities, WebDriver};
     use uuid::Uuid;
 
@@ -271,5 +272,24 @@ mod no_dead_code {
 
     pub fn sleep() {
         std::thread::sleep(Duration::from_millis(100));
+    }
+
+    pub mod tf {
+        use go_web::guards::SESSION_COOKIE;
+        use serde_json::json;
+        use thirtyfour::{Cookie, WebDriver};
+
+        pub async fn session(driver: &WebDriver, session_id: &str) {
+            driver.delete_cookie(SESSION_COOKIE).await.unwrap();
+            driver
+                .add_cookie(Cookie::new(SESSION_COOKIE, json!(session_id)))
+                .await
+                .unwrap();
+        }
+
+        pub async fn refresh_with_session(driver: &WebDriver, session_id: &str) {
+            session(driver, session_id).await;
+            driver.refresh().await.unwrap();
+        }
     }
 }

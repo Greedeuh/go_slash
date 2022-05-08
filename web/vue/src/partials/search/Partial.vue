@@ -7,10 +7,10 @@
       :administer="administer"
       @on-administer="set_administer"
       @enter="go_selected(-1)"
-      :editor="capabilities.includes('ShortcutsWrite')"
+      :editor="shortcut_write"
     />
     <ShortcutInput
-      v-if="shortcut && capabilities.includes('ShortcutsWrite')"
+      v-if="shortcut && shortcut_write"
       @save="add"
       :initial_shortcut="shortcut"
       :initial_url="url"
@@ -105,6 +105,12 @@ export default defineComponent({
         .search(this.search)
         .map((res) => res.item);
       return shortcuts_fuzzed.length ? shortcuts_fuzzed : this.shortcuts;
+    },
+    shortcut_write() {
+      return (
+        this.capabilities.includes("ShortcutsWrite") ||
+        this.admin_teams.length > 0
+      );
     },
   },
   created() {
