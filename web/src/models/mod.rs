@@ -1,7 +1,7 @@
 use rustbreak::RustbreakError;
 use serde::Deserialize;
 
-pub mod features;
+pub mod settings;
 pub mod shortcuts;
 pub mod teams;
 pub mod users;

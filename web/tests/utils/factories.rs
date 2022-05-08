@@ -7,7 +7,7 @@ mod no_dead_code {
     use go_web::{
         guards::SESSION_COOKIE,
         models::{
-            features::{Features, Setting, DEFAULT_CAPABILITIES},
+            settings::{Features, Setting, DEFAULT_CAPABILITIES},
             shortcuts::NewShortcut,
             teams::{Team, TeamCapability},
             users::{Capability, UserTeam, UserWithPwd},

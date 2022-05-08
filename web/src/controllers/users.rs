@@ -10,7 +10,7 @@ use rocket_dyn_templates::Template;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-use crate::models::features::Features;
+use crate::models::settings::Features;
 use crate::models::teams::{Team, TeamCapability};
 use crate::models::users::{Capability, User, UserTeam, SAFE_USER_COLUMNS};
 use crate::models::AppError;

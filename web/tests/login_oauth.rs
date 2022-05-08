@@ -1,5 +1,5 @@
 use diesel::PgConnection;
-use go_web::services::oidc::*;
+use go_web::services::oidc::{OidcService, TokenRes};
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::http::Cookie;
@@ -7,7 +7,7 @@ use rocket::http::Status;
 
 mod utils;
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::features::{Features, LoginFeature};
+use go_web::models::settings::{Features, LoginFeature};
 use rocket::tokio::sync::Mutex;
 use thirtyfour::By;
 use thirtyfour::WebDriver;

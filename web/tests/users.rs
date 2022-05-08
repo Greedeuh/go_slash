@@ -1,6 +1,6 @@
 use diesel::PgConnection;
 use go_web::controllers::login::LoginSuccessfull;
-use go_web::models::features::{Features, LoginFeature};
+use go_web::models::settings::{Features, LoginFeature};
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;

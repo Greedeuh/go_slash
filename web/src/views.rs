@@ -1,4 +1,4 @@
-use crate::models::{features::Features, shortcuts::Shortcut, teams::Team, users::User};
+use crate::models::{settings::Features, shortcuts::Shortcut, teams::Team, users::User};
 
 #[derive(Serialize)]
 pub struct IndexContext {

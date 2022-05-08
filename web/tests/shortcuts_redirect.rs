@@ -1,6 +1,6 @@
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::features::Features;
-use go_web::models::features::LoginFeature;
+use go_web::models::settings::Features;
+use go_web::models::settings::LoginFeature;
 use rocket::http;
 use rocket::http::Cookie;
 use rocket::http::Header;

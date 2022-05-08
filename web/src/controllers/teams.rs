@@ -10,7 +10,7 @@ use std::cmp::Ordering;
 
 use crate::{
     models::{
-        features::Features,
+        settings::Features,
         shortcuts::Shortcut,
         teams::{admin_teams, Team, TeamCapability, TeamForOptUser, TeamForUserIfSome},
         users::{Capability, User, UserTeam},

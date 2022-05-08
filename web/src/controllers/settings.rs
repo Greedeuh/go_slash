@@ -4,25 +4,25 @@ use serde_json::{json, Value};
 
 use crate::{
     models::{
-        features::{patch_features, Features, PatchableFeatures},
+        settings::{patch_features, Features, PatchableFeatures},
         users::{Capability, User},
         AppError,
     },
     DbPool,
 };
 
-#[get("/go/features")]
-pub fn features(user: User, features: Features) -> Result<Template, (Status, Template)> {
+#[get("/go/settings")]
+pub fn settings(user: User, features: Features) -> Result<Template, (Status, Template)> {
     user.should_have_capability(Capability::Features)?;
 
     Ok(Template::render(
-        "features",
+        "settings",
         json!({ "features_str": json!(features).to_string(), "features": json!(features) }),
     ))
 }
 
-#[patch("/go/features", data = "<new_features>")]
-pub fn patch_feature(
+#[patch("/go/settings", data = "<new_features>")]
+pub fn patch_settings(
     new_features: Json<PatchableFeatures>,
     user: User,
     pool: &State<DbPool>,

@@ -8,7 +8,7 @@ use rocket::{
 
 use crate::{
     models::{
-        features::{get_global_features, Features},
+        settings::{get_global_features, Features},
         users::{Sessions, User, SAFE_USER_COLUMNS},
         AppError,
     },

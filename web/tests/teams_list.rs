@@ -10,7 +10,7 @@ use thirtyfour::prelude::*;
 
 mod utils;
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::features::{Features, LoginFeature};
+use go_web::models::settings::{Features, LoginFeature};
 use utils::*;
 
 #[test]

@@ -8,7 +8,7 @@ use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
-use crate::models::features::Features;
+use crate::models::settings::Features;
 use crate::models::shortcuts::{sorted, NewShortcut, UpdatableShortcut, SHORTCUT_COLUMNS, Shortcut};
 use crate::models::teams::{admin_teams}; 
 use crate::models::users::{Capability, User};

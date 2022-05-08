@@ -1,5 +1,5 @@
 use diesel::PgConnection;
-use go_web::models::features::{Features, LoginFeature};
+use go_web::models::settings::{Features, LoginFeature};
 use go_web::models::users::Capability;
 use rocket::async_test;
 use rocket::futures::FutureExt;
@@ -20,7 +20,7 @@ async fn features_should_list_editable_features() {
         |driver: &WebDriver, _con: Mutex<PgConnection>, port: u16| {
             async move {
                 driver
-                    .get(format!("http://localhost:{}/go/features", port))
+                    .get(format!("http://localhost:{}/go/settings", port))
                     .await?;
 
                 let features = driver.find_elements(By::Css("[role='article']")).await?;
@@ -41,7 +41,7 @@ async fn features_should_list_editable_features() {
                 }
 
                 driver
-                    .get(format!("http://localhost:{}/go/features", port))
+                    .get(format!("http://localhost:{}/go/settings", port))
                     .await?;
 
                 // TODO re-use when having another feature
@@ -88,12 +88,12 @@ fn should_be_logged_in_to_manage_features() {
     );
 
     assert_eq!(
-        client.get("/go/features").dispatch().status(),
+        client.get("/go/settings").dispatch().status(),
         Status::Unauthorized
     );
     assert_eq!(
         client
-            .patch("/go/features")
+            .patch("/go/settings")
             .json(&json!({ "login": null }))
             .dispatch()
             .status(),
@@ -124,7 +124,7 @@ fn should_be_logged_in_to_manage_features_ok_with_auth() {
 
     assert_ne!(
         client
-            .get("/go/features")
+            .get("/go/settings")
             .cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
             .dispatch()
             .status(),
@@ -132,7 +132,7 @@ fn should_be_logged_in_to_manage_features_ok_with_auth() {
     );
     assert_ne!(
         client
-            .get("/go/features")
+            .get("/go/settings")
             .header(Header::new("Authorization", "some_session_id"))
             .dispatch()
             .status(),
@@ -141,7 +141,7 @@ fn should_be_logged_in_to_manage_features_ok_with_auth() {
 
     assert_ne!(
         client
-            .patch("/go/features")
+            .patch("/go/settings")
             .cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
             .dispatch()
             .status(),
@@ -149,7 +149,7 @@ fn should_be_logged_in_to_manage_features_ok_with_auth() {
     );
     assert_ne!(
         client
-            .patch("/go/features")
+            .patch("/go/settings")
             .header(Header::new("Authorization", "some_session_id"))
             .dispatch()
             .status(),

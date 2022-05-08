@@ -16,11 +16,11 @@ use crate::{
     controllers::users::MAIL_REGEX,
     guards::{NonceOIDC, SessionId, SESSION_COOKIE},
     models::{
-        features::{Features, Setting, DEFAULT_CAPABILITIES},
-        users::{Capability, Sessions, UserWithPwd},
+        settings::{default_capabilities, Features},
+        users::{Sessions, UserWithPwd},
         AppError,
     },
-    schema::{settings, users},
+    schema::users,
     services::oidc::OidcService,
     AppConfig, DbConn, DbPool,
 };
@@ -162,19 +162,7 @@ pub async fn login_redirect_google(
 }
 
 fn register_user(mail: &str, conn: &DbConn) -> Result<(), AppError> {
-    let default_capabilities: Setting = settings::table
-        .find(DEFAULT_CAPABILITIES)
-        .first(conn)
-        .map_err(AppError::from)?;
-
-    let capabilities: Vec<Capability> = serde_json::from_str(&default_capabilities.content)
-        .map_err(|e| {
-            error!(
-                "Can't parse default_capabilities {:?} : {}",
-                default_capabilities, e
-            );
-            AppError::Db
-        })?;
+    let capabilities = default_capabilities(conn)?;
 
     diesel::insert_into(users::table)
         .values(UserWithPwd {

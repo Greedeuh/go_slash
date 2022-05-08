@@ -2,6 +2,7 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use crate::models::users::Capability;
 use crate::models::AppError;
 use crate::schema::{global_features::dsl, settings};
 use crate::DbConn;
@@ -43,6 +44,21 @@ pub fn get_global_features(conn: &DbConn) -> Result<Features, AppError> {
 
     serde_json::from_str(&features).map_err(|e| {
         error!("Failed to parse features {}", e);
+        AppError::Db
+    })
+}
+
+pub fn default_capabilities(conn: &DbConn) -> Result<Vec<Capability>, AppError> {
+    let default_capabilities: Setting = settings::table
+        .find(DEFAULT_CAPABILITIES)
+        .first(conn)
+        .map_err(AppError::from)?;
+
+    serde_json::from_str(&default_capabilities.content).map_err(|e| {
+        error!(
+            "Can't parse default_capabilities {:?} : {}",
+            default_capabilities, e
+        );
         AppError::Db
     })
 }

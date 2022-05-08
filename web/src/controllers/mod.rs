@@ -4,8 +4,8 @@ use serde_json::{json, Value};
 
 use crate::models::AppError;
 
-pub mod features;
 pub mod login;
+pub mod settings;
 pub mod shortcuts;
 pub mod teams;
 pub mod users;

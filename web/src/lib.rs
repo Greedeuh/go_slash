@@ -17,9 +17,9 @@ use rocket_dyn_templates::Template;
 
 pub mod controllers;
 use controllers::{
-    features::{features, patch_feature},
     health_check,
     login::{google_login, login, login_redirect_google, simple_login},
+    settings::{patch_settings, settings},
     shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut},
     teams::{create_team, delete_team, list_teams, patch_team, show_team},
     users::{
@@ -80,8 +80,8 @@ pub fn server(
                 delete_shortcut,
                 login,
                 list_users,
-                features,
-                patch_feature,
+                settings,
+                patch_settings,
                 simple_login,
                 health_check,
                 put_user_team_ranks,
@@ -101,7 +101,6 @@ pub fn server(
             ],
         )
         .mount("/public", FileServer::from("./public"))
-        .manage(features)
         .manage(sessions)
         .manage(config)
         .manage(oidc_service)

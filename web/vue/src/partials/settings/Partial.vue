@@ -55,7 +55,7 @@ export default defineComponent({
       });
 
       axios
-        .patch("/go/features", features)
+        .patch("/go/settings", features)
         .then((res) => {
           if (res.status !== 200) {
             e.rollback_cb();

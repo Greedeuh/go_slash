@@ -7,10 +7,10 @@ module.exports = {
       template: "public/index.html",
       filename: "search.html.hbs",
     },
-    features: {
-      entry: "src/partials/features/main.ts",
+    settings: {
+      entry: "src/partials/settings/main.ts",
       template: "public/index.html",
-      filename: "features.html.hbs",
+      filename: "settings.html.hbs",
     },
     login: {
       entry: "src/partials/login/main.ts",
