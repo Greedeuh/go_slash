@@ -75,35 +75,56 @@ session_without_capability: again_a_mail@mail.com",
 }
 
 async fn assert_no_admin_interface(driver: &WebDriver) {
-    assert!(driver.find_element(By::Id("btn-administer")).await.is_err());
-    assert!(driver.find_element(By::Id("btn-delete")).await.is_err());
-    assert!(driver.find_element(By::Id("btn-administer")).await.is_err());
+    assert!(driver
+        .find_element(By::Css("[aria-label='Switch administration mode']"))
+        .await
+        .is_err());
+    assert!(driver
+        .find_element(By::Css("[aria-label='Delete shortcut']"))
+        .await
+        .is_err());
+    assert!(driver
+        .find_element(By::Css("[aria-label='Switch administration mode']"))
+        .await
+        .is_err());
     assert!(driver
         .find_element(By::Css("[name='shortcut']"))
         .await
         .is_err());
     assert!(driver.find_element(By::Css("[name='url']")).await.is_err());
     assert!(driver.find_element(By::Css("[name='team']")).await.is_err());
-    assert!(driver.find_element(By::Id("btn-add")).await.is_err());
+    assert!(driver
+        .find_element(By::Css("[aria-label='Add shortcut']"))
+        .await
+        .is_err());
 }
 
 async fn assert_admin_interface(driver: &WebDriver) {
     driver
-        .find_element(By::Id("btn-administer"))
+        .find_element(By::Css("[aria-label='Switch administration mode']"))
         .await
         .unwrap()
         .click()
         .await
         .unwrap();
-    assert!(driver.find_element(By::Id("btn-delete")).await.is_ok());
-    assert!(driver.find_element(By::Id("btn-administer")).await.is_ok());
+    assert!(driver
+        .find_element(By::Css("[aria-label='Delete shortcut']"))
+        .await
+        .is_ok());
+    assert!(driver
+        .find_element(By::Css("[aria-label='Switch administration mode']"))
+        .await
+        .is_ok());
     assert!(driver
         .find_element(By::Css("[name='shortcut']"))
         .await
         .is_ok());
     assert!(driver.find_element(By::Css("[name='url']")).await.is_ok());
     assert!(driver.find_element(By::Css("[name='team']")).await.is_ok());
-    assert!(driver.find_element(By::Id("btn-add")).await.is_ok());
+    assert!(driver
+        .find_element(By::Css("[aria-label='Add shortcut']"))
+        .await
+        .is_ok());
 }
 
 #[async_test]
@@ -122,21 +143,27 @@ async fn index_user_can_delete_shortcuts() {
 
                 driver.get(format!("http://localhost:{}", port)).await?;
 
-                let administer_btn = driver.find_element(By::Id("btn-administer")).await?;
+                let administer_btn = driver
+                    .find_element(By::Css("[aria-label='Switch administration mode']"))
+                    .await?;
                 assert_eq!(
                     administer_btn.class_name().await?,
                     Some("btn-light btn".to_owned())
                 );
                 administer_btn.click().await?;
 
-                let delete_btn = driver.find_element(By::Id("btn-delete")).await?;
+                let delete_btn = driver
+                    .find_element(By::Css("[aria-label='Delete shortcut']"))
+                    .await?;
 
                 // Escape should quit the admin mode
                 administer_btn.send_keys(Keys::Escape).await?;
                 assert!(!delete_btn.is_present().await?);
 
                 administer_btn.click().await?;
-                let delete_btn = driver.find_element(By::Id("btn-delete")).await?;
+                let delete_btn = driver
+                    .find_element(By::Css("[aria-label='Delete shortcut']"))
+                    .await?;
                 delete_btn.click().await?;
 
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
@@ -194,7 +221,9 @@ async fn index_user_can_delete_shortcuts_with_team() {
                     .await?;
                 driver.get(format!("http://localhost:{}", port)).await?;
 
-                let administer_btn = driver.find_element(By::Id("btn-administer")).await?;
+                let administer_btn = driver
+                    .find_element(By::Css("[aria-label='Switch administration mode']"))
+                    .await?;
                 assert_eq!(
                     administer_btn.class_name().await?,
                     Some("btn-light btn".to_owned())
@@ -202,7 +231,7 @@ async fn index_user_can_delete_shortcuts_with_team() {
 
                 administer_btn.click().await?;
                 driver
-                    .find_element(By::Id("btn-delete"))
+                    .find_element(By::Css("[aria-label='Delete shortcut']"))
                     .await?
                     .click()
                     .await?;
@@ -231,7 +260,9 @@ async fn index_user_can_add_shortcuts() {
             async move {
                 driver.get(format!("http://localhost:{}", port)).await?;
 
-                let administer_btn = driver.find_element(By::Id("btn-administer")).await?;
+                let administer_btn = driver
+                    .find_element(By::Css("[aria-label='Switch administration mode']"))
+                    .await?;
                 assert_eq!(
                     administer_btn.class_name().await?,
                     Some("btn-light btn".to_owned())
@@ -253,7 +284,7 @@ async fn index_user_can_add_shortcuts() {
                 assert!(driver.find_element(By::Css("[name='team']")).await.is_err());
 
                 driver
-                    .find_element(By::Id("btn-add"))
+                    .find_element(By::Css("[aria-label='Add shortcut']"))
                     .await?
                     .click()
                     .await?;
@@ -337,7 +368,9 @@ async fn index_user_can_add_shortcuts_for_team() {
 
                 driver.get(format!("http://localhost:{}", port)).await?;
 
-                let administer_btn = driver.find_element(By::Id("btn-administer")).await?;
+                let administer_btn = driver
+                    .find_element(By::Css("[aria-label='Switch administration mode']"))
+                    .await?;
                 assert_eq!(
                     administer_btn.class_name().await?,
                     Some("btn-light btn".to_owned())
@@ -371,7 +404,7 @@ async fn index_user_can_add_shortcuts_for_team() {
                 team.select_by_exact_text("slug1").await?;
 
                 driver
-                    .find_element(By::Id("btn-add"))
+                    .find_element(By::Css("[aria-label='Add shortcut']"))
                     .await?
                     .click()
                     .await?;

@@ -41,7 +41,7 @@
         </option>
       </select>
       <button
-        id="btn-add"
+        aria-label="Add shortcut"
         class="btn btn-primary"
         type="submit"
         @focus="global_focus(true)"

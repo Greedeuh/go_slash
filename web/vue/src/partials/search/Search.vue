@@ -18,7 +18,7 @@
           ><button
             v-if="editor"
             @click="emit_administer"
-            id="btn-administer"
+            aria-label="Switch administration mode"
             :class="{ 'btn-light': !administer, 'btn-secondary': administer }"
             class="btn"
             type="button"

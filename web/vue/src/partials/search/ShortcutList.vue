@@ -26,7 +26,7 @@
       </div>
       <div v-if="administer" class="btn-group" role="group">
         <button
-          id="btn-delete"
+          aria-label="Delete shortcut"
           @click.prevent="
             delete_shortcut({
               shortcut: shortcut.shortcut,

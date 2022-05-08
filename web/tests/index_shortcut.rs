@@ -65,7 +65,7 @@ async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
                     .send_keys("2")
                     .await?;
                 driver
-                    .find_element(By::Id("btn-add"))
+                    .find_element(By::Css("[aria-label='Add shortcut']"))
                     .await?
                     .click()
                     .await?;
@@ -140,7 +140,7 @@ async fn undefined_shortcut_return_search_filled_and_edit_form() {
                     .send_keys(format!("http://localhost:{}/ring", port))
                     .await?;
                 driver
-                    .find_element(By::Id("btn-add"))
+                    .find_element(By::Css("[aria-label='Add shortcut']"))
                     .await?
                     .click()
                     .await?;
