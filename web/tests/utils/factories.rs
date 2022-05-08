@@ -7,14 +7,14 @@ mod no_dead_code {
     use go_web::{
         guards::SESSION_COOKIE,
         models::{
-            features::Features,
+            features::{Features, Setting, DEFAULT_CAPABILITIES},
             shortcuts::NewShortcut,
             teams::{Team, TeamCapability},
             users::{Capability, UserTeam, UserWithPwd},
         },
         schema::global_features,
-        schema::teams,
         schema::users,
+        schema::{settings, teams},
         schema::{shortcuts, users_teams},
     };
     use serde_json::json;
@@ -64,6 +64,16 @@ mod no_dead_code {
     pub fn global_features(features: &Features, db_con: &PgConnection) {
         diesel::update(global_features::table)
             .set(global_features::features.eq(serde_json::to_string(features).unwrap()))
+            .execute(db_con)
+            .unwrap();
+    }
+
+    pub fn default_capabilities(capabilities: &[Capability], db_con: &PgConnection) {
+        diesel::update(settings::table)
+            .set(Setting {
+                title: DEFAULT_CAPABILITIES.to_string(),
+                content: json!(capabilities).to_string(),
+            })
             .execute(db_con)
             .unwrap();
     }

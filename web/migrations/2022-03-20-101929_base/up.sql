@@ -27,6 +27,13 @@ CREATE TABLE global_features (
 
 INSERT INTO global_features(features) VALUES ('{ "login": { "simple": false, "google": false,"read_private": false }, "teams": false }');
 
+CREATE TABLE settings (
+  title text NOT NULL PRIMARY KEY,
+  content text NOT NULL
+);
+
+INSERT INTO settings(title, content) VALUES ('default_capabilities', '[]');
+
 CREATE TABLE users_teams (
   user_mail   VARCHAR NOT NULL,
   team_slug   VARCHAR NOT NULL,

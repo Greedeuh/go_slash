@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::models::AppError;
-use crate::schema::global_features::dsl;
+use crate::schema::{global_features::dsl, settings};
 use crate::DbConn;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
@@ -17,6 +17,16 @@ pub struct LoginFeature {
     pub simple: bool,
     pub google: bool,
     pub read_private: bool,
+}
+
+pub const DEFAULT_CAPABILITIES: &str = "default_capabilities";
+
+#[derive(AsChangeset, Queryable, Identifiable, Debug)]
+#[table_name = "settings"]
+#[primary_key(title)]
+pub struct Setting {
+    pub title: String,
+    pub content: String,
 }
 
 impl LoginFeature {

@@ -5,6 +5,13 @@ table! {
 }
 
 table! {
+    settings (title) {
+        title -> Text,
+        content -> Text,
+    }
+}
+
+table! {
     shortcuts (shortcut, team_slug) {
         shortcut -> Varchar,
         team_slug -> Varchar,
@@ -45,6 +52,7 @@ joinable!(users_teams -> users (user_mail));
 
 allow_tables_to_appear_in_same_query!(
     global_features,
+    settings,
     shortcuts,
     teams,
     users,
