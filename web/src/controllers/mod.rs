@@ -5,6 +5,7 @@ use serde_json::{json, Value};
 use crate::models::AppError;
 
 pub mod features;
+pub mod login;
 pub mod shortcuts;
 pub mod teams;
 pub mod users;
@@ -33,6 +34,10 @@ impl From<AppError> for (Status, Value) {
                 Status::NotFound,
                 json!({"error": "Can't found what you requested :/"}),
             ),
+            AppError::ServiceError => (
+                Status::InternalServerError,
+                json!({"error": "Wow that's weird :/"}),
+            ),
         }
     }
 }
@@ -45,9 +50,10 @@ impl From<AppError> for (Status, Template) {
             AppError::Unauthorized => {
                 (Status::Unauthorized, Template::render("redirect_login", ""))
             }
-            AppError::BadRequest => (Status::InternalServerError, Template::render("error", "")),
+            AppError::BadRequest => (Status::BadRequest, Template::render("error", "")),
             AppError::Guard => (Status::InternalServerError, Template::render("error", "")),
             AppError::NotFound => (Status::NotFound, Template::render("error", "")),
+            AppError::ServiceError => (Status::InternalServerError, Template::render("error", "")),
         }
     }
 }

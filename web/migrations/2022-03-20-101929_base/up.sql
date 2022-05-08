@@ -17,7 +17,7 @@ CREATE TABLE shortcuts (
 
 CREATE TABLE users (
   mail          VARCHAR NOT NULL PRIMARY KEY,
-  pwd           VARCHAR NOT NULL,
+  pwd           VARCHAR,
   capabilities  text[]  NOT NULL DEFAULT ARRAY[]::text[]
 ); 
 
@@ -25,7 +25,7 @@ CREATE TABLE global_features (
   features text NOT NULL PRIMARY KEY
 );
 
-INSERT INTO global_features(features) VALUES ('{ "login": { "simple": false, "read_private": false }, "teams": false }');
+INSERT INTO global_features(features) VALUES ('{ "login": { "simple": false, "google": false,"read_private": false }, "teams": false }');
 
 CREATE TABLE users_teams (
   user_mail   VARCHAR NOT NULL,

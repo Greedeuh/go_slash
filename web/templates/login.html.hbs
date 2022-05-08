@@ -1,9 +1,7 @@
 {{#*inline "page"}}
 
 <script>
-{{#if simple_salt}}
-window.simple_salt = "{{ simple_salt }}"
-{{/if}}
+window.context = {{{context}}}
 </script>
 
 {{> vue_dist/login }}

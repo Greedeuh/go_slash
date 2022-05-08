@@ -14,6 +14,7 @@ pub enum AppError {
     BadRequest,
     Guard,
     NotFound,
+    ServiceError,
 }
 
 impl From<RustbreakError> for AppError {

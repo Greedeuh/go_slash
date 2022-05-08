@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use diesel::dsl::count;
 use diesel::prelude::*;
 use lazy_static::lazy_static;
 use log::warn;
@@ -9,92 +8,19 @@ use regex::Regex;
 use rocket::{http::Status, serde::json::Json, State};
 use rocket_dyn_templates::Template;
 use serde::Deserialize;
-use serde_json::{json, Map, Value};
-use sha256::digest;
-use uuid::Uuid;
+use serde_json::{json, Value};
 
 use crate::models::features::Features;
 use crate::models::teams::{Team, TeamCapability};
 use crate::models::users::{Capability, User, UserTeam, SAFE_USER_COLUMNS};
+use crate::models::AppError;
 use crate::schema::users::dsl;
 use crate::schema::{teams, users_teams};
 use crate::DbPool;
-use crate::{
-    models::{users::Sessions, AppError},
-    AppConfig,
-};
 
 lazy_static! {
-    static ref MAIL_REGEX: Regex =
+   pub static ref MAIL_REGEX: Regex =
         Regex::new(r#"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"#,).unwrap();
-}
-
-#[get("/go/login")]
-pub fn login(conf: &State<AppConfig>, features: Features) -> Result<Template, (Status, Template)> {
-    let mut context: Map<String, Value> = Map::new();
-    if !features.login.simple {
-        return Err(AppError::Disable.into());
-    } else {
-        context.insert(
-            "simple_salt".to_string(),
-            Value::String(conf.simple_login_salt1.clone()),
-        );
-    }
-
-    Ok(Template::render("login", json!(context)))
-}
-
-#[derive(Deserialize, Serialize)]
-pub struct LoginSuccessfull {
-    pub token: String,
-}
-
-#[derive(Deserialize)]
-pub struct Credentials {
-    mail: String,
-    pwd: String,
-}
-
-#[post("/go/login", data = "<credentials>")]
-pub fn simple_login(
-    credentials: Json<Credentials>,
-    sessions: &State<Sessions>,
-    config: &State<AppConfig>,
-    features: Features,
-    pool: &State<DbPool>,
-) -> Result<Json<LoginSuccessfull>, (Status, Value)> {
-    if !features.login.simple {
-        return Err(AppError::Disable.into());
-    }
-
-    let credentials = credentials.into_inner();
-    if !MAIL_REGEX.is_match(&credentials.mail) {
-        return Err((Status::BadRequest, json!({"error": "Wrong mail format."})));
-    }
-
-    let pwd = digest(format!("{}{}", credentials.pwd, config.simple_login_salt2));
-
-    let conn = pool.get().map_err(AppError::from)?;
-    let mail_pwd_match: i64 = dsl::users
-        .select(count(dsl::mail))
-        .filter(dsl::pwd.eq(&pwd))
-        .find(&credentials.mail)
-        .first(&conn)
-        .map_err(AppError::from)?;
-
-    if mail_pwd_match != 1 {
-        return Err((
-            Status::Unauthorized,
-            json!({ "error": "Wrong credentials." }),
-        ));
-    };
-
-    let token = Uuid::new_v4();
-    sessions.put(&token.to_simple().to_string(), &credentials.mail);
-
-    Ok(Json(LoginSuccessfull {
-        token: token.to_simple().to_string(),
-    }))
 }
 
 #[derive(Deserialize)]
@@ -120,7 +46,7 @@ pub fn join_team(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    if !features.login.simple {
+    if !features.login.any() {
         return Err(AppError::Disable.into());
     }
 
@@ -169,7 +95,7 @@ pub fn leave_team(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    if !features.login.simple {
+    if !features.login.any() {
         return Err(AppError::Disable.into());
     }
 
@@ -231,7 +157,7 @@ pub fn list_users(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Value)> {
-    if !features.login.simple {
+    if !features.login.any() {
         return Err(AppError::Disable.into());
     }
 
@@ -266,7 +192,7 @@ pub fn put_user_capability(
 
     let conn = pool.get().map_err(AppError::from)?;
 
-    if !features.login.simple {
+    if !features.login.any() {
         return Err(AppError::Disable.into());
     }
 
@@ -304,7 +230,7 @@ pub fn delete_user_capability(
 
     let conn = pool.get().map_err(AppError::from)?;
 
-    if !features.login.simple {
+    if !features.login.any() {
         return Err(AppError::Disable.into());
     }
 

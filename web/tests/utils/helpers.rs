@@ -3,8 +3,12 @@ pub use no_dead_code::*;
 #[allow(dead_code)]
 mod no_dead_code {
     use diesel::{prelude::*, Connection, PgConnection};
-    use go_web::{models::users::Sessions, server, AppConfig};
+    use go_web::{models::users::Sessions, server, services::oidc::OidcService, AppConfig};
     use lazy_static::lazy_static;
+    use openidconnect::{
+        core::{CoreClient, CoreProviderMetadata},
+        AuthUrl, ClientId, ClientSecret, IssuerUrl, JsonWebKeySetUrl, RedirectUrl, TokenUrl,
+    };
     use rocket::{
         futures::{future::BoxFuture, FutureExt},
         local::blocking::Client,
@@ -54,6 +58,7 @@ mod no_dead_code {
             conf(),
             true,
             true,
+            google_oauth(),
         ))
         .expect("valid rocket instance")
     }
@@ -71,6 +76,30 @@ mod no_dead_code {
                 conf(),
                 true,
                 true,
+                google_oauth(),
+            ))
+            .expect("valid rocket instance"),
+            db_conn,
+        )
+    }
+
+    pub fn launch_with_sessions_and_mock(
+        sessions: &str,
+        oidc_service: OidcService,
+    ) -> (Client, PgConnection) {
+        let (db_path, db) = random_pg_url();
+        let db_conn = setup_db_conn(&db_path, &db);
+
+        (
+            Client::tracked(server(
+                PORT,
+                ADDR,
+                &db_path,
+                Sessions::from(sessions),
+                conf(),
+                true,
+                true,
+                oidc_service,
             ))
             .expect("valid rocket instance"),
             db_conn,
@@ -82,6 +111,35 @@ mod no_dead_code {
             simple_login_salt1: "salt1".to_owned(),
             simple_login_salt2: "salt2".to_owned(),
         }
+    }
+
+    fn google_oauth() -> OidcService {
+        let client_id = "gclient_id".to_string();
+        let client_secret = "gclient_secret".to_string();
+        let hostname = "hostname".to_string();
+
+        let provider_metadata = CoreProviderMetadata::new(
+            IssuerUrl::new("http://issuer_url".to_string()).unwrap(),
+            AuthUrl::new("http://auth_url/g".to_string()).unwrap(),
+            JsonWebKeySetUrl::new("http://jwks_url/g".to_string()).unwrap(),
+            vec![],
+            vec![],
+            vec![],
+            openidconnect::EmptyAdditionalProviderMetadata {},
+        )
+        .set_token_endpoint(Some(
+            TokenUrl::new("http://token_url/g".to_string()).unwrap(),
+        ));
+        let client = CoreClient::from_provider_metadata(
+            provider_metadata,
+            ClientId::new(client_id),
+            Some(ClientSecret::new(client_secret)),
+        )
+        .set_redirect_uri(
+            RedirectUrl::new(format!("http://{}/go/login/redirect/google", hostname)).unwrap(),
+        );
+
+        OidcService::new(client)
     }
 
     pub async fn in_browser<F>(sessions: &str, f: F)
@@ -152,10 +210,19 @@ mod no_dead_code {
         }
 
         spawn(async move {
-            server(port, ADDR, &srv_db_path, sessions, conf(), true, true)
-                .launch()
-                .await
-                .unwrap()
+            server(
+                port,
+                ADDR,
+                &srv_db_path,
+                sessions,
+                conf(),
+                true,
+                true,
+                google_oauth(),
+            )
+            .launch()
+            .await
+            .unwrap()
         });
 
         let mut caps = DesiredCapabilities::chrome();

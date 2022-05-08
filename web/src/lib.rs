@@ -1,3 +1,4 @@
+#![cfg_attr(test, feature(proc_macro_hygiene))]
 #![feature(let_chains)]
 #[macro_use]
 extern crate rocket;
@@ -18,19 +19,20 @@ pub mod controllers;
 use controllers::{
     features::{features, patch_feature},
     health_check,
+    login::{google_login, login, login_redirect_google, simple_login},
     shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut},
     teams::{create_team, delete_team, list_teams, patch_team, show_team},
     users::{
         delete_user_capability, join_global_team, join_team, leave_global_team, leave_team,
-        list_users, login, put_user_capability, put_user_team_ranks, simple_login,
+        list_users, put_user_capability, put_user_team_ranks,
     },
 };
 pub mod guards;
 pub mod models;
-use crate::models::users::Sessions;
+use crate::{models::users::Sessions, services::oidc::OidcService};
 pub mod schema;
+pub mod services;
 mod views;
-use dotenv::dotenv;
 
 embed_migrations!("migrations");
 
@@ -42,6 +44,7 @@ pub struct AppConfig {
 pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 pub type DbConn = PooledConnection<ConnectionManager<PgConnection>>;
 
+#[allow(clippy::too_many_arguments)]
 pub fn server(
     port: u16,
     address: &str,
@@ -50,9 +53,8 @@ pub fn server(
     config: AppConfig,
     run_migration: bool,
     cli_colors: bool,
+    oidc_service: OidcService,
 ) -> Rocket<Build> {
-    dotenv().ok();
-
     let db_manager: ConnectionManager<PgConnection> = ConnectionManager::new(db_url);
     let db_pool = Pool::builder().max_size(15).build(db_manager).unwrap();
 
@@ -93,13 +95,16 @@ pub fn server(
                 create_team,
                 show_team,
                 put_user_capability,
-                delete_user_capability
+                delete_user_capability,
+                google_login,
+                login_redirect_google
             ],
         )
         .mount("/public", FileServer::from("./public"))
         .manage(features)
         .manage(sessions)
         .manage(config)
+        .manage(oidc_service)
         .manage(db_pool)
         .attach(Template::fairing())
         .attach(AdHoc::on_response("HTTP code", |_, res| {

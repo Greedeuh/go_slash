@@ -1,15 +1,17 @@
 #![feature(let_chains)]
 #[macro_use]
 extern crate rocket;
+use openidconnect::{
+    core::{CoreClient, CoreProviderMetadata},
+    reqwest, ClientId, ClientSecret, IssuerUrl, RedirectUrl,
+};
 use std::env;
 
-use go_web::{models::users::Sessions, server, AppConfig};
+use go_web::{models::users::Sessions, server, services::oidc::OidcService, AppConfig};
 
 #[launch]
-fn rocket() -> _ {
-    if let Ok(dot_env)= env::var("DOT_ENV") && dot_env =="true"  {
-        dotenv::dotenv().unwrap();
-    }
+async fn rocket() -> _ {
+    dotenv::dotenv().unwrap();
 
     let db_url = env::var("DATABASE_URL").expect("Missing DATABASE_URL env var");
 
@@ -44,6 +46,7 @@ fn rocket() -> _ {
         },
         run_migrations,
         false,
+        google_oidc_client().await,
     )
 }
 
@@ -64,4 +67,29 @@ fn logger() {
         // .chain(fern::log_file("go.log").unwrap()) TO DO see what to do with that
         .apply()
         .unwrap();
+}
+
+async fn google_oidc_client() -> OidcService {
+    let client_id =
+        env::var("OAUTH_GOOGLE_CLIENT_ID").expect("expect env var OAUTH_GOOGLE_CLIENT_ID");
+    let client_secret =
+        env::var("OAUTH_GOOGLE_CLIENT_SECRET").expect("expect env var OAUTH_GOOGLE_CLIENT_SECRET");
+    let hostname = env::var("HOSTNAME").expect("expect env var SALT2");
+
+    let provider_metadata = CoreProviderMetadata::discover_async(
+        IssuerUrl::new("https://accounts.google.com".to_string()).unwrap(),
+        reqwest::async_http_client,
+    )
+    .await
+    .unwrap();
+    let client = CoreClient::from_provider_metadata(
+        provider_metadata,
+        ClientId::new(client_id),
+        Some(ClientSecret::new(client_secret)),
+    )
+    .set_redirect_uri(
+        RedirectUrl::new(format!("http://{}/go/login/redirect/google", hostname)).unwrap(),
+    );
+
+    OidcService::new(client)
 }

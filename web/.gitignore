@@ -2,3 +2,4 @@
 templates/vue_dist
 public/vue
 go.log
+.env

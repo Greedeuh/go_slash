@@ -19,6 +19,9 @@
         <input type="submit" class="btn btn-primary" value="Login" />
       </div>
     </form>
+    <a href="/go/login/google" aria-label="Login with google"
+      >Login with google</a
+    >
   </div>
 </template>
 
@@ -31,11 +34,15 @@ import addMonths from "date-fns/addMonths";
 import formatISO from "date-fns/formatISO";
 
 interface Window {
+  context: WindowContext;
+}
+
+interface WindowContext {
   simple_salt: string;
 }
 
 let win = window as unknown as Window;
-const SIMPLE_SALT = win.simple_salt;
+const SIMPLE_SALT = win.context.simple_salt;
 
 export default defineComponent({
   name: "Partial",

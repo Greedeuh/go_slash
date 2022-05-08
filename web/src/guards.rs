@@ -21,13 +21,16 @@ pub const SESSION_COOKIE: &str = "go_session_id";
 #[derive(Clone)]
 pub struct SessionId(pub String);
 
+#[derive(Clone)]
+pub struct NonceOIDC(pub String);
+
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for SessionId {
     type Error = serde_json::Value;
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let features = try_outcome!(req.guard::<Features>().await);
-        if !features.login.simple {
+        if !features.login.any() {
             return Outcome::Failure(AppError::Disable.into());
         }
 
@@ -39,6 +42,34 @@ impl<'r> FromRequest<'r> for SessionId {
         }
 
         Outcome::Failure(AppError::Unauthorized.into())
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for NonceOIDC {
+    type Error = serde_json::Value;
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let features = try_outcome!(req.guard::<Features>().await);
+        if !features.login.any() {
+            return Outcome::Failure(AppError::Disable.into());
+        }
+
+        let sessions: Outcome<&State<Sessions>, Self::Error> = req
+            .guard::<&State<Sessions>>()
+            .await
+            .map_failure(|_| AppError::Guard.into());
+        let sessions = try_outcome!(sessions);
+
+        let session_id = try_outcome!(req.guard::<SessionId>().await);
+
+        match sessions.is_logged_in(&session_id.0) {
+            None => {
+                error!("Wrong session_id.");
+                Outcome::Failure(AppError::Unauthorized.into())
+            }
+            Some(nonce) => Outcome::Success(NonceOIDC(nonce)),
+        }
     }
 }
 
@@ -66,7 +97,7 @@ impl<'r> FromRequest<'r> for User {
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let features = try_outcome!(req.guard::<Features>().await);
-        if !features.login.simple {
+        if !features.login.any() {
             return Outcome::Success(User::fake_admin());
         }
 

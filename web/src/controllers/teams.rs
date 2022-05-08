@@ -31,7 +31,7 @@ pub fn list_teams(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
-    if !features.teams || !features.login.simple {
+    if !features.teams || !features.login.any() {
         return Err(AppError::Disable.into());
     }
 
@@ -76,7 +76,7 @@ pub fn delete_team(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    if !features.teams || !features.login.simple {
+    if !features.teams || !features.login.any() {
         return Err(AppError::Disable.into());
     }
 
@@ -104,7 +104,7 @@ pub fn create_team(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    if !features.teams || !features.login.simple {
+    if !features.teams || !features.login.any() {
         return Err(AppError::Disable.into());
     }
 
@@ -169,7 +169,7 @@ pub fn patch_team(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    if !features.teams || !features.login.simple {
+    if !features.teams || !features.login.any() {
         return Err(AppError::Disable.into());
     }
 

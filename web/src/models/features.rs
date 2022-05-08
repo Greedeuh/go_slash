@@ -15,7 +15,14 @@ pub struct Features {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
 pub struct LoginFeature {
     pub simple: bool,
+    pub google: bool,
     pub read_private: bool,
+}
+
+impl LoginFeature {
+    pub fn any(&self) -> bool {
+        self.simple || self.google
+    }
 }
 
 pub fn get_global_features(conn: &DbConn) -> Result<Features, AppError> {
@@ -36,6 +43,9 @@ pub fn patch_features(new_features: PatchableFeatures, conn: &DbConn) -> Result<
     if let Some(login) = &new_features.login {
         if let Some(simple) = login.simple {
             features.login.simple = simple;
+        }
+        if let Some(google) = login.google {
+            features.login.google = google;
         }
         if let Some(read_private) = login.read_private {
             features.login.read_private = read_private;
@@ -61,6 +71,7 @@ pub struct PatchableFeatures {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct PatchableLoginFeature {
     pub simple: Option<bool>,
+    pub google: Option<bool>,
     pub read_private: Option<bool>,
     pub write_private: Option<bool>,
 }

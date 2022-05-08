@@ -21,6 +21,7 @@ async fn not_logged_in_should_redirect_to_login() {
                         login: LoginFeature {
                             simple: true,
                             read_private: true,
+                            ..Default::default()
                         },
                         ..Default::default()
                     },

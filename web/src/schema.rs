@@ -24,7 +24,7 @@ table! {
 table! {
     users (mail) {
         mail -> Varchar,
-        pwd -> Varchar,
+        pwd -> Nullable<Varchar>,
         capabilities -> Array<Text>,
     }
 }

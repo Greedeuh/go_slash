@@ -13,7 +13,7 @@ pub type SafeColumns = (users::mail, users::capabilities);
 
 pub const SAFE_USER_COLUMNS: SafeColumns = (users::mail, users::capabilities);
 
-#[derive(Queryable, Identifiable, Serialize, Debug)]
+#[derive(Queryable, Identifiable, Serialize, Debug, PartialEq)]
 #[table_name = "users"]
 #[primary_key(mail)]
 pub struct User {
@@ -26,7 +26,7 @@ pub struct User {
 #[primary_key(mail)]
 pub struct UserWithPwd {
     pub mail: String,
-    pub pwd: String,
+    pub pwd: Option<String>,
     pub capabilities: Vec<Capability>,
 }
 

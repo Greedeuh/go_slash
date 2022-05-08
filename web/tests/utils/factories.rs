@@ -41,7 +41,7 @@ mod no_dead_code {
         diesel::insert_into(users::table)
             .values(&UserWithPwd {
                 mail: mail.to_string(),
-                pwd: pwd.to_string(),
+                pwd: Some(pwd.to_string()),
                 capabilities: capabilities.to_vec(),
             })
             .execute(db_con)

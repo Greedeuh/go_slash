@@ -3,6 +3,9 @@ name = "go_web"
 version = "1.0.0"
 edition = "2021"
 
+[features]
+mock = []
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -26,7 +29,8 @@ chrono = "0.4.19"
 serial_test = "0.6.0"
 strum = "0.24.0"
 strum_macros = "0.24.0"
+openidconnect = "2.3.1"
+faux = "^0.1"
 
 [dev-dependencies]
 thirtyfour = "0.28.1"
-uuid = { version = "0.8.2", features = ["v4"] }
