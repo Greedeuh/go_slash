@@ -21,18 +21,14 @@ CREATE TABLE users (
   capabilities  text[]  NOT NULL DEFAULT ARRAY[]::text[]
 ); 
 
-CREATE TABLE global_features (
-  features text NOT NULL PRIMARY KEY
-);
-
-INSERT INTO global_features(features) VALUES ('{ "login": { "simple": false, "google": false,"read_private": false }, "teams": false }');
-
 CREATE TABLE settings (
   title text NOT NULL PRIMARY KEY,
   content text NOT NULL
 );
 
-INSERT INTO settings(title, content) VALUES ('default_capabilities', '[]');
+INSERT INTO settings(title, content) VALUES
+  ('default_capabilities', '[]'),
+  ('features', '{ "login": { "simple": false, "google": false,"read_private": false }, "teams": false }');
 
 CREATE TABLE users_teams (
   user_mail   VARCHAR NOT NULL,

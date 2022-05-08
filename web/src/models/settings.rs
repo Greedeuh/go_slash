@@ -4,7 +4,7 @@ use serde_json::json;
 
 use crate::models::users::Capability;
 use crate::models::AppError;
-use crate::schema::{global_features::dsl, settings};
+use crate::schema::settings;
 use crate::DbConn;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
@@ -21,6 +21,7 @@ pub struct LoginFeature {
 }
 
 pub const DEFAULT_CAPABILITIES: &str = "default_capabilities";
+pub const FEATURES: &str = "features";
 
 #[derive(AsChangeset, Queryable, Identifiable, Debug)]
 #[table_name = "settings"]
@@ -37,12 +38,12 @@ impl LoginFeature {
 }
 
 pub fn get_global_features(conn: &DbConn) -> Result<Features, AppError> {
-    let features = dsl::global_features
-        .select(dsl::features)
-        .first::<String>(conn)
+    let features: Setting = settings::table
+        .find(FEATURES)
+        .first(conn)
         .map_err(AppError::from)?;
 
-    serde_json::from_str(&features).map_err(|e| {
+    serde_json::from_str(&features.content).map_err(|e| {
         error!("Failed to parse features {}", e);
         AppError::Db
     })
@@ -82,8 +83,9 @@ pub fn patch_features(new_features: PatchableFeatures, conn: &DbConn) -> Result<
         features.teams = teams;
     }
 
-    diesel::update(dsl::global_features)
-        .set(dsl::features.eq(json!(features).to_string()))
+    diesel::update(settings::table)
+        .set(settings::content.eq(json!(features).to_string()))
+        .filter(settings::title.eq(FEATURES))
         .execute(conn)
         .map_err(AppError::from)
 }

@@ -1,10 +1,4 @@
 table! {
-    global_features (features) {
-        features -> Text,
-    }
-}
-
-table! {
     settings (title) {
         title -> Text,
         content -> Text,
@@ -51,7 +45,6 @@ joinable!(users_teams -> teams (team_slug));
 joinable!(users_teams -> users (user_mail));
 
 allow_tables_to_appear_in_same_query!(
-    global_features,
     settings,
     shortcuts,
     teams,
