@@ -1,3 +1,4 @@
+use diesel::dsl::count;
 use diesel::prelude::*;
 use lazy_static::lazy_static;
 use log::error;
@@ -10,7 +11,7 @@ use std::path::{Path, PathBuf};
 
 use crate::models::settings::Features;
 use crate::models::shortcuts::{sorted, NewShortcut, UpdatableShortcut, SHORTCUT_COLUMNS, Shortcut};
-use crate::models::teams::{admin_teams}; 
+use crate::models::teams::{admin_teams, TeamCapability}; 
 use crate::models::users::{Capability, User};
 use crate::models::AppError;
 use crate::schema::shortcuts;
@@ -216,7 +217,7 @@ pub fn delete_shortcut(
     features: Features,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Value)> {
-    user.should_have_capability(Capability::ShortcutsWrite)?;
+
 
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
@@ -227,6 +228,15 @@ pub fn delete_shortcut(
     };
 
     let conn = pool.get().map_err(AppError::from)?;
+
+    if !features.teams {
+        user.should_have_capability(Capability::ShortcutsWrite)?;
+    } else if !user.have_capability(Capability::ShortcutsWrite) && users_teams::table.find((&user.mail, &team_slug)).filter(users_teams::capabilities.contains(vec![TeamCapability::ShortcutsWrite]))
+    .select(count(users_teams::user_mail))
+    .first::<i64>(&conn).map_err(AppError::from)? == 0{
+        return Err(AppError::Unauthorized.into());
+    }
+
 
     diesel::delete(shortcuts::table)
         .filter(dsl::shortcut.eq(shortcut).and(dsl::team_slug.eq(team_slug)))

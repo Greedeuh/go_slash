@@ -20,6 +20,18 @@ mod no_dead_code {
             .unwrap()
     }
 
+    pub fn get_shortcut_with_team(
+        shortcut: &str,
+        team: &str,
+        conn: &PgConnection,
+    ) -> Option<Shortcut> {
+        shortcuts::table
+            .find((shortcut, team))
+            .first(conn)
+            .optional()
+            .unwrap()
+    }
+
     pub fn get_user_team_links(mail: &str, conn: &PgConnection) -> Vec<UserTeam> {
         users_teams::table
             .filter(users_teams::user_mail.eq(mail))

@@ -3,29 +3,95 @@ use go_web::models::settings::Features;
 use go_web::models::settings::LoginFeature;
 use go_web::models::teams::TeamCapability;
 use go_web::models::users::Capability;
-use rocket::http::Cookie;
-use rocket::http::Header;
-use rocket::http::Status;
+use rocket::http::{Cookie, Status};
 mod utils;
 use utils::*;
 
 #[test]
-fn delete_a_shortcut_return_200() {
-    let (client, _conn) = launch_with("");
-    let response = client.delete("/myShortCut/hop").dispatch();
-
-    assert_eq!(response.status(), Status::Ok);
-}
-
-#[test]
-fn delete_a_shortcut_with_team_return_200() {
+fn user_with_capability_is_ok() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    team("slug1", "team1", false, false, &conn);
-    shortcut("myShortCut/hop", "http://localhost", "slug1", &conn);
+    shortcut("myShortCut/hop", "http://localhost", "", &conn);
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("slug1", &[TeamCapability::TeamsWrite], 0)],
+        &[],
+        &[Capability::ShortcutsWrite],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let shortcut = get_shortcut("myShortCut/hop", &conn);
+    assert!(shortcut.is_some());
+
+    let response = client
+        .delete("/myShortCut/hop")
+        .cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    let shortcut = get_shortcut("myShortCut/hop", &conn);
+    assert!(shortcut.is_none());
+
+    assert_eq!(response.status(), Status::Ok);
+
+    assert!(get_shortcut("/myShortCut/hop", &conn).is_none());
+}
+
+#[test]
+fn user_with_team_capability_is_ok() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    shortcut("myShortCut/hop", "http://localhost", "", &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[("", &[TeamCapability::ShortcutsWrite], 0)],
+        &[],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
+
+    let shortcut = get_shortcut("myShortCut/hop", &conn);
+    assert!(shortcut.is_some());
+
+    let response = client
+        .delete("/myShortCut/hop")
+        .cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
+
+    let shortcut = get_shortcut("myShortCut/hop", &conn);
+    assert!(shortcut.is_none());
+
+    assert_eq!(response.status(), Status::Ok);
+    assert!(get_shortcut("/myShortCut/hop", &conn).is_none());
+}
+
+#[test]
+fn specific_team_is_ok() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, false, &conn);
+    shortcut("myShortCut/hop", "http://localhost", "slug1", &conn);
+    shortcut("myShortCut/hop", "http://localhost", "", &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[],
         &[Capability::ShortcutsWrite],
         &conn,
     );
@@ -48,15 +114,16 @@ fn delete_a_shortcut_with_team_return_200() {
         .cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
 
-    let shortcut = get_shortcut("myShortCut/hop", &conn);
-    assert!(shortcut.is_none());
+    assert!(get_shortcut_with_team("myShortCut/hop", "slug1", &conn).is_none());
+    assert!(get_shortcut_with_team("myShortCut/hop", "", &conn).is_some());
 
     assert_eq!(response.status(), Status::Ok);
 }
 
 #[test]
-fn delete_a_shortcut_return_unauthorized() {
+fn unknow_user_is_unauthorized() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    shortcut("myShortCut/hop", "http://localhost", "", &conn);
     global_features(
         &Features {
             login: LoginFeature {
@@ -74,13 +141,14 @@ fn delete_a_shortcut_return_unauthorized() {
 }
 
 #[test]
-fn delete_a_shortcut_with_auth_authorized() {
+fn user_without_capability_is_unauthorized() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    shortcut("myShortCut/hop", "http://localhost", "", &conn);
     user(
         "some_mail@mail.com",
         "pwd",
+        &[("", &[TeamCapability::ShortcutsWrite], 0)],
         &[],
-        &[Capability::ShortcutsWrite],
         &conn,
     );
     global_features(
@@ -96,13 +164,37 @@ fn delete_a_shortcut_with_auth_authorized() {
 
     let response = client
         .delete("/myShortCut/hop")
-        .header(Header::new("Authorization", "some_session_id"))
+        .cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
-    assert_ne!(response.status(), Status::Unauthorized);
+    assert_eq!(response.status(), Status::Unauthorized);
+}
+
+#[test]
+fn user_without_team_capability_is_unauthorized() {
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("wrong_team", "team1", false, false, &conn);
+    shortcut("myShortCut/hop", "http://localhost", "", &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[("wrong_team", &[TeamCapability::ShortcutsWrite], 0)],
+        &[],
+        &conn,
+    );
+    global_features(
+        &Features {
+            login: LoginFeature {
+                simple: true,
+                ..Default::default()
+            },
+            teams: true,
+        },
+        &conn,
+    );
 
     let response = client
         .delete("/myShortCut/hop")
         .cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
-    assert_ne!(response.status(), Status::Unauthorized);
+    assert_eq!(response.status(), Status::Unauthorized);
 }

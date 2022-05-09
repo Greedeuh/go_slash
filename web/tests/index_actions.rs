@@ -13,7 +13,7 @@ use thirtyfour::prelude::*;
 use utils::*;
 
 #[async_test]
-async fn user_see_admin_interface_if_has_capability_shortcut_write() {
+async fn user_see_admin_interface() {
     in_browser(
         "session_with_capability: some_mail@mail.com
 session_with_team_capability: other_mail@mail.com
@@ -166,16 +166,39 @@ async fn user_delete_shortcuts() {
                     "",
                     &con,
                 );
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    &[],
+                    &[Capability::ShortcutsWrite],
+                    &con,
+                );
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                    &con,
+                );
 
                 driver.get(format!("http://localhost:{}", port)).await?;
 
-                let administer_btn = driver
+                driver
                     .find_element(By::Css("[aria-label='Switch administration mode']"))
+                    .await?
+                    .click()
                     .await?;
-                administer_btn.click().await?;
 
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-                assert_eq!(articles.len(), 1);
+                assert_eq!(
+                    driver
+                        .find_elements(By::Css("[role='listitem']"))
+                        .await?
+                        .len(),
+                    1
+                );
 
                 driver
                     .find_element(By::Css("[aria-label='Delete shortcut']"))
@@ -183,17 +206,22 @@ async fn user_delete_shortcuts() {
                     .click()
                     .await?;
 
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-                assert_eq!(articles.len(), 0);
+                assert_eq!(
+                    driver
+                        .find_elements(By::Css("[role='listitem']"))
+                        .await?
+                        .len(),
+                    0
+                );
 
-                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
-                search_bar.send_keys("newShortcut").await?;
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-                assert_eq!(articles.len(), 0);
-
-                driver.get(format!("http://localhost:{}", port)).await?;
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-                assert_eq!(articles.len(), 0);
+                driver.refresh().await?;
+                assert_eq!(
+                    driver
+                        .find_elements(By::Css("[role='listitem']"))
+                        .await?
+                        .len(),
+                    0
+                );
 
                 Ok(())
             }
@@ -204,7 +232,7 @@ async fn user_delete_shortcuts() {
 }
 
 #[async_test]
-async fn user_delete_shortcuts_with_team_if_team_capabilities() {
+async fn user_delete_shortcuts_with_team() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -239,15 +267,12 @@ async fn user_delete_shortcuts_with_team_if_team_capabilities() {
                     .await?;
                 driver.get(format!("http://localhost:{}", port)).await?;
 
-                let administer_btn = driver
+                driver
                     .find_element(By::Css("[aria-label='Switch administration mode']"))
+                    .await?
+                    .click()
                     .await?;
-                assert_eq!(
-                    administer_btn.class_name().await?,
-                    Some("btn-light btn".to_owned())
-                );
 
-                administer_btn.click().await?;
                 driver
                     .find_element(By::Css("[aria-label='Delete shortcut']"))
                     .await?
@@ -257,7 +282,7 @@ async fn user_delete_shortcuts_with_team_if_team_capabilities() {
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
                 assert_eq!(articles.len(), 0);
 
-                driver.get(format!("http://localhost:{}", port)).await?;
+                driver.refresh().await?;
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
                 assert_eq!(articles.len(), 0);
                 Ok(())
@@ -269,21 +294,37 @@ async fn user_delete_shortcuts_with_team_if_team_capabilities() {
 }
 
 #[async_test]
-async fn index_user_can_add_shortcuts() {
+async fn user_add_shortcut() {
     in_browser(
         "",
-        |driver: &WebDriver, _con: Mutex<PgConnection>, port: u16| {
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
+                let con = con.lock().await;
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    &[],
+                    &[Capability::ShortcutsWrite],
+                    &con,
+                );
+                global_features(
+                    &Features {
+                        login: LoginFeature {
+                            simple: true,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                    &con,
+                );
+
                 driver.get(format!("http://localhost:{}", port)).await?;
 
-                let administer_btn = driver
+                driver
                     .find_element(By::Css("[aria-label='Switch administration mode']"))
+                    .await?
+                    .click()
                     .await?;
-                assert_eq!(
-                    administer_btn.class_name().await?,
-                    Some("btn-light btn".to_owned())
-                );
-                administer_btn.click().await?;
 
                 driver
                     .find_element(By::Css("[name='shortcut']"))
@@ -295,9 +336,6 @@ async fn index_user_can_add_shortcuts() {
                     .await?
                     .send_keys(format!("http://localhost:{}/aShortcut", port))
                     .await?;
-
-                // no team feature
-                assert!(driver.find_element(By::Css("[name='team']")).await.is_err());
 
                 driver
                     .find_element(By::Css("[aria-label='Add shortcut']"))
@@ -333,11 +371,19 @@ async fn index_user_can_add_shortcuts() {
                     Some("".to_owned())
                 );
 
-                administer_btn.click().await?;
+                driver.refresh().await?;
+
+                let article = driver.find_element(By::Css("[role='listitem']")).await?;
+                assert_eq!(
+                    article.text().await?,
+                    format!("jeanLuc http://localhost:{}/aShortcut", port)
+                );
+
                 assert_eq!(
                     article.get_property("href").await?,
-                    Some(format!("http://localhost:{}/aShortcut", port))
+                    Some(format!("http://localhost:{}/jeanLuc?no_redirect", port))
                 );
+
                 Ok(())
             }
             .boxed()
@@ -362,7 +408,7 @@ async fn index_user_can_add_shortcuts_for_team() {
                         ("slug1", &[TeamCapability::ShortcutsWrite], 0),
                         ("slug2", &[TeamCapability::ShortcutsWrite], 0),
                     ],
-                    &[Capability::ShortcutsWrite],
+                    &[],
                     &con,
                 );
                 global_features(
