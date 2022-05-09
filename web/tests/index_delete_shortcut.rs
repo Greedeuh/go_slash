@@ -12,7 +12,7 @@ use thirtyfour::prelude::*;
 use utils::*;
 
 #[async_test]
-async fn unknow_user_is_not_allowed() {
+async fn as_unknow_user_is_not_allowed() {
     in_browser(
         "",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -58,7 +58,7 @@ async fn unknow_user_is_not_allowed() {
 }
 
 #[async_test]
-async fn user_without_capability_is_not_allowed() {
+async fn as_user_without_capability_is_not_allowed() {
     in_browser(
         "",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -107,7 +107,7 @@ async fn user_without_capability_is_not_allowed() {
 }
 
 #[async_test]
-async fn user_with_capability() {
+async fn as_user_with_capability() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -188,7 +188,7 @@ async fn user_with_capability() {
 }
 
 #[async_test]
-async fn user_with_team_capability() {
+async fn as_user_with_team_capability() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -250,7 +250,7 @@ async fn user_with_team_capability() {
 }
 
 #[async_test]
-async fn user_without_team_capability() {
+async fn as_user_without_team_capability() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
