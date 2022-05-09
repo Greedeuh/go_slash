@@ -24,7 +24,15 @@
           ><i class="icon-eye-open"></i
         ></span>
       </div>
-      <div v-if="administer" class="btn-group" role="group">
+      <div
+        v-if="
+          administer &&
+          (shortcut_write_capability ||
+            admin_teams?.map((t) => t.slug).includes(shortcut.team_slug))
+        "
+        class="btn-group"
+        role="group"
+      >
         <button
           aria-label="Delete shortcut"
           @click.prevent="
@@ -51,6 +59,8 @@ export default defineComponent({
     shortcuts: Array,
     selected_index: Number,
     administer: Boolean,
+    admin_teams: Array,
+    shortcut_write_capability: Boolean,
   },
   emits: ["click_shortcut_index", "delete_shortcut"],
   methods: {

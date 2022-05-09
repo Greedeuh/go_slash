@@ -13,11 +13,12 @@ use thirtyfour::prelude::*;
 use utils::*;
 
 #[async_test]
-async fn user_see_admin_if_has_capability_shortcut_write() {
+async fn user_see_admin_interface_if_has_capability_shortcut_write() {
     in_browser(
         "session_with_capability: some_mail@mail.com
 session_with_team_capability: other_mail@mail.com
-session_without_capability: again_a_mail@mail.com",
+session_without_capability: again_a_mail@mail.com
+session_with_wrong_team_capability: really_other_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
@@ -27,6 +28,7 @@ session_without_capability: again_a_mail@mail.com",
                     "",
                     &con,
                 );
+                team("slug1", "team1", false, true, &con);
                 user("again_a_mail@mail.com", "pwd", &[], &[], &con);
                 user(
                     "some_mail@mail.com",
@@ -39,6 +41,13 @@ session_without_capability: again_a_mail@mail.com",
                     "other_mail@mail.com",
                     "pwd",
                     &[("", &[TeamCapability::ShortcutsWrite], 0)],
+                    &[],
+                    &con,
+                );
+                user(
+                    "really_other_mail@mail.com",
+                    "pwd",
+                    &[("slug1", &[TeamCapability::ShortcutsWrite], 0)],
                     &[],
                     &con,
                 );
@@ -55,16 +64,27 @@ session_without_capability: again_a_mail@mail.com",
 
                 driver.get(format!("http://localhost:{}", port)).await?;
 
-                assert_no_admin_interface(driver).await;
+                assert_no_admin_interface(driver, true).await;
 
                 refresh_with_session(driver, "session_without_capability").await;
-                assert_no_admin_interface(driver).await;
+                assert_no_admin_interface(driver, true).await;
 
                 refresh_with_session(driver, "session_with_capability").await;
-                assert_admin_interface(driver).await;
+                open_and_assert_admin_interface(driver, true).await;
 
                 refresh_with_session(driver, "session_with_team_capability").await;
-                assert_admin_interface(driver).await;
+                open_and_assert_admin_interface(driver, true).await;
+
+                refresh_with_session(driver, "session_with_wrong_team_capability").await;
+                open_and_assert_admin_interface(driver, false).await;
+
+                // Escape should quit the admin mode
+                driver
+                    .find_element(By::Css("[aria-label='Switch administration mode']"))
+                    .await?
+                    .send_keys(Keys::Escape)
+                    .await?;
+                assert_no_admin_interface(driver, false).await;
 
                 Ok(())
             }
@@ -74,17 +94,17 @@ session_without_capability: again_a_mail@mail.com",
     .await;
 }
 
-async fn assert_no_admin_interface(driver: &WebDriver) {
-    assert!(driver
-        .find_element(By::Css("[aria-label='Switch administration mode']"))
-        .await
-        .is_err());
+async fn assert_no_admin_interface(driver: &WebDriver, admin_btn: bool) {
+    assert_eq!(
+        admin_btn,
+        driver
+            .find_element(By::Css("[aria-label='Switch administration mode']"))
+            .await
+            .is_err()
+    );
+
     assert!(driver
         .find_element(By::Css("[aria-label='Delete shortcut']"))
-        .await
-        .is_err());
-    assert!(driver
-        .find_element(By::Css("[aria-label='Switch administration mode']"))
         .await
         .is_err());
     assert!(driver
@@ -99,22 +119,28 @@ async fn assert_no_admin_interface(driver: &WebDriver) {
         .is_err());
 }
 
-async fn assert_admin_interface(driver: &WebDriver) {
-    driver
+async fn open_and_assert_admin_interface(driver: &WebDriver, delte_btn: bool) {
+    let administer_btn = driver
         .find_element(By::Css("[aria-label='Switch administration mode']"))
-        .await
-        .unwrap()
-        .click()
         .await
         .unwrap();
-    assert!(driver
-        .find_element(By::Css("[aria-label='Delete shortcut']"))
-        .await
-        .is_ok());
-    assert!(driver
-        .find_element(By::Css("[aria-label='Switch administration mode']"))
-        .await
-        .is_ok());
+    assert_eq!(
+        administer_btn.class_name().await.unwrap(),
+        Some("btn-light btn".to_owned())
+    );
+    administer_btn.click().await.unwrap();
+    assert_eq!(
+        administer_btn.class_name().await.unwrap(),
+        Some("btn-secondary btn".to_owned())
+    );
+
+    assert_eq!(
+        delte_btn,
+        driver
+            .find_element(By::Css("[aria-label='Delete shortcut']"))
+            .await
+            .is_ok()
+    );
     assert!(driver
         .find_element(By::Css("[name='shortcut']"))
         .await
@@ -128,7 +154,7 @@ async fn assert_admin_interface(driver: &WebDriver) {
 }
 
 #[async_test]
-async fn index_user_can_delete_shortcuts() {
+async fn user_delete_shortcuts() {
     in_browser(
         "",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -146,25 +172,16 @@ async fn index_user_can_delete_shortcuts() {
                 let administer_btn = driver
                     .find_element(By::Css("[aria-label='Switch administration mode']"))
                     .await?;
-                assert_eq!(
-                    administer_btn.class_name().await?,
-                    Some("btn-light btn".to_owned())
-                );
                 administer_btn.click().await?;
 
-                let delete_btn = driver
-                    .find_element(By::Css("[aria-label='Delete shortcut']"))
-                    .await?;
+                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                assert_eq!(articles.len(), 1);
 
-                // Escape should quit the admin mode
-                administer_btn.send_keys(Keys::Escape).await?;
-                assert!(!delete_btn.is_present().await?);
-
-                administer_btn.click().await?;
-                let delete_btn = driver
+                driver
                     .find_element(By::Css("[aria-label='Delete shortcut']"))
+                    .await?
+                    .click()
                     .await?;
-                delete_btn.click().await?;
 
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
                 assert_eq!(articles.len(), 0);
@@ -177,6 +194,7 @@ async fn index_user_can_delete_shortcuts() {
                 driver.get(format!("http://localhost:{}", port)).await?;
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
                 assert_eq!(articles.len(), 0);
+
                 Ok(())
             }
             .boxed()
@@ -186,7 +204,7 @@ async fn index_user_can_delete_shortcuts() {
 }
 
 #[async_test]
-async fn index_user_can_delete_shortcuts_with_team() {
+async fn user_delete_shortcuts_with_team_if_team_capabilities() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -235,8 +253,6 @@ async fn index_user_can_delete_shortcuts_with_team() {
                     .await?
                     .click()
                     .await?;
-
-                sleep();
 
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
                 assert_eq!(articles.len(), 0);
