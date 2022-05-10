@@ -76,6 +76,7 @@ export default defineComponent({
         on_success = () => {
           this.shortcut = "";
           this.url = "";
+          this.team = "";
         };
       }
 

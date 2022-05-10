@@ -5,7 +5,7 @@ use strum_macros::{Display, EnumString};
 
 use crate::{
     models::{
-        users::{User, UserTeam},
+        users::{Capability, User, UserTeam},
         AppError,
     },
     schema::{teams, users_teams},
@@ -110,18 +110,25 @@ where
     }
 }
 
-pub fn admin_teams(user: &User, conn: &DbConn) -> Result<Vec<Team>, AppError> {
-    teams::table
-        .inner_join(
-            users_teams::table.on(teams::slug
-                .eq(users_teams::team_slug)
-                .and(users_teams::user_mail.eq(&user.mail))
-                .and(
-                    users_teams::capabilities
-                        .contains(vec![TeamCapability::ShortcutsWrite.to_string()]),
-                )),
-        )
-        .select(TEAM_COLUMNS)
-        .load::<Team>(conn)
-        .map_err(AppError::from)
+pub fn teams_with_shortcut_write(user: &User, conn: &DbConn) -> Result<Vec<Team>, AppError> {
+    if user.have_capability(Capability::ShortcutsWrite) {
+        teams::table
+            .select(TEAM_COLUMNS)
+            .load::<Team>(conn)
+            .map_err(AppError::from)
+    } else {
+        teams::table
+            .inner_join(
+                users_teams::table.on(teams::slug
+                    .eq(users_teams::team_slug)
+                    .and(users_teams::user_mail.eq(&user.mail))
+                    .and(
+                        users_teams::capabilities
+                            .contains(vec![TeamCapability::ShortcutsWrite.to_string()]),
+                    )),
+            )
+            .select(TEAM_COLUMNS)
+            .load::<Team>(conn)
+            .map_err(AppError::from)
+    }
 }

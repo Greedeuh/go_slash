@@ -12,7 +12,9 @@ use crate::{
     models::{
         settings::Features,
         shortcuts::Shortcut,
-        teams::{admin_teams, Team, TeamCapability, TeamForOptUser, TeamForUserIfSome},
+        teams::{
+            teams_with_shortcut_write, Team, TeamCapability, TeamForOptUser, TeamForUserIfSome,
+        },
         users::{Capability, User, UserTeam},
         AppError,
     },
@@ -248,7 +250,7 @@ pub fn show_team(
                 shortcuts,
                 features,
                 team: Some(team),
-                teams: Some(admin_teams(&user, &conn)?),
+                teams: Some(teams_with_shortcut_write(&user, &conn)?),
                 user: Some(user)
             }).to_string()
         }),
