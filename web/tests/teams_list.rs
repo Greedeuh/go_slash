@@ -32,7 +32,7 @@ async fn layout_with_team_link_if_feature_team() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    &[("slug1", &[], 0)],
+                    &[("slug1", &[], 0, true)],
                     &Capability::all(),
                     &con,
                 );
@@ -192,7 +192,7 @@ async fn teams_user_team_then_others() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    &[("slug1", &[], 0)],
+                    &[("slug1", &[], 0, true)],
                     &[Capability::TeamsRead],
                     &con,
                 );
@@ -200,7 +200,10 @@ async fn teams_user_team_then_others() {
                 user(
                     "another@mail.com",
                     "pwd",
-                    &[("slug2", &[], 0), ("slug3", &TeamCapability::all(), 0)],
+                    &[
+                        ("slug2", &[], 0, true),
+                        ("slug3", &TeamCapability::all(), 0, true),
+                    ],
                     &[Capability::TeamsRead],
                     &con,
                 );

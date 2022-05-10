@@ -76,7 +76,7 @@ fn as_user_with_team_capability_is_ok() {
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("", &[TeamCapability::ShortcutsWrite], 0)],
+        &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
         &[],
         &conn,
     );
@@ -118,7 +118,7 @@ fn with_specific_team_is_ok() {
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("slug1", &[TeamCapability::TeamsWrite], 0)],
+        &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
         &[Capability::ShortcutsWrite],
         &conn,
     );
@@ -201,7 +201,7 @@ fn as_unknow_user_is_unauthorized() {
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("wrong_team", &[TeamCapability::ShortcutsWrite], 0)],
+        &[("wrong_team", &[TeamCapability::ShortcutsWrite], 0, true)],
         &[],
         &conn,
     );
@@ -260,7 +260,7 @@ fn as_user_without_team_capability_is_unauthorized() {
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("wrong_team", &[TeamCapability::ShortcutsWrite], 0)],
+        &[("wrong_team", &[TeamCapability::ShortcutsWrite], 0, true)],
         &[],
         &conn,
     );

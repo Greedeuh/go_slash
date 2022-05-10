@@ -155,7 +155,7 @@ async fn admin_action_on_teams() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    &[("slug1", &[], 1)],
+                    &[("slug1", &[], 1, true)],
                     &[Capability::TeamsRead, Capability::TeamsWrite],
                     &con,
                 );
@@ -373,7 +373,7 @@ fn patch_team_as_a_teamate() {
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("slug1", &[TeamCapability::TeamsWrite], 0)],
+        &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
         &[],
         &conn,
     );
@@ -413,7 +413,7 @@ fn patch_team_as_a_teamate_cant_accept() {
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("slug1", &[TeamCapability::TeamsWrite], 0)],
+        &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
         &[],
         &conn,
     );
@@ -693,7 +693,7 @@ fn create_team_creator_should_be_in_team_as_admin_with_higher_rank() {
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("slug", &[], 0)],
+        &[("slug", &[], 0, true)],
         &[Capability::TeamsWrite],
         &conn,
     );

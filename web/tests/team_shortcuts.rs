@@ -201,7 +201,7 @@ async fn show_team_user_can_edit() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    &[("slug1", &[TeamCapability::TeamsWrite], 0)],
+                    &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
                     &[Capability::TeamsRead],
                     &conn,
                 );

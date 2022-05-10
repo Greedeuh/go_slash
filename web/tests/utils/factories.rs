@@ -33,7 +33,7 @@ mod no_dead_code {
     pub fn user(
         mail: &str,
         pwd: &str,
-        teams: &[(&str, &[TeamCapability], i16)],
+        teams: &[(&str, &[TeamCapability], i16, bool)],
         capabilities: &[Capability],
         db_con: &PgConnection,
     ) {
@@ -46,13 +46,13 @@ mod no_dead_code {
             .execute(db_con)
             .unwrap();
 
-        for (team, team_capabilities, rank) in teams {
+        for (team, team_capabilities, rank, is_accepted) in teams {
             diesel::insert_into(users_teams::table)
                 .values(&UserTeam {
                     user_mail: mail.to_string(),
                     team_slug: team.to_string(),
                     capabilities: team_capabilities.to_vec(),
-                    is_accepted: true,
+                    is_accepted: *is_accepted,
                     rank: *rank,
                 })
                 .execute(db_con)
