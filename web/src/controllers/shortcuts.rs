@@ -14,7 +14,7 @@ use crate::models::shortcuts::{sorted, NewShortcut, UpdatableShortcut, SHORTCUT_
 use crate::models::teams::{teams_with_shortcut_write, TeamCapability}; 
 use crate::models::users::{Capability, User};
 use crate::models::AppError;
-use crate::schema::shortcuts;
+use crate::schema::{shortcuts, teams};
 use crate::schema::shortcuts::dsl;
 use crate::schema::users_teams;
 use crate::{DbPool, DbConn};
@@ -193,7 +193,8 @@ pub fn put_shortcut(
 
     let conn = pool.get().map_err(AppError::from)?;
 
-    user_has_shortcut_write_for_team(&user,&team_slug, &features, &conn)?;
+    team_should_be_accepted(&team_slug, &features, &conn)?;
+    user_should_have_shortcut_write_for_team(&user,&team_slug, &features, &conn)?;
 
     diesel::insert_into(shortcuts::table)
         .values(NewShortcut {
@@ -228,7 +229,8 @@ pub fn delete_shortcut(
 
     let conn = pool.get().map_err(AppError::from)?;
 
-    user_has_shortcut_write_for_team(&user,&team_slug, &features, &conn)?;
+    team_should_be_accepted(&team_slug, &features, &conn)?;
+    user_should_have_shortcut_write_for_team(&user,&team_slug, &features, &conn)?;
 
     diesel::delete(shortcuts::table)
         .filter(dsl::shortcut.eq(shortcut).and(dsl::team_slug.eq(team_slug)))
@@ -250,17 +252,26 @@ fn parse_shortcut_path_buff(shortcut: &'_ Path) -> Result<&'_ str, AppError> {
         Some(shortcut) => Ok(shortcut),
         None => {
             error!("GET <shortcut..> failed parsing: {:?}", shortcut);
-            Err(AppError::BadRequest)
+            Err(AppError::BadRequest) 
         }
     }
 }
 
-fn user_has_shortcut_write_for_team(user: &User, team_slug: &str, features: &Features,conn: &DbConn) -> Result<(), AppError> {
+fn team_should_be_accepted( team_slug: &str, features: &Features,conn: &DbConn) -> Result<(), AppError> {
+    if features.teams && teams::table.find(&team_slug).filter(teams::is_accepted).select(count(teams::slug)).first::<i64>(conn).map_err(AppError::from)? == 0{
+        return Err(AppError::Unauthorized);
+    }
+    Ok(())
+}
+
+fn user_should_have_shortcut_write_for_team(user: &User, team_slug: &str, features: &Features,conn: &DbConn) -> Result<(), AppError> {
     if !features.teams {
         user.should_have_capability(Capability::ShortcutsWrite)
     } else if !user.have_capability(Capability::ShortcutsWrite) && users_teams::table.find((&user.mail, &team_slug)).filter(users_teams::capabilities.contains(vec![TeamCapability::ShortcutsWrite]))
+    .filter(users_teams::is_accepted)
     .select(count(users_teams::user_mail))
     .first::<i64>(conn).map_err(AppError::from)? == 0{ 
+        error!("User {} miss capability or team capability ShortcutsWrite on team {}", user.mail, team_slug);
         Err(AppError::Unauthorized) 
     } else {
  

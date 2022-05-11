@@ -36,7 +36,7 @@ import SearchBar from "./Search.vue";
 import ShortcutList from "./ShortcutList.vue";
 import ShortcutInput from "./ShortcutInput.vue";
 import TeamEditor from "./TeamEditor.vue";
-import { User } from "../../models";
+import { User, Capability } from "../../models";
 
 interface Window {
   context: WindowContext;
@@ -84,10 +84,23 @@ const TEAM = win.context.team;
 
 let key_press: (e: KeyboardEvent) => void;
 
+interface Data {
+  selected_index: -1;
+  shortcuts: Shortcut[];
+  administer: boolean;
+  fuse: Fuse<Shortcut>;
+  search: string;
+  shortcut?: string;
+  url?: string;
+  capabilities: Capability[];
+  admin_teams?: Team[];
+  team?: Team;
+}
+
 export default defineComponent({
   name: "Partial",
   components: { SearchBar, ShortcutList, ShortcutInput, TeamEditor },
-  data() {
+  data(): Data {
     return {
       selected_index: -1,
       shortcuts: SHORTCUTS,
@@ -108,10 +121,10 @@ export default defineComponent({
         .map((res) => res.item);
       return shortcuts_fuzzed.length ? shortcuts_fuzzed : this.shortcuts;
     },
-    shortcut_write() {
+    shortcut_write(): boolean {
       return (
         this.capabilities.includes("ShortcutsWrite") ||
-        this.admin_teams.length > 0
+        (this.admin_teams !== undefined && this.admin_teams.length > 0)
       );
     },
   },
