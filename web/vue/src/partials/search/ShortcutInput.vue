@@ -67,7 +67,7 @@ export default defineComponent({
     return {
       shortcut: this.initial_shortcut?.shortcut,
       url: this.initial_shortcut?.url,
-      team: "",
+      team: this.initial_shortcut?.team_slug,
     };
   },
   emits: ["save"],

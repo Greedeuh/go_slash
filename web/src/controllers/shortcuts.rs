@@ -93,7 +93,8 @@ pub fn get_shortcut(
             .inner_join(
                 users_teams::table.on(dsl::team_slug
                     .eq(users_teams::team_slug)
-                    .and(users_teams::user_mail.eq(&user.mail))),
+                    .and(users_teams::user_mail.eq(&user.mail))
+                    .and(users_teams::is_accepted)),
             )
             .filter(dsl::shortcut.eq(shortcut))
             .select(SHORTCUT_COLUMNS)
