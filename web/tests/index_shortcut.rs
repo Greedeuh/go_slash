@@ -7,7 +7,7 @@ use thirtyfour::prelude::*;
 use utils::*;
 
 #[async_test]
-async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
+async fn with_no_redirect_return_search_and_edit_form_filled() {
     in_browser(
         "",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -47,35 +47,24 @@ async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
                 );
                 assert_eq!(articles.len(), 2);
 
-                let shortcut_edit = driver
-                    .find_element(By::Css("input[name='shortcut']"))
-                    .await?;
                 assert_eq!(
-                    shortcut_edit.get_property("value").await?,
+                    driver
+                        .find_element(By::Css("input[name='shortcut']"))
+                        .await?
+                        .get_property("value")
+                        .await?,
                     Some("newShortcut".to_owned())
                 );
+
                 assert_eq!(
-                    shortcut_edit.get_property("disabled").await?,
-                    Some("true".to_owned())
+                    driver
+                        .find_element(By::Css("input[name='url']"))
+                        .await?
+                        .get_property("value")
+                        .await?,
+                    Some(format!("http://localhost:{}/looped", port))
                 );
 
-                driver
-                    .find_element(By::Css("input[name='url']"))
-                    .await?
-                    .send_keys("2")
-                    .await?;
-                driver
-                    .find_element(By::Css("[aria-label='Add shortcut']"))
-                    .await?
-                    .click()
-                    .await?;
-
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-                assert_eq!(
-                    articles[0].text().await?,
-                    format!("newShortcut http://localhost:{}/looped2 NEW", port)
-                );
-                assert_eq!(articles.len(), 2);
                 Ok(())
             }
             .boxed()
@@ -85,7 +74,7 @@ async fn shortcut_no_redirect_return_search_filled_and_edit_form() {
 }
 
 #[async_test]
-async fn undefined_shortcut_return_search_filled_and_edit_form() {
+async fn with_not_existing_shortcut_return_search_and_edit_form_filled() {
     in_browser(
         "",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -109,6 +98,15 @@ async fn undefined_shortcut_return_search_filled_and_edit_form() {
                     .get(format!("http://localhost:{}/newShortcut", port))
                     .await?;
 
+                assert_eq!(
+                    driver
+                        .find_element(By::Css("[role='alert']"))
+                        .await?
+                        .text()
+                        .await?,
+                    "Shortcut \"newShortcut\" does not exist yet."
+                );
+
                 let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
                 assert_eq!(
                     search_bar.get_property("value").await?,
@@ -122,34 +120,15 @@ async fn undefined_shortcut_return_search_filled_and_edit_form() {
                 );
                 assert_eq!(articles.len(), 2);
 
-                let shortcut_edit = driver
-                    .find_element(By::Css("input[name='shortcut']"))
-                    .await?;
                 assert_eq!(
-                    shortcut_edit.get_property("value").await?,
+                    driver
+                        .find_element(By::Css("input[name='shortcut']"))
+                        .await?
+                        .get_property("value")
+                        .await?,
                     Some("newShortcut".to_owned())
                 );
-                assert_eq!(
-                    shortcut_edit.get_property("disabled").await?,
-                    Some("true".to_owned())
-                );
 
-                driver
-                    .find_element(By::Css("input[name='url']"))
-                    .await?
-                    .send_keys(format!("http://localhost:{}/ring", port))
-                    .await?;
-                driver
-                    .find_element(By::Css("[aria-label='Add shortcut']"))
-                    .await?
-                    .click()
-                    .await?;
-
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
-                assert_eq!(
-                    articles[0].text().await?,
-                    format!("newShortcut http://localhost:{}/ring NEW", port)
-                );
                 Ok(())
             }
             .boxed()

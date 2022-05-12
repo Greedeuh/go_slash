@@ -4,7 +4,6 @@
       <span class="input-group-text">Bind</span>
       <input
         v-model="shortcut"
-        :disabled="initial_shortcut"
         minlength="1"
         required
         type="text"
@@ -54,31 +53,31 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, PropType } from "vue";
+import { Shortcut } from "./Partial.vue";
 
 export default defineComponent({
   name: "ShortcutInput",
   props: {
-    initial_shortcut: String,
+    initial_shortcut: Object as PropType<Shortcut>,
     initial_url: String,
     admin_teams: Object,
   },
   data() {
-    return { shortcut: this.initial_shortcut, url: this.initial_url, team: "" };
+    return {
+      shortcut: this.initial_shortcut?.shortcut,
+      url: this.initial_shortcut?.url,
+      team: "",
+    };
   },
   emits: ["save"],
   methods: {
     save() {
-      let on_success;
-      if (this.initial_shortcut) {
-        on_success = () => {}; // eslint-disable-line
-      } else {
-        on_success = () => {
-          this.shortcut = "";
-          this.url = "";
-          this.team = "";
-        };
-      }
+      let on_success = () => {
+        this.shortcut = "";
+        this.url = "";
+        this.team = "";
+      };
 
       this.$emit("save", {
         shortcut: this.shortcut,

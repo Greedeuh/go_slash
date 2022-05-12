@@ -1,5 +1,8 @@
 <template>
   <div>
+    <div v-if="shortcut" role="alert" class="alert alert-warning">
+      Shortcut "{{ shortcut.shortcut }}" does not exist yet.
+    </div>
     <TeamEditor v-if="team" :team="team" @save="save_team" />
     <SearchBar
       v-model="search"
@@ -10,12 +13,11 @@
       :editor="shortcut_write"
     />
     <ShortcutInput
-      v-if="shortcut && shortcut_write"
+      v-if="(administer || shortcut) && shortcut_write"
       @save="add"
       :initial_shortcut="shortcut"
-      :initial_url="url"
+      :admin_teams="admin_teams"
     />
-    <ShortcutInput v-if="administer" :admin_teams="admin_teams" @save="add" />
     <ShortcutList
       :shortcuts="fuzzed_or_all"
       :selected_index="selected_index"
@@ -76,8 +78,7 @@ function setup_fuse(shortcuts: Shortcut[]) {
 let win = window as unknown as Window;
 const CONTROL_KEYS = ["ArrowUp", "ArrowDown", "Enter", "Tab", "Escape"];
 const SHORTCUTS = win.context.shortcuts;
-const SHORTCUT = win.context.shortcut?.shortcut;
-const URL = win.context.shortcut?.url;
+const SHORTCUT = win.context.shortcut;
 const CAPABILITIES = win.context.user?.capabilities;
 const ADMIN_TEAMS = win.context.teams;
 const TEAM = win.context.team;
@@ -90,8 +91,7 @@ interface Data {
   administer: boolean;
   fuse: Fuse<Shortcut>;
   search: string;
-  shortcut?: string;
-  url?: string;
+  shortcut?: Shortcut;
   capabilities: Capability[];
   admin_teams?: Team[];
   team?: Team;
@@ -106,9 +106,8 @@ export default defineComponent({
       shortcuts: SHORTCUTS,
       administer: false,
       fuse: setup_fuse(SHORTCUTS),
-      search: SHORTCUT ? SHORTCUT : "",
+      search: SHORTCUT ? SHORTCUT.shortcut : "",
       shortcut: SHORTCUT,
-      url: URL,
       capabilities: CAPABILITIES ?? [],
       admin_teams: ADMIN_TEAMS,
       team: TEAM,
