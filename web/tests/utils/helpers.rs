@@ -47,6 +47,12 @@ mod no_dead_code {
         PgConnection::establish(db_url).unwrap()
     }
 
+    fn drop_db(db: &str, pg: &PgConnection) {
+        diesel::dsl::sql::<bool>(&format!("DROP DATABASE {};", db))
+            .execute(pg)
+            .unwrap();
+    }
+
     pub fn launch_with(sessions: &str) -> (Client, PgConnection) {
         let (db_path, db) = random_pg_url();
         let db_conn = setup_db_conn(&db_path, &db);
@@ -251,6 +257,11 @@ mod no_dead_code {
         if let Err(panic) = maybe_panicked {
             resume_unwind(panic)
         }
+
+        let db_conn =
+            PgConnection::establish("postgres://postgres:postgres@localhost:6543/postgres")
+                .unwrap();
+        drop_db(&db_path, &db_conn);
     }
 
     pub fn sleep() {
