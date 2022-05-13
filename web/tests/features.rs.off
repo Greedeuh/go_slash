@@ -1,5 +1,4 @@
 use diesel::PgConnection;
-use go_web::models::settings::{Features, LoginFeature};
 use go_web::models::users::Capability;
 use rocket::async_test;
 use rocket::futures::FutureExt;
@@ -76,17 +75,6 @@ async fn features_should_list_editable_features() {
 fn should_be_logged_in_to_manage_features() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
 
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        &conn,
-    );
-
     assert_eq!(
         client.get("/go/settings").dispatch().status(),
         Status::Unauthorized
@@ -109,16 +97,6 @@ fn should_be_logged_in_to_manage_features_ok_with_auth() {
         "pwd",
         &[],
         &[Capability::Features],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
         &conn,
     );
 

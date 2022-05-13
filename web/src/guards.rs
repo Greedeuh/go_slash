@@ -8,7 +8,6 @@ use rocket::{
 
 use crate::{
     models::{
-        settings::{get_global_features, Features},
         users::{Sessions, User, SAFE_USER_COLUMNS},
         AppError,
     },
@@ -29,11 +28,6 @@ impl<'r> FromRequest<'r> for SessionId {
     type Error = serde_json::Value;
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let features = try_outcome!(req.guard::<Features>().await);
-        if !features.login.any() {
-            return Outcome::Failure(AppError::Disable.into());
-        }
-
         if let Some(session_id) = session_from_cookies(req.cookies()) {
             return Outcome::Success(session_id);
         }
@@ -50,11 +44,6 @@ impl<'r> FromRequest<'r> for NonceOIDC {
     type Error = serde_json::Value;
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let features = try_outcome!(req.guard::<Features>().await);
-        if !features.login.any() {
-            return Outcome::Failure(AppError::Disable.into());
-        }
-
         let sessions: Outcome<&State<Sessions>, Self::Error> = req
             .guard::<&State<Sessions>>()
             .await
@@ -74,33 +63,10 @@ impl<'r> FromRequest<'r> for NonceOIDC {
 }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for Features {
-    type Error = serde_json::Value;
-
-    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let pool: Outcome<&State<DbPool>, Self::Error> = req
-            .guard::<&State<DbPool>>()
-            .await
-            .map_failure(|_| AppError::Guard.into());
-        let pool = try_outcome!(pool);
-
-        match get_features(pool) {
-            Ok(features) => Outcome::Success(features),
-            Err(err) => Outcome::Failure(err.into()),
-        }
-    }
-}
-
-#[rocket::async_trait]
 impl<'r> FromRequest<'r> for User {
     type Error = serde_json::Value;
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let features = try_outcome!(req.guard::<Features>().await);
-        if !features.login.any() {
-            return Outcome::Success(User::fake_admin());
-        }
-
         let pool: Outcome<&State<DbPool>, Self::Error> = req
             .guard::<&State<DbPool>>()
             .await
@@ -144,11 +110,6 @@ fn session_from_headers(headers: &HeaderMap) -> Option<SessionId> {
     };
 
     Some(SessionId(cookie.value().to_string()))
-}
-
-fn get_features(pool: &State<DbPool>) -> Result<Features, AppError> {
-    let conn = pool.get().map_err(AppError::from)?;
-    get_global_features(&conn)
 }
 
 fn get_user(

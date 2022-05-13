@@ -11,66 +11,14 @@ use thirtyfour::prelude::*;
 
 mod utils;
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::settings::{Features, LoginFeature};
+
 use utils::*;
-
-#[test]
-fn delete_team_need_feature() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    team("slug1", "team1", false, true, &conn);
-    user("some_mail@mail.com", "pwd", &[], &[], &conn);
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: false,
-        },
-        &conn,
-    );
-
-    let response = client
-        .delete("/go/teams/slug1")
-        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: false,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
-
-    let response = client
-        .delete("/go/teams/slug1")
-        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-}
 
 #[test]
 fn delete_team_need_to_be_admin() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
     user("some_mail@mail.com", "pwd", &[], &[], &conn);
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
 
     let response = client.delete("/go/teams/slug1").dispatch();
 
@@ -94,16 +42,6 @@ fn cant_delete_global_team() {
         &[Capability::TeamsWrite],
         &conn,
     );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
 
     client
         .delete("/go/teams/")
@@ -122,16 +60,6 @@ fn delete_team() {
         "pwd",
         &[],
         &[Capability::TeamsWrite],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
         &conn,
     );
 
@@ -157,16 +85,6 @@ async fn admin_action_on_teams() {
                     "pwd",
                     &[("slug1", &[], 1, true)],
                     &[Capability::TeamsRead, Capability::TeamsWrite],
-                    &con,
-                );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
                     &con,
                 );
 
@@ -250,70 +168,10 @@ async fn admin_action_on_teams() {
 }
 
 #[test]
-fn patch_team_need_feature() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    team("slug1", "team1", false, true, &conn);
-    user(
-        "some_mail@mail.com",
-        "pwd",
-        &[],
-        &[Capability::TeamsWrite],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: false,
-        },
-        &conn,
-    );
-
-    let response = client
-        .patch("/go/teams/slug1")
-        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
-        .json(&json!({ "title": "newTitle", "is_private": true, "is_accepted": true }))
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: false,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
-
-    let response = client
-        .patch("/go/teams/slug1")
-        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
-        .json(&json!({ "title": "newTitle", "is_private": true, "is_accepted": true }))
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-}
-
-#[test]
 fn patch_team_user_need_to_be_admin() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
     user("some_mail@mail.com", "pwd", &[], &[], &conn);
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
 
     let response = client.delete("/go/teams/slug1").dispatch();
 
@@ -336,16 +194,6 @@ fn cant_patch_global_team() {
         "pwd",
         &[],
         &[Capability::TeamsWrite],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
         &conn,
     );
 
@@ -375,16 +223,6 @@ fn patch_team_as_a_teamate() {
         "pwd",
         &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
         &[],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
         &conn,
     );
 
@@ -417,16 +255,6 @@ fn patch_team_as_a_teamate_cant_accept() {
         &[],
         &conn,
     );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
 
     let response = client
         .patch("/go/teams/slug1")
@@ -446,16 +274,6 @@ fn patch_team() {
         "pwd",
         &[],
         &[Capability::TeamsWrite],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
         &conn,
     );
 
@@ -529,55 +347,6 @@ fn patch_team() {
 }
 
 #[test]
-fn create_team_need_feature() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user(
-        "some_mail@mail.com",
-        "pwd",
-        &[],
-        &[Capability::TeamsWrite],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: false,
-        },
-        &conn,
-    );
-
-    let response = client
-        .post("/go/teams")
-        .json(&json!({ "slug": "slug1", "title": "newTitle", "is_private": true}))
-        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: false,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
-
-    let response = client
-        .post("/go/teams")
-        .json(&json!({ "slug": "slug1", "title": "newTitle", "is_private": true }))
-        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-}
-
-#[test]
 fn cant_create_already_existing() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", false, true, &conn);
@@ -586,16 +355,6 @@ fn cant_create_already_existing() {
         "pwd",
         &[],
         &[Capability::TeamsWrite],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
         &conn,
     );
 
@@ -616,16 +375,6 @@ fn create_team_as_admin() {
         "pwd",
         &[],
         &[Capability::TeamsWrite],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
         &conn,
     );
 
@@ -657,16 +406,6 @@ fn create_team_as_user() {
         &[Capability::TeamsWriteWithValidation],
         &conn,
     );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
 
     let response = client
         .post("/go/teams")
@@ -695,16 +434,6 @@ fn create_team_creator_should_be_in_team_as_admin_with_higher_rank() {
         "pwd",
         &[("slug", &[], 0, true)],
         &[Capability::TeamsWrite],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
         &conn,
     );
 
@@ -750,16 +479,6 @@ async fn create_team_from_teams_page_as_admin() {
                     &[Capability::TeamsRead, Capability::TeamsWrite],
                     &con,
                 );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
-                    &con,
-                );
 
                 create_team(driver, port).await?;
 
@@ -793,16 +512,6 @@ async fn create_team_from_teams_page_as_user() {
                     "pwd",
                     &[],
                     &[Capability::TeamsRead, Capability::TeamsWriteWithValidation],
-                    &con,
-                );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
                     &con,
                 );
 

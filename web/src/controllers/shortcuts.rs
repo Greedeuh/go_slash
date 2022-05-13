@@ -9,16 +9,17 @@ use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
-use crate::models::settings::Features;
-use crate::models::shortcuts::{sorted, NewShortcut, UpdatableShortcut, SHORTCUT_COLUMNS, Shortcut};
-use crate::models::teams::{teams_with_shortcut_write, TeamCapability}; 
-use crate::models::users::{Capability, User};
+use crate::models::shortcuts::{
+    sorted, NewShortcut, Shortcut, UpdatableShortcut, SHORTCUT_COLUMNS,
+};
+use crate::models::teams::{teams_with_shortcut_write, TeamCapability};
+use crate::models::users::User;
 use crate::models::AppError;
-use crate::schema::{shortcuts, teams};
 use crate::schema::shortcuts::dsl;
 use crate::schema::users_teams;
-use crate::{DbPool, DbConn};
+use crate::schema::{shortcuts, teams};
 use crate::views::IndexContext;
+use crate::{DbConn, DbPool};
 
 lazy_static! {
     static ref URL_REGEX: Regex =
@@ -26,35 +27,19 @@ lazy_static! {
 }
 
 #[get("/")]
-pub fn index(
-    user: Option<User>,
-    features: Features,
-    pool: &State<DbPool>,
-) -> Result<Template, (Status, Template)> {
-    if user.is_none() && features.login.read_private {
-        return Err(AppError::Unauthorized.into());
-    }
-
+pub fn index(user: User, pool: &State<DbPool>) -> Result<Template, (Status, Template)> {
     let conn = pool.get().map_err(AppError::from)?;
 
-    let admin_teams = if let Some(user) = &user && features.teams {
-        Some(
-            teams_with_shortcut_write(user, &conn)?
-        )
-    } else {
-        None
-    };
+    let admin_teams = teams_with_shortcut_write(&user, &conn)?;
 
     Ok(Template::render(
         "index",
-        json!({ 
-            "mail": user.as_ref().map(|user| &user.mail),
-            "features": json!(features),
+        json!({
+            "mail": &user.mail,
             "context": json!(IndexContext {
                 shortcut: None,
                 shortcuts:  sorted(&conn)?,
-                 user, 
-                features,
+                 user,
                 team: None,
                 teams: admin_teams,
             }).to_string()
@@ -76,61 +61,41 @@ pub enum ShortcutRes {
 pub fn get_shortcut(
     shortcut: PathBuf,
     no_redirect: Option<bool>,
-    user: Option<User>,
-    features: Features,
+    user: User,
+
     pool: &State<DbPool>,
 ) -> Result<ShortcutRes, (Status, Template)> {
-    if user.is_none() && features.login.read_private {
-        return Err(AppError::Unauthorized.into());
-    }
-
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
     let conn = pool.get().map_err(AppError::from)?;
 
-    let shortcut_found = if let Some(user) = &user && features.teams {
-        dsl::shortcuts
-            .inner_join(
-                users_teams::table.on(dsl::team_slug
-                    .eq(users_teams::team_slug)
-                    .and(users_teams::user_mail.eq(&user.mail))
-                    .and(users_teams::is_accepted)),
-            )
-            .filter(dsl::shortcut.eq(shortcut))
-            .select(SHORTCUT_COLUMNS)
-            .order_by(users_teams::rank.asc())
-            .first::<Shortcut>(&conn)
-            .optional()
-            .map_err(AppError::from)?
-    } else {
-        dsl::shortcuts
-            .find((shortcut, ""))
-            .first::<Shortcut>(&conn)
-            .optional()
-            .map_err(AppError::from)?
-    };
-
-    let admin_teams = if let Some(user) = &user && features.teams {
-        Some(
-            teams_with_shortcut_write(user, &conn)?
-            
+    let shortcut_found = dsl::shortcuts
+        .inner_join(
+            users_teams::table.on(dsl::team_slug
+                .eq(users_teams::team_slug)
+                .and(users_teams::user_mail.eq(&user.mail))
+                .and(users_teams::is_accepted)),
         )
-    } else {
-        None
-    };
+        .filter(dsl::shortcut.eq(shortcut))
+        .select(SHORTCUT_COLUMNS)
+        .order_by(users_teams::rank.asc())
+        .first::<Shortcut>(&conn)
+        .optional()
+        .map_err(AppError::from)?;
+
+    let admin_teams = teams_with_shortcut_write(&user, &conn)?;
 
     Ok(match shortcut_found {
         Some(shortcut_found) => {
             if let Some(true) = no_redirect {
                 ShortcutRes::Ok(Template::render(
                     "index",
-                    json!({ 
-                        "mail": user.as_ref().map(|user| &user.mail),
+                    json!({
+                        "mail": &user.mail,
                         "context": json!(IndexContext {
                             shortcut: Some(shortcut_found),
                             shortcuts:  sorted(&conn)?,
-                             user, 
-                            features,
+                            user,
                             team: None,
                             teams: admin_teams,
                         }).to_string()
@@ -142,19 +107,17 @@ pub fn get_shortcut(
         }
         None => ShortcutRes::NotFound(Template::render(
             "index",
-            json!({ 
-                "mail": user.as_ref().map(|user| &user.mail),
-                "features": json!(features),
+            json!({
+                "mail":&user.mail,
                 "not_found": true,
                 "context": json!(IndexContext {
                     shortcut: Some(Shortcut {
                         shortcut: shortcut.to_string(),
-                        team_slug:"".to_string(), 
+                        team_slug:"".to_string(),
                         url:"".to_string()
                     }),
                     shortcuts:  sorted(&conn)?,
-                     user, 
-                    features,
+                    user,
                     team: None,
                     teams: admin_teams,
                 }).to_string()
@@ -174,10 +137,9 @@ pub fn put_shortcut(
     team: Option<String>,
     data: Json<Url>,
     user: User,
-    features: Features,
+
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
     let data = data.into_inner();
@@ -186,7 +148,7 @@ pub fn put_shortcut(
         return Err((Status::BadRequest, json!({"error": "Wrong URL format."})));
     }
 
-    let team_slug = if features.teams && let Some(team) = team {
+    let team_slug = if let Some(team) = team {
         team
     } else {
         "".to_string()
@@ -194,8 +156,8 @@ pub fn put_shortcut(
 
     let conn = pool.get().map_err(AppError::from)?;
 
-    team_should_be_accepted(&team_slug, &features, &conn)?;
-    user_should_have_shortcut_write_for_team(&user,&team_slug, &features, &conn)?;
+    team_should_be_accepted(&team_slug, &conn)?;
+    user_should_have_shortcut_write_for_team(&user, &team_slug, &conn)?;
 
     diesel::insert_into(shortcuts::table)
         .values(NewShortcut {
@@ -217,12 +179,12 @@ pub fn delete_shortcut(
     shortcut: PathBuf,
     team: Option<String>,
     user: User,
-    features: Features,
+
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Value)> {
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
-    let team_slug = if features.teams && let Some(team) = team {
+    let team_slug = if let Some(team) = team {
         team
     } else {
         "".to_string()
@@ -230,8 +192,8 @@ pub fn delete_shortcut(
 
     let conn = pool.get().map_err(AppError::from)?;
 
-    team_should_be_accepted(&team_slug, &features, &conn)?;
-    user_should_have_shortcut_write_for_team(&user,&team_slug, &features, &conn)?;
+    team_should_be_accepted(&team_slug, &conn)?;
+    user_should_have_shortcut_write_for_team(&user, &team_slug, &conn)?;
 
     diesel::delete(shortcuts::table)
         .filter(dsl::shortcut.eq(shortcut).and(dsl::team_slug.eq(team_slug)))
@@ -243,7 +205,6 @@ pub fn delete_shortcut(
         json!({
             "shortcut":shortcut,
             "deleted":true,
-            "features": json!(features)
         }),
     ))
 }
@@ -253,29 +214,45 @@ fn parse_shortcut_path_buff(shortcut: &'_ Path) -> Result<&'_ str, AppError> {
         Some(shortcut) => Ok(shortcut),
         None => {
             error!("GET <shortcut..> failed parsing: {:?}", shortcut);
-            Err(AppError::BadRequest) 
+            Err(AppError::BadRequest)
         }
     }
 }
 
-fn team_should_be_accepted( team_slug: &str, features: &Features,conn: &DbConn) -> Result<(), AppError> {
-    if features.teams && teams::table.find(&team_slug).filter(teams::is_accepted).select(count(teams::slug)).first::<i64>(conn).map_err(AppError::from)? == 0{
+fn team_should_be_accepted(team_slug: &str, conn: &DbConn) -> Result<(), AppError> {
+    if teams::table
+        .find(&team_slug)
+        .filter(teams::is_accepted)
+        .select(count(teams::slug))
+        .first::<i64>(conn)
+        .map_err(AppError::from)?
+        == 0
+    {
         return Err(AppError::Unauthorized);
     }
     Ok(())
 }
 
-fn user_should_have_shortcut_write_for_team(user: &User, team_slug: &str, features: &Features,conn: &DbConn) -> Result<(), AppError> {
-    if !features.teams {
-        user.should_have_capability(Capability::ShortcutsWrite)
-    } else if !user.have_capability(Capability::ShortcutsWrite) && users_teams::table.find((&user.mail, &team_slug)).filter(users_teams::capabilities.contains(vec![TeamCapability::ShortcutsWrite]))
-    .filter(users_teams::is_accepted)
-    .select(count(users_teams::user_mail))
-    .first::<i64>(conn).map_err(AppError::from)? == 0{ 
-        error!("User {} miss capability or team capability ShortcutsWrite on team {}", user.mail, team_slug);
-        Err(AppError::Unauthorized) 
+fn user_should_have_shortcut_write_for_team(
+    user: &User,
+    team_slug: &str,
+    conn: &DbConn,
+) -> Result<(), AppError> {
+    if users_teams::table
+        .find((&user.mail, &team_slug))
+        .filter(users_teams::capabilities.contains(vec![TeamCapability::ShortcutsWrite]))
+        .filter(users_teams::is_accepted)
+        .select(count(users_teams::user_mail))
+        .first::<i64>(conn)
+        .map_err(AppError::from)?
+        == 0
+    {
+        error!(
+            "User {} miss capability or team capability ShortcutsWrite on team {}",
+            user.mail, team_slug
+        );
+        Err(AppError::Unauthorized)
     } else {
- 
-    Ok(())
+        Ok(())
     }
 }

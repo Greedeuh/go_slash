@@ -7,7 +7,7 @@ mod no_dead_code {
     use go_web::{
         guards::SESSION_COOKIE,
         models::{
-            settings::{Features, DEFAULT_CAPABILITIES, FEATURES},
+            settings::DEFAULT_CAPABILITIES,
             shortcuts::NewShortcut,
             teams::{Team, TeamCapability},
             users::{Capability, UserTeam, UserWithPwd},
@@ -58,14 +58,6 @@ mod no_dead_code {
                 .execute(db_con)
                 .unwrap();
         }
-    }
-
-    pub fn global_features(features: &Features, db_con: &PgConnection) {
-        diesel::update(settings::table)
-            .set(settings::content.eq(json!(features).to_string()))
-            .filter(settings::title.eq(FEATURES))
-            .execute(db_con)
-            .unwrap();
     }
 
     pub fn default_capabilities(capabilities: &[Capability], db_con: &PgConnection) {

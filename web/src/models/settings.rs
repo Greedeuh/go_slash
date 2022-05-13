@@ -8,17 +8,7 @@ use crate::schema::settings;
 use crate::DbConn;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
-pub struct Features {
-    pub login: LoginFeature,
-    pub teams: bool,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
-pub struct LoginFeature {
-    pub simple: bool,
-    pub google: bool,
-    pub read_private: bool,
-}
+pub struct FeaturesOld {}
 
 pub const DEFAULT_CAPABILITIES: &str = "default_capabilities";
 pub const FEATURES: &str = "features";
@@ -31,13 +21,7 @@ pub struct Setting {
     pub content: String,
 }
 
-impl LoginFeature {
-    pub fn any(&self) -> bool {
-        self.simple || self.google
-    }
-}
-
-pub fn get_global_features(conn: &DbConn) -> Result<Features, AppError> {
+pub fn get_global_features(conn: &DbConn) -> Result<FeaturesOld, AppError> {
     let features: Setting = settings::table
         .find(FEATURES)
         .first(conn)
@@ -64,24 +48,8 @@ pub fn default_capabilities(conn: &DbConn) -> Result<Vec<Capability>, AppError> 
     })
 }
 
-pub fn patch_features(new_features: PatchableFeatures, conn: &DbConn) -> Result<usize, AppError> {
-    let mut features = get_global_features(conn)?;
-
-    if let Some(login) = &new_features.login {
-        if let Some(simple) = login.simple {
-            features.login.simple = simple;
-        }
-        if let Some(google) = login.google {
-            features.login.google = google;
-        }
-        if let Some(read_private) = login.read_private {
-            features.login.read_private = read_private;
-        }
-    }
-
-    if let Some(teams) = new_features.teams {
-        features.teams = teams;
-    }
+pub fn patch_features(_new_features: PatchableFeatures, conn: &DbConn) -> Result<usize, AppError> {
+    let features = get_global_features(conn)?;
 
     diesel::update(settings::table)
         .set(settings::content.eq(json!(features).to_string()))

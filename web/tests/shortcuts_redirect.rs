@@ -1,6 +1,4 @@
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::settings::Features;
-use go_web::models::settings::LoginFeature;
 use rocket::http;
 use rocket::http::Cookie;
 use rocket::http::Header;
@@ -10,18 +8,39 @@ use utils::*;
 
 #[test]
 fn undefined_shortcut_return_a_404() {
-    let client = launch_empty();
-    let response = client.get("/myShortCut").dispatch();
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[("", &[], 0, true)],
+        &[],
+        &conn,
+    );
+
+    let response = client
+        .get("/myShortCut")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
 
     assert_eq!(response.status(), Status::NotFound);
 }
 
 #[test]
 fn shortcut_redirect_to_target() {
-    let (client, conn) = launch_with("");
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     shortcut("myShortCut/hop", "https://thetarget.test.go.com", "", &conn);
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[("", &[], 0, true)],
+        &[],
+        &conn,
+    );
 
-    let response = client.get("/myShortCut/hop").dispatch();
+    let response = client
+        .get("/myShortCut/hop")
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+        .dispatch();
 
     assert_eq!(response.status(), Status::PermanentRedirect);
     let mut location = response.headers().get("Location");
@@ -58,16 +77,6 @@ some_other_session_id: some_other_mail@mail.com",
         &[],
         &conn,
     );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
 
     let response = client
         .get("/myShortCut/hop")
@@ -94,19 +103,7 @@ some_other_session_id: some_other_mail@mail.com",
 
 #[test]
 fn shortcut_read_private_should_return_unauthorized() {
-    let (client, conn) = launch_with("");
-
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                read_private: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        &conn,
-    );
+    let (client, _conn) = launch_with("");
 
     let response = client.get("/myShortCut/hop").dispatch();
 
@@ -117,17 +114,6 @@ fn shortcut_read_private_should_return_unauthorized() {
 fn shortcut_read_private_should_return_ok_with_session() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     user("some_mail@mail.com", "pwd", &[], &[], &conn);
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                read_private: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        &conn,
-    );
 
     let response = client
         .get("/myShortCut/hop")

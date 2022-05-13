@@ -27,8 +27,7 @@
       <div
         v-if="
           administer &&
-          (shortcut_write_capability ||
-            admin_teams?.map((t) => t.slug).includes(shortcut.team_slug))
+          admin_teams?.map((t) => t.slug).includes(shortcut.team_slug)
         "
         class="btn-group"
         role="group"
@@ -60,7 +59,6 @@ export default defineComponent({
     selected_index: Number,
     administer: Boolean,
     admin_teams: Array,
-    shortcut_write_capability: Boolean,
   },
   emits: ["click_shortcut_index", "delete_shortcut"],
   methods: {

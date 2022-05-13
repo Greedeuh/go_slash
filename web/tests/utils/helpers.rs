@@ -47,23 +47,6 @@ mod no_dead_code {
         PgConnection::establish(db_url).unwrap()
     }
 
-    pub fn launch_empty() -> Client {
-        let (db_path, db) = random_pg_url();
-        setup_db_conn(&db_path, &db);
-
-        Client::tracked(server(
-            PORT,
-            ADDR,
-            &db_path,
-            Sessions::default(),
-            conf(),
-            true,
-            true,
-            google_oauth(),
-        ))
-        .expect("valid rocket instance")
-    }
-
     pub fn launch_with(sessions: &str) -> (Client, PgConnection) {
         let (db_path, db) = random_pg_url();
         let db_conn = setup_db_conn(&db_path, &db);

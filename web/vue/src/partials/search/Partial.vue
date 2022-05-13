@@ -22,7 +22,6 @@
       :shortcuts="fuzzed_or_all"
       :selected_index="selected_index"
       :administer="administer"
-      :shortcut_write_capability="this.capabilities.includes('ShortcutsWrite')"
       :admin_teams="admin_teams"
       @delete_shortcut="delete_shortcut"
     />

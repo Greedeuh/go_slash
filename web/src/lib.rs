@@ -29,7 +29,10 @@ use controllers::{
 };
 pub mod guards;
 pub mod models;
-use crate::{models::users::Sessions, services::oidc::OidcService};
+use crate::{
+    middlewares::UnauthorizedAsLogin, models::users::Sessions, services::oidc::OidcService,
+};
+mod middlewares;
 pub mod schema;
 pub mod services;
 mod views;
@@ -106,6 +109,7 @@ pub fn server(
         .manage(oidc_service)
         .manage(db_pool)
         .attach(Template::fairing())
+        .attach(UnauthorizedAsLogin {})
         .attach(AdHoc::on_response("HTTP code", |_, res| {
             Box::pin(async move {
                 if (200..399).contains(&res.status().code) {

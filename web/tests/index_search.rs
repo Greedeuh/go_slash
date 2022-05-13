@@ -1,15 +1,18 @@
 use diesel::PgConnection;
+use go_web::guards::SESSION_COOKIE;
+use go_web::models::teams::TeamCapability;
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
 mod utils;
+use serde_json::json;
 use thirtyfour::prelude::*;
 use utils::*;
 
 #[async_test]
 async fn index_should_list_shortcuts() {
     in_browser(
-        "",
+        "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
@@ -32,6 +35,13 @@ async fn index_should_list_shortcuts() {
                     "",
                     &con,
                 );
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    &[("", &[], 0, true), ("team1", &[], 0, true)],
+                    &[],
+                    &con,
+                );
 
                 let texts_sorted = vec![
                     format!("aShortcut http://localhost:{}/aShortcut team1", port),
@@ -44,6 +54,9 @@ async fn index_should_list_shortcuts() {
                     format!("http://localhost:{}/ssshortcut", port),
                 ];
 
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await?;
                 driver.get(format!("http://localhost:{}", port)).await?;
 
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
@@ -66,7 +79,7 @@ async fn index_should_list_shortcuts() {
 #[async_test]
 async fn index_user_as_sugestions_when_typing() {
     in_browser(
-        "",
+        "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
@@ -89,7 +102,17 @@ async fn index_user_as_sugestions_when_typing() {
                     "",
                     &con,
                 );
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    &[("", &[], 0, true), ("slug1", &[], 0, true)],
+                    &[],
+                    &con,
+                );
 
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await?;
                 driver.get(format!("http://localhost:{}", port)).await?;
 
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
@@ -133,7 +156,7 @@ async fn index_user_as_sugestions_when_typing() {
 #[async_test]
 async fn index_user_can_search() {
     in_browser(
-        "",
+        "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
                 let con = con.lock().await;
@@ -155,7 +178,17 @@ async fn index_user_can_search() {
                     "",
                     &con,
                 );
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
+                    &[],
+                    &con,
+                );
 
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await?;
                 driver.get(format!("http://localhost:{}", port)).await?;
 
                 let search_bar = driver.find_element(By::Css("input[type='search']")).await?;

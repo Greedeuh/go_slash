@@ -1,8 +1,6 @@
 use diesel::PgConnection;
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::settings::{Features, LoginFeature};
 use go_web::models::teams::TeamCapability;
-use go_web::models::users::Capability;
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
@@ -28,18 +26,8 @@ async fn as_unknow_user_is_not_allowed() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
+                    &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
                     &[],
-                    &[Capability::ShortcutsWrite],
-                    &con,
-                );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    },
                     &con,
                 );
 
@@ -72,16 +60,6 @@ async fn as_user_without_capability_is_not_allowed() {
                     &con,
                 );
                 user("some_mail@mail.com", "pwd", &[], &[], &con);
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
-                    &con,
-                );
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
@@ -121,16 +99,6 @@ async fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
                     &[],
                     &con,
                 );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
-                    &con,
-                );
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
@@ -154,87 +122,6 @@ mod delete_shortcut {
     use super::*;
 
     #[async_test]
-    async fn as_user_with_capability() {
-        in_browser(
-            "some_session_id: some_mail@mail.com",
-            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
-                async move {
-                    let con = con.lock().await;
-                    shortcut(
-                        "newShortcut",
-                        &format!("http://localhost:{}/newShortcut", port),
-                        "",
-                        &con,
-                    );
-                    user(
-                        "some_mail@mail.com",
-                        "pwd",
-                        &[],
-                        &[Capability::ShortcutsWrite],
-                        &con,
-                    );
-                    global_features(
-                        &Features {
-                            login: LoginFeature {
-                                simple: true,
-                                ..Default::default()
-                            },
-                            teams: true,
-                        },
-                        &con,
-                    );
-
-                    driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
-                        .await?;
-                    driver.get(format!("http://localhost:{}", port)).await?;
-
-                    driver
-                        .find_element(By::Css("[aria-label='Switch administration mode']"))
-                        .await?
-                        .click()
-                        .await?;
-
-                    assert_eq!(
-                        driver
-                            .find_elements(By::Css("[role='listitem']"))
-                            .await?
-                            .len(),
-                        1
-                    );
-
-                    driver
-                        .find_element(By::Css("[aria-label='Delete shortcut']"))
-                        .await?
-                        .click()
-                        .await?;
-
-                    assert_eq!(
-                        driver
-                            .find_elements(By::Css("[role='listitem']"))
-                            .await?
-                            .len(),
-                        0
-                    );
-
-                    driver.refresh().await?;
-                    assert_eq!(
-                        driver
-                            .find_elements(By::Css("[role='listitem']"))
-                            .await?
-                            .len(),
-                        0
-                    );
-
-                    Ok(())
-                }
-                .boxed()
-            },
-        )
-        .await;
-    }
-
-    #[async_test]
     async fn as_user_with_team_capability() {
         in_browser(
             "some_session_id: some_mail@mail.com",
@@ -252,16 +139,6 @@ mod delete_shortcut {
                         "pwd",
                         &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
                         &[],
-                        &con,
-                    );
-                    global_features(
-                        &Features {
-                            login: LoginFeature {
-                                simple: true,
-                                ..Default::default()
-                            },
-                            teams: true,
-                        },
                         &con,
                     );
 
@@ -326,16 +203,6 @@ mod delete_shortcut {
                         &[],
                         &con,
                     );
-                    global_features(
-                        &Features {
-                            login: LoginFeature {
-                                simple: true,
-                                ..Default::default()
-                            },
-                            teams: true,
-                        },
-                        &con,
-                    );
 
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
@@ -365,7 +232,7 @@ mod delete_shortcut {
     }
 
     #[async_test]
-    async fn as_user_without_team_capability() {
+    async fn as_user_without_team_capability_is_not_allowed() {
         in_browser(
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -378,16 +245,7 @@ mod delete_shortcut {
                         &con,
                     );
                     user("some_mail@mail.com", "pwd", &[], &[], &con);
-                    global_features(
-                        &Features {
-                            login: LoginFeature {
-                                simple: true,
-                                ..Default::default()
-                            },
-                            teams: true,
-                        },
-                        &con,
-                    );
+
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
@@ -421,16 +279,7 @@ mod delete_shortcut {
                         &con,
                     );
                     user("some_mail@mail.com", "pwd", &[], &[], &con);
-                    global_features(
-                        &Features {
-                            login: LoginFeature {
-                                simple: true,
-                                ..Default::default()
-                            },
-                            teams: true,
-                        },
-                        &con,
-                    );
+
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
@@ -454,44 +303,6 @@ mod create_shortcut {
     use super::*;
 
     #[async_test]
-    async fn as_user_with_capability() {
-        in_browser(
-            "some_session_id: some_mail@mail.com",
-            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
-                async move {
-                    let con = con.lock().await;
-                    user(
-                        "some_mail@mail.com",
-                        "pwd",
-                        &[],
-                        &[Capability::ShortcutsWrite],
-                        &con,
-                    );
-                    global_features(
-                        &Features {
-                            login: LoginFeature {
-                                simple: true,
-                                ..Default::default()
-                            },
-                            teams: true,
-                        },
-                        &con,
-                    );
-
-                    driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
-                        .await?;
-                    assert_create_shortcut_ok(driver, "", port).await;
-
-                    Ok(())
-                }
-                .boxed()
-            },
-        )
-        .await;
-    }
-
-    #[async_test]
     async fn as_user_with_team_capability() {
         in_browser(
             "some_session_id: some_mail@mail.com",
@@ -503,16 +314,6 @@ mod create_shortcut {
                         "pwd",
                         &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
                         &[],
-                        &con,
-                    );
-                    global_features(
-                        &Features {
-                            login: LoginFeature {
-                                simple: true,
-                                ..Default::default()
-                            },
-                            teams: true,
-                        },
                         &con,
                     );
 
@@ -540,18 +341,8 @@ mod create_shortcut {
                     user(
                         "some_mail@mail.com",
                         "pwd",
+                        &[("team1", &[TeamCapability::ShortcutsWrite], 0, true)],
                         &[],
-                        &[Capability::ShortcutsWrite],
-                        &con,
-                    );
-                    global_features(
-                        &Features {
-                            login: LoginFeature {
-                                simple: true,
-                                ..Default::default()
-                            },
-                            teams: true,
-                        },
                         &con,
                     );
 
@@ -586,16 +377,6 @@ mod create_shortcut {
                         &[],
                         &con,
                     );
-                    global_features(
-                        &Features {
-                            login: LoginFeature {
-                                simple: true,
-                                ..Default::default()
-                            },
-                            teams: true,
-                        },
-                        &con,
-                    );
 
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
@@ -623,7 +404,7 @@ mod create_shortcut {
     }
 
     #[async_test]
-    async fn as_user_with_capabilities_but_team_not_yet_accepted_is_not_allowed() {
+    async fn with_team_not_yet_accepted_is_not_allowed() {
         in_browser(
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -633,18 +414,8 @@ mod create_shortcut {
                     user(
                         "some_mail@mail.com",
                         "pwd",
+                        &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
                         &[],
-                        &[Capability::ShortcutsWrite],
-                        &con,
-                    );
-                    global_features(
-                        &Features {
-                            login: LoginFeature {
-                                simple: true,
-                                ..Default::default()
-                            },
-                            teams: true,
-                        },
                         &con,
                     );
 
@@ -689,16 +460,6 @@ mod create_shortcut {
                             ("team", &[TeamCapability::ShortcutsWrite], 0, true),
                         ],
                         &[],
-                        &con,
-                    );
-                    global_features(
-                        &Features {
-                            login: LoginFeature {
-                                simple: true,
-                                ..Default::default()
-                            },
-                            teams: true,
-                        },
                         &con,
                     );
 

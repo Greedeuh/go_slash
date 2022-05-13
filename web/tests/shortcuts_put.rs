@@ -1,9 +1,7 @@
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::settings::Features;
-use go_web::models::settings::LoginFeature;
 use go_web::models::shortcuts::Shortcut;
 use go_web::models::teams::TeamCapability;
-use go_web::models::users::Capability;
+use rocket::http;
 use rocket::http::ContentType;
 use rocket::http::Cookie;
 use rocket::http::Status;
@@ -14,59 +12,26 @@ use utils::*;
 
 #[test]
 fn with_invalid_url_return_400() {
-    let (client, _conn) = launch_with("");
+    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    user(
+        "some_mail@mail.com",
+        "pwd",
+        &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
+        &[],
+        &conn,
+    );
 
     let response = client
         .put("/myShortCut/hop")
         .header(ContentType::JSON)
         .body(r#"{"url": "not_url"}"#)
+        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
 
     assert_eq!(response.status(), Status::BadRequest);
     assert_eq!(
         response.into_string().unwrap().parse::<Value>().unwrap(),
         json!({"error": "Wrong URL format."})
-    );
-}
-
-#[test]
-fn as_user_with_capability_is_ok() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user(
-        "some_mail@mail.com",
-        "pwd",
-        &[],
-        &[Capability::ShortcutsWrite],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
-
-    let response = client
-        .put("/myShortCut/hop")
-        .header(ContentType::JSON)
-        .cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
-        .body(r#"{"url": "http://localhost"}"#)
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Ok);
-
-    let shortcut = get_shortcut("myShortCut/hop", &conn);
-    assert_eq!(
-        shortcut.unwrap(),
-        Shortcut {
-            shortcut: "myShortCut/hop".to_string(),
-            url: "http://localhost".to_string(),
-            team_slug: "".to_string()
-        }
     );
 }
 
@@ -78,16 +43,6 @@ fn as_user_with_team_capability_is_ok() {
         "pwd",
         &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
         &[],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
         &conn,
     );
 
@@ -118,18 +73,8 @@ fn with_specific_team_is_ok() {
     user(
         "some_mail@mail.com",
         "pwd",
-        &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
-        &[Capability::ShortcutsWrite],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
+        &[("slug1", &[TeamCapability::ShortcutsWrite], 0, true)],
+        &[],
         &conn,
     );
 
@@ -160,18 +105,8 @@ fn that_already_exist_replace_it() {
     user(
         "some_mail@mail.com",
         "pwd",
+        &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
         &[],
-        &[Capability::ShortcutsWrite],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
         &conn,
     );
 
@@ -205,16 +140,6 @@ fn as_unknow_user_is_unauthorized() {
         &[],
         &conn,
     );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
 
     let response = client
         .put("/myShortCut/hop")
@@ -231,16 +156,6 @@ fn as_user_without_capability_is_unauthorized() {
     team("wrong_team", "team1", false, false, &conn);
     shortcut("myShortCut/hop", "http://localhost", "", &conn);
     user("some_mail@mail.com", "pwd", &[], &[], &conn);
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
 
     let response = client
         .put("/myShortCut/hop")
@@ -264,16 +179,6 @@ fn as_user_without_team_capability_is_unauthorized() {
         &[],
         &conn,
     );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
 
     let response = client
         .put("/myShortCut/hop")
@@ -295,16 +200,6 @@ fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
         &[],
         &conn,
     );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
 
     let response = client
         .put("/myShortCut/hop")
@@ -323,18 +218,8 @@ fn with_team_not_yet_accepted_is_not_allowed() {
     user(
         "some_mail@mail.com",
         "pwd",
+        &[("team1", &[TeamCapability::ShortcutsWrite], 0, true)],
         &[],
-        &[Capability::ShortcutsWrite],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
         &conn,
     );
 

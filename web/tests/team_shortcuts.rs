@@ -11,30 +11,13 @@ use thirtyfour::prelude::*;
 
 mod utils;
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::settings::{Features, LoginFeature};
+
 use utils::*;
-
-#[test]
-fn feature_team_is_required() {
-    let (client, _conn) = launch_with("");
-    let response = client.get("/go/teams/slug1").dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-}
 
 #[test]
 fn show_public_team_require_user_with_capabilities() {
     let (client, conn) = launch_with("");
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
+
     user("some_mail@mail.com", "pwd", &[], &[], &conn);
 
     let response = client.get("/go/teams/slug1").dispatch();
@@ -52,16 +35,7 @@ fn show_public_team_require_user_with_capabilities() {
 #[test]
 fn show_team_that_do_not_exit_return_404() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
+
     user(
         "some_mail@mail.com",
         "pwd",
@@ -82,16 +56,7 @@ fn show_team_that_do_not_exit_return_404() {
 fn show_private_team_user_not_in_return_404() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", true, true, &conn);
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
+
     user(
         "some_mail@mail.com",
         "pwd",
@@ -128,16 +93,7 @@ async fn show_team_with_shortcuts() {
                     "slug1",
                     &conn,
                 );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
-                    &conn,
-                );
+
                 user(
                     "some_mail@mail.com",
                     "pwd",
@@ -188,16 +144,7 @@ async fn show_team_user_can_edit() {
                     "slug1",
                     &conn,
                 );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
-                    &conn,
-                );
+
                 user(
                     "some_mail@mail.com",
                     "pwd",
@@ -236,16 +183,7 @@ async fn show_team_admin_can_edit() {
                     "slug1",
                     &conn,
                 );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
-                    &conn,
-                );
+
                 user(
                     "some_mail@mail.com",
                     "pwd",

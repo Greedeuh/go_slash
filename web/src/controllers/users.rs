@@ -10,7 +10,6 @@ use rocket_dyn_templates::Template;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-use crate::models::settings::Features;
 use crate::models::teams::{Team, TeamCapability};
 use crate::models::users::{Capability, User, UserTeam, SAFE_USER_COLUMNS};
 use crate::models::AppError;
@@ -32,10 +31,10 @@ pub struct UserTeamLink {
 pub fn join_global_team(
     user: User,
     team_user_link: Json<UserTeamLink>,
-    features: Features,
+
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    join_team("".to_string(), team_user_link, user, features, pool)
+    join_team("".to_string(), team_user_link, user, pool)
 }
 
 #[post("/go/user/teams/<slug>", data = "<team_user_link>")]
@@ -43,13 +42,9 @@ pub fn join_team(
     slug: String,
     team_user_link: Json<UserTeamLink>,
     user: User,
-    features: Features,
+
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    if !features.login.any() {
-        return Err(AppError::Disable.into());
-    }
-
     user.should_have_capability(Capability::UsersTeamsWrite)?;
 
     let conn = pool.get().map_err(AppError::from)?;
@@ -80,25 +75,17 @@ pub fn join_team(
 }
 
 #[delete("/go/user/teams")]
-pub fn leave_global_team(
-    user: User,
-    features: Features,
-    pool: &State<DbPool>,
-) -> Result<Status, (Status, Value)> {
-    leave_team("".to_string(), user, features, pool)
+pub fn leave_global_team(user: User, pool: &State<DbPool>) -> Result<Status, (Status, Value)> {
+    leave_team("".to_string(), user, pool)
 }
 
 #[delete("/go/user/teams/<slug>")]
 pub fn leave_team(
     slug: String,
     user: User,
-    features: Features,
+
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    if !features.login.any() {
-        return Err(AppError::Disable.into());
-    }
-
     user.should_have_capability(Capability::UsersTeamsWrite)?;
 
     let conn = pool.get().map_err(AppError::from)?;
@@ -118,13 +105,9 @@ pub fn leave_team(
 pub fn put_user_team_ranks(
     team_ranks: Json<HashMap<String, u16>>,
     user: User,
-    features: Features,
+
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    if !features.teams {
-        return Err(AppError::Disable.into());
-    }
-
     user.should_have_capability(Capability::UsersTeamsWrite)?;
 
     let conn = pool.get().map_err(AppError::from)?;
@@ -152,15 +135,7 @@ pub fn put_user_team_ranks(
 }
 
 #[get("/go/users")]
-pub fn list_users(
-    user: User,
-    features: Features,
-    pool: &State<DbPool>,
-) -> Result<Template, (Status, Value)> {
-    if !features.login.any() {
-        return Err(AppError::Disable.into());
-    }
-
+pub fn list_users(user: User, pool: &State<DbPool>) -> Result<Template, (Status, Value)> {
     let conn = pool.get().map_err(AppError::from)?;
     let users = dsl::users
         .select(SAFE_USER_COLUMNS)
@@ -172,7 +147,6 @@ pub fn list_users(
         "users",
         json!({
             "mail":  &user.mail,
-            "features": json!(features),
             "context": json!({
                 "users": users
             }).to_string()
@@ -185,16 +159,12 @@ pub fn put_user_capability(
     mail: String,
     capability: String,
     user: User,
-    features: Features,
+
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
     let capability = Capability::from_str(&capability).map_err(|_| AppError::BadRequest)?;
 
     let conn = pool.get().map_err(AppError::from)?;
-
-    if !features.login.any() {
-        return Err(AppError::Disable.into());
-    }
 
     user.should_have_capability(Capability::UsersAdmin)?;
 
@@ -223,16 +193,12 @@ pub fn delete_user_capability(
     mail: String,
     capability: String,
     user: User,
-    features: Features,
+
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
     let capability = Capability::from_str(&capability).map_err(|_| AppError::BadRequest)?;
 
     let conn = pool.get().map_err(AppError::from)?;
-
-    if !features.login.any() {
-        return Err(AppError::Disable.into());
-    }
 
     user.should_have_capability(Capability::UsersAdmin)?;
 

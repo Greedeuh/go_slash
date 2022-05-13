@@ -16,7 +16,7 @@ use crate::{
     controllers::users::MAIL_REGEX,
     guards::{NonceOIDC, SessionId, SESSION_COOKIE},
     models::{
-        settings::{default_capabilities, Features},
+        settings::default_capabilities,
         users::{Sessions, UserWithPwd},
         AppError,
     },
@@ -26,14 +26,10 @@ use crate::{
 };
 
 #[get("/go/login")]
-pub fn login(conf: &State<AppConfig>, features: Features) -> Result<Template, (Status, Template)> {
-    if !features.login.any() {
-        return Err(AppError::Disable.into());
-    }
-
+pub fn login(conf: &State<AppConfig>) -> Result<Template, (Status, Template)> {
     Ok(Template::render(
         "login",
-        json!({ "context": json!({ "features": features, "simple_salt": conf.simple_login_salt1 }).to_string() }),
+        json!({ "context": json!({ "simple_salt": conf.simple_login_salt1 }).to_string() }),
     ))
 }
 
@@ -53,13 +49,9 @@ pub fn simple_login(
     credentials: Json<Credentials>,
     sessions: &State<Sessions>,
     config: &State<AppConfig>,
-    features: Features,
+
     pool: &State<DbPool>,
 ) -> Result<Json<LoginSuccessfull>, (Status, Value)> {
-    if !features.login.any() {
-        return Err(AppError::Disable.into());
-    }
-
     let credentials = credentials.into_inner();
     if !MAIL_REGEX.is_match(&credentials.mail) {
         return Err((Status::BadRequest, json!({"error": "Wrong mail format."})));
@@ -92,16 +84,11 @@ pub fn simple_login(
 
 #[get("/go/login/google")]
 pub async fn google_login(
-    features: Features,
     user: Option<SessionId>,
     sessions: &State<Sessions>,
     oidc_service: &State<OidcService>,
     cookies: &CookieJar<'_>,
 ) -> Result<Redirect, (Status, Template)> {
-    if !features.login.google {
-        return Err(AppError::Disable.into());
-    }
-
     if user.is_some() {
         return Err(AppError::BadRequest.into());
     }
@@ -129,15 +116,11 @@ pub async fn login_redirect_google(
     code: String,
     nonce: NonceOIDC,
     session_id: SessionId,
-    features: Features,
+
     oidc_service: &State<OidcService>,
     sessions: &State<Sessions>,
     pool: &State<DbPool>,
 ) -> Result<Redirect, (Status, Template)> {
-    if !features.login.google {
-        return Err(AppError::Disable.into());
-    }
-
     let token_res = oidc_service
         .retrieve_token(&code, &nonce.0)
         .await

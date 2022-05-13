@@ -3,23 +3,14 @@ use go_web::models::teams::TeamCapability;
 use go_web::models::users::Capability;
 use rocket::async_test;
 use rocket::futures::FutureExt;
-use rocket::http::Status;
 use rocket::tokio::sync::Mutex;
 use serde_json::json;
 use thirtyfour::prelude::*;
 
 mod utils;
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::settings::{Features, LoginFeature};
+
 use utils::*;
-
-#[test]
-fn feature_team_disable() {
-    let (client, _conn) = launch_with("");
-    let response = client.get("/go/teams").dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-}
 
 #[async_test]
 async fn layout_with_team_link_if_feature_team() {
@@ -37,17 +28,6 @@ async fn layout_with_team_link_if_feature_team() {
                     &con,
                 );
 
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: false,
-                    },
-                    &con,
-                );
-
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
@@ -59,16 +39,6 @@ async fn layout_with_team_link_if_feature_team() {
                     .await
                     .is_err());
 
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
-                    &con,
-                );
                 let endpoints = vec!["", "go/teams", "go/features", "azdaz"];
 
                 for endpoint in endpoints {
@@ -113,16 +83,6 @@ async fn list_teams_with_infos() {
                     &con,
                 );
 
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
-                    &con,
-                );
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
@@ -205,16 +165,6 @@ async fn teams_user_team_then_others() {
                         ("slug3", &TeamCapability::all(), 0, true),
                     ],
                     &[Capability::TeamsRead],
-                    &con,
-                );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
                     &con,
                 );
 

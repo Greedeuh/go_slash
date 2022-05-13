@@ -1,8 +1,6 @@
 use diesel::PgConnection;
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::settings::{Features, LoginFeature};
 use go_web::models::teams::TeamCapability;
-use go_web::models::users::Capability;
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
@@ -36,16 +34,6 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
                     "pwd",
                     &[("team", &[TeamCapability::ShortcutsWrite], 0, true)],
                     &[],
-                    &con,
-                );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
                     &con,
                 );
 
@@ -130,18 +118,8 @@ async fn with_not_existing_shortcut_return_search_and_edit_form_filled() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
+                    &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
                     &[],
-                    &[Capability::ShortcutsWrite],
-                    &con,
-                );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
                     &con,
                 );
 

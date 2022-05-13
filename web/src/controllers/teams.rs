@@ -10,7 +10,6 @@ use std::cmp::Ordering;
 
 use crate::{
     models::{
-        settings::Features,
         shortcuts::Shortcut,
         teams::{
             teams_with_shortcut_write, Team, TeamCapability, TeamForOptUser, TeamForUserIfSome,
@@ -28,15 +27,7 @@ use crate::{
 };
 
 #[get("/go/teams")]
-pub fn list_teams(
-    user: User,
-    features: Features,
-    pool: &State<DbPool>,
-) -> Result<Template, (Status, Template)> {
-    if !features.teams || !features.login.any() {
-        return Err(AppError::Disable.into());
-    }
-
+pub fn list_teams(user: User, pool: &State<DbPool>) -> Result<Template, (Status, Template)> {
     user.should_have_capability(Capability::TeamsRead)?;
 
     let conn = pool.get().map_err(AppError::from)?;
@@ -64,7 +55,6 @@ pub fn list_teams(
     Ok(Template::render(
         "teams",
         json!({ "teams": json!(teams).to_string(),
-            "features": json!(features),
             "capabilities": json!(user.capabilities).to_string(),
             "mail": user.mail
         }),
@@ -75,13 +65,9 @@ pub fn list_teams(
 pub fn delete_team(
     team: String,
     user: User,
-    features: Features,
+
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    if !features.teams || !features.login.any() {
-        return Err(AppError::Disable.into());
-    }
-
     user.should_have_capability(Capability::TeamsWrite)?;
 
     let conn = pool.get().map_err(AppError::from)?;
@@ -103,13 +89,9 @@ pub struct NewTeam {
 pub fn create_team(
     data: Json<NewTeam>,
     user: User,
-    features: Features,
+
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    if !features.teams || !features.login.any() {
-        return Err(AppError::Disable.into());
-    }
-
     user.should_have_one_of_theses_capabilities(&[
         Capability::TeamsWrite,
         Capability::TeamsWriteWithValidation,
@@ -168,13 +150,9 @@ pub fn patch_team(
     team: String,
     data: Json<PatchableTeam>,
     user: User,
-    features: Features,
+
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    if !features.teams || !features.login.any() {
-        return Err(AppError::Disable.into());
-    }
-
     let conn = pool.get().map_err(AppError::from)?;
 
     // should be admin or (part of the team but can't change is_accepted)
@@ -203,13 +181,8 @@ pub fn patch_team(
 pub fn show_team(
     slug: String,
     user: User,
-    features: Features,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
-    if !features.teams {
-        return Err(AppError::Disable.into());
-    }
-
     user.should_have_capability(Capability::TeamsRead)?;
 
     let conn = pool.get().map_err(AppError::from)?;
@@ -244,14 +217,12 @@ pub fn show_team(
         "index",
         json!({
             "mail": &user.mail,
-            "features": json!(features),
             "context": json!(IndexContext {
                 shortcut: None,
                 shortcuts,
-                features,
                 team: Some(team),
-                teams: Some(teams_with_shortcut_write(&user, &conn)?),
-                user: Some(user)
+                teams: teams_with_shortcut_write(&user, &conn)?,
+                user
             }).to_string()
         }),
     ))

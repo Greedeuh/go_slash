@@ -9,34 +9,13 @@ use thirtyfour::prelude::*;
 
 mod utils;
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::settings::{Features, LoginFeature};
+
 use utils::*;
 
 #[test]
-fn post_user_team_need_feature() {
-    let (client, _conn) = launch_with("");
-    let response = client
-        .post("/go/user/teams/slug1")
-        .body(json!({ "rank": 0 }).to_string())
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-}
-
-#[test]
 fn post_user_team_need_user() {
-    let (client, conn) = launch_with("");
+    let (client, _conn) = launch_with("");
 
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
     let response = client
         .post("/go/user/teams/slug1")
         .body(json!({ "rank": 0 }).to_string())
@@ -55,43 +34,13 @@ fn post_user_team() {
         &[Capability::UsersTeamsWrite],
         &conn,
     );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
+
     let response = client
         .post("/go/user/teams/slug1")
         .body(json!({ "rank": 0 }).to_string())
         .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
         .dispatch();
     assert_eq!(response.status(), Status::Created);
-}
-
-#[test]
-fn delete_user_team_need_user() {
-    let (client, conn) = launch_with("");
-    let response = client.delete("/go/user/teams/slug1").dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
-    let response = client.delete("/go/user/teams/slug1").dispatch();
-    assert_eq!(response.status(), Status::Unauthorized);
 }
 
 #[test]
@@ -105,16 +54,7 @@ fn delete_user_team() {
         &[Capability::UsersTeamsWrite],
         &conn,
     );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
+
     let response = client
         .delete("/go/user/teams/slug1")
         .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
@@ -138,16 +78,6 @@ async fn action_on_teams() {
                         Capability::UsersTeamsRead,
                         Capability::UsersTeamsWrite,
                     ],
-                    &con,
-                );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
                     &con,
                 );
 
@@ -234,16 +164,6 @@ fn put_user_teams_ranks() {
         &[Capability::UsersTeamsWrite],
         &conn,
     );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            teams: true,
-        },
-        &conn,
-    );
 
     let response = client
         .put("/go/user/teams/ranks")
@@ -276,19 +196,6 @@ fn put_user_teams_ranks() {
     assert_eq!(response.status(), Status::Ok);
 }
 
-#[test]
-fn put_user_teams_ranks_need_feature() {
-    let (client, conn) = launch_with("");
-    team("slug1", "team1", false, true, &conn);
-
-    let response = client
-        .put("/go/user/teams/ranks")
-        .body(json!({ "": 1, "slug1": 0 }).to_string())
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-}
-
 #[async_test]
 async fn user_team_ranks() {
     in_browser(
@@ -308,16 +215,6 @@ async fn user_team_ranks() {
                         ("slug2", &[], 0, true),
                     ],
                     &[Capability::TeamsRead, Capability::UsersTeamsWrite],
-                    &con,
-                );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
                     &con,
                 );
 

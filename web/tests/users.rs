@@ -1,6 +1,5 @@
 use diesel::PgConnection;
 use go_web::controllers::login::LoginSuccessfull;
-use go_web::models::settings::{Features, LoginFeature};
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
@@ -12,29 +11,6 @@ use utils::*;
 use uuid::Uuid;
 
 #[test]
-fn simple_login_is_behind_a_feature_switch() {
-    let (client, _conn) = launch_with("");
-    let response = client.get("/go/login").dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-
-    let response = client
-        .post("/go/login")
-        .body(json!({ "mail": "some_mail", "pwd": "some_pwd" }).to_string())
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-}
-
-#[test]
-fn simple_login_feature_switch() {
-    let (client, _conn) = launch_with("");
-    let response = client.get("/go/login").dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-}
-
-#[test]
 fn post_simple_login_token() {
     let (client, conn) = launch_with("");
     user(
@@ -42,16 +18,6 @@ fn post_simple_login_token() {
         "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
         &[],
         &[],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
         &conn,
     );
 
@@ -77,16 +43,6 @@ fn post_simple_login_wrong_credentials() {
         "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
         &[],
         &[],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
         &conn,
     );
 
@@ -115,16 +71,6 @@ fn post_simple_login_not_a_mail() {
         &[],
         &conn,
     );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        &conn,
-    );
 
     let response = client
         .post("/go/login")
@@ -146,16 +92,6 @@ async fn simple_login() {
                     "4a4498acaf82759d929a7571b5bcea425c9275854d963e49333bf8056c673f60",
                     &[],
                     &[],
-                    &conn,
-                );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    },
                     &conn,
                 );
 

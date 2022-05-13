@@ -30,8 +30,8 @@ export default defineComponent({
   },
   data() {
     return {
-      features: FEATURES,
       disabled: false,
+      features: FEATURES,
     };
   },
   methods: {

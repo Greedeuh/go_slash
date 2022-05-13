@@ -9,16 +9,8 @@ use thirtyfour::prelude::*;
 
 mod utils;
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::settings::{Features, LoginFeature};
+
 use utils::*;
-
-#[test]
-fn feature_team_disable() {
-    let (client, _conn) = launch_with("");
-    let response = client.get("/go/users").dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-}
 
 #[async_test]
 async fn layout_with_users_link_if_feature_login() {
@@ -28,16 +20,6 @@ async fn layout_with_users_link_if_feature_login() {
             async move {
                 let con = con.lock().await;
                 user("some_mail@mail.com", "pwd", &[], &Capability::all(), &con);
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: false,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
-                    &con,
-                );
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
@@ -50,16 +32,6 @@ async fn layout_with_users_link_if_feature_login() {
                     .await
                     .is_err());
 
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        teams: true,
-                    },
-                    &con,
-                );
                 let endpoints = vec!["", "go/teams", "go/features", "azdaz"];
 
                 for endpoint in endpoints {
@@ -103,17 +75,7 @@ async fn list_users() {
                     "another_mail@mail.com",
                     "pwd",
                     &[],
-                    &[Capability::ShortcutsWrite],
-                    &con,
-                );
-                global_features(
-                    &Features {
-                        login: LoginFeature {
-                            simple: true,
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    },
+                    &[Capability::TeamsRead],
                     &con,
                 );
 
@@ -136,8 +98,7 @@ async fn list_users() {
 
                 let expeted_capabilities = vec![
                     ("false", Capability::Features),
-                    ("true", Capability::ShortcutsWrite),
-                    ("false", Capability::TeamsRead),
+                    ("true", Capability::TeamsRead),
                     ("false", Capability::TeamsWrite),
                     ("false", Capability::TeamsWriteWithValidation),
                     ("false", Capability::UsersAdmin),
@@ -210,48 +171,9 @@ async fn assert_users(driver: &WebDriver, expected_users: Vec<&str>) {
 }
 
 #[test]
-fn put_user_capability_need_feature() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user(
-        "some_mail@mail.com",
-        "pwd",
-        &[],
-        &[Capability::UsersAdmin],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: false,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        &conn,
-    );
-
-    let response = client
-        .put("/go/users/some_mail@mail.com/capabilities/Features")
-        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-}
-
-#[test]
 fn put_user_capability_user_with_capability() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     user("some_mail@mail.com", "pwd", &[], &[], &conn);
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        &conn,
-    );
 
     let response = client
         .put("/go/users/some_mail@mail.com/capabilities/Features")
@@ -277,16 +199,6 @@ fn put_user_capability() {
         &[Capability::UsersAdmin],
         &conn,
     );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        &conn,
-    );
 
     let response = client
         .put("/go/users/some_mail@mail.com/capabilities/Features")
@@ -303,48 +215,9 @@ fn put_user_capability() {
 }
 
 #[test]
-fn delete_user_capability_need_feature() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    user(
-        "some_mail@mail.com",
-        "pwd",
-        &[],
-        &[Capability::UsersAdmin],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: false,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        &conn,
-    );
-
-    let response = client
-        .delete("/go/users/some_mail@mail.com/capabilities/Features")
-        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Conflict);
-}
-
-#[test]
 fn delete_user_capability_user_with_capability() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     user("some_mail@mail.com", "pwd", &[], &[], &conn);
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        &conn,
-    );
 
     let response = client
         .delete("/go/users/some_mail@mail.com/capabilities/Features")
@@ -368,16 +241,6 @@ fn delete_user_capability() {
         "pwd",
         &[],
         &[Capability::UsersAdmin, Capability::Features],
-        &conn,
-    );
-    global_features(
-        &Features {
-            login: LoginFeature {
-                simple: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
         &conn,
     );
 

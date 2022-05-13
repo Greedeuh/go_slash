@@ -3,8 +3,8 @@
       <a class="navbar-brand" href="/">GO</a>
       
       <ul class="nav navbar-text me-lg-auto">
-        {{#if features.teams }} <li class="nav-item"><a class="nav-link" href="/go/teams">teams</a></li> {{/if}}
-        {{#if features.login.simple }} <li class="nav-item"><a class="nav-link" href="/go/users">users</a></li> {{/if}}
+        <li class="nav-item"><a class="nav-link" href="/go/teams">teams</a></li>
+        <li class="nav-item"><a class="nav-link" href="/go/users">users</a></li>
       </ul>
     {{#unless mail }} <a class="nav-link" href="/go/login">Login</a> {{/unless}}
     {{#if mail }} <span class="navbar-text">{{mail}}</span> {{/if}}
