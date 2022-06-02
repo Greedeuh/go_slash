@@ -1,6 +1,5 @@
 use diesel::PgConnection;
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::teams::TeamCapability;
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
@@ -10,7 +9,7 @@ use thirtyfour::prelude::*;
 use utils::*;
 
 #[async_test]
-async fn index_should_list_shortcuts() {
+async fn list_shortcuts() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -77,7 +76,7 @@ async fn index_should_list_shortcuts() {
 }
 
 #[async_test]
-async fn index_user_as_sugestions_when_typing() {
+async fn sugest_when_typing() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -154,7 +153,7 @@ async fn index_user_as_sugestions_when_typing() {
 }
 
 #[async_test]
-async fn index_user_can_search() {
+async fn with_click() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -181,7 +180,68 @@ async fn index_user_can_search() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
+                    &[("", &[], 0, true)],
+                    &[],
+                    &con,
+                );
+
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await?;
+                driver.get(format!("http://localhost:{}", port)).await?;
+
+                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
+                search_bar.send_keys("jeanLuc").await?;
+
+                driver
+                    .find_element(By::Css("[type='submit']"))
+                    .await?
+                    .click()
+                    .await?;
+                sleep();
+
+                assert_eq!(
+                    driver.current_url().await?,
+                    format!("http://localhost:{}/aShortcut1", port)
+                );
+
+                Ok(())
+            }
+            .boxed()
+        },
+    )
+    .await;
+}
+
+#[async_test]
+async fn with_keyboard() {
+    in_browser(
+        "some_session_id: some_mail@mail.com",
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                shortcut(
+                    "newShortcut",
+                    &format!("http://localhost:{}/newShortcut", port),
+                    "",
+                    &con,
+                );
+                shortcut(
+                    "jeanLuc",
+                    &format!("http://localhost:{}/aShortcut1", port),
+                    "",
+                    &con,
+                );
+                shortcut(
+                    "tadadam",
+                    &format!("http://localhost:{}/ssshortcut", port),
+                    "",
+                    &con,
+                );
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    &[("", &[], 0, true)],
                     &[],
                     &con,
                 );
