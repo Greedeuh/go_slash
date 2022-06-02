@@ -48,6 +48,14 @@ mod no_dead_code {
     }
 
     fn drop_db(db: &str, pg: &PgConnection) {
+        diesel::dsl::sql::<bool>(&format!(
+            "SELECT pg_terminate_backend(pg_stat_activity.pid)
+        FROM pg_stat_activity
+        WHERE pg_stat_activity.datname = '{}';",
+            db
+        ))
+        .execute(pg)
+        .unwrap();
         diesel::dsl::sql::<bool>(&format!("DROP DATABASE {};", db))
             .execute(pg)
             .unwrap();
@@ -261,7 +269,7 @@ mod no_dead_code {
         let db_conn =
             PgConnection::establish("postgres://postgres:postgres@localhost:6543/postgres")
                 .unwrap();
-        drop_db(&db_path, &db_conn);
+        drop_db(&db, &db_conn);
     }
 
     pub fn sleep() {
