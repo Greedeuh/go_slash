@@ -17,7 +17,7 @@ use crate::{
     guards::{NonceOIDC, SessionId, SESSION_COOKIE},
     models::{
         settings::default_capabilities,
-        users::{Sessions, UserWithPwd},
+        users::{Sessions, User, UserWithPwd},
         AppError,
     },
     schema::users,
@@ -84,7 +84,7 @@ pub fn simple_login(
 
 #[get("/go/login/google")]
 pub async fn google_login(
-    user: Option<SessionId>,
+    user: Option<User>,
     sessions: &State<Sessions>,
     oidc_service: &State<OidcService>,
     cookies: &CookieJar<'_>,
