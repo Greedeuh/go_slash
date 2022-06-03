@@ -12,58 +12,8 @@ use go_web::guards::SESSION_COOKIE;
 
 use utils::*;
 
-#[test]
-fn post_user_team_need_user() {
-    let (client, _conn) = launch_with("");
-
-    let response = client
-        .post("/go/user/teams/slug1")
-        .body(json!({ "rank": 0 }).to_string())
-        .dispatch();
-    assert_eq!(response.status(), Status::Unauthorized);
-}
-
-#[test]
-fn post_user_team() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    team("slug1", "team1", false, false, &conn);
-    user(
-        "some_mail@mail.com",
-        "pwd",
-        &[],
-        &[Capability::UsersTeamsWrite],
-        &conn,
-    );
-
-    let response = client
-        .post("/go/user/teams/slug1")
-        .body(json!({ "rank": 0 }).to_string())
-        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
-        .dispatch();
-    assert_eq!(response.status(), Status::Created);
-}
-
-#[test]
-fn delete_user_team() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    team("slug1", "team1", false, false, &conn);
-    user(
-        "some_mail@mail.com",
-        "pwd",
-        &[("slug1", &[], 0, true)],
-        &[Capability::UsersTeamsWrite],
-        &conn,
-    );
-
-    let response = client
-        .delete("/go/user/teams/slug1")
-        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-}
-
 #[async_test]
-async fn action_on_teams() {
+async fn join_team() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -118,6 +68,48 @@ async fn action_on_teams() {
                     ))
                     .await?;
                 assert_eq!(leave.text().await?, "Leave");
+
+                Ok(())
+            }
+            .boxed()
+        },
+    )
+    .await;
+}
+
+#[async_test]
+async fn leave_team() {
+    in_browser(
+        "some_session_id: some_mail@mail.com",
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    &[("", &[], 0, true)],
+                    &[
+                        Capability::TeamsRead,
+                        Capability::UsersTeamsRead,
+                        Capability::UsersTeamsWrite,
+                    ],
+                    &con,
+                );
+
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await?;
+
+                driver
+                    .get(format!("http://localhost:{}/go/teams", port))
+                    .await?;
+
+                let leave = driver
+                    .find_element(By::Css(
+                        "[aria-label='User teams'] [role='listitem'] button",
+                    ))
+                    .await?;
+                assert_eq!(leave.text().await?, "Leave");
                 leave.click().await?;
 
                 assert_eq!(
@@ -153,51 +145,8 @@ async fn action_on_teams() {
     .await;
 }
 
-#[test]
-fn put_user_teams_ranks() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    team("slug1", "team1", false, true, &conn);
-    user(
-        "some_mail@mail.com",
-        "pwd",
-        &[("", &[], 0, true), ("slug1", &[], 1, true)],
-        &[Capability::UsersTeamsWrite],
-        &conn,
-    );
-
-    let response = client
-        .put("/go/user/teams/ranks")
-        .body(json!({ "": 1, "slug1": 0 }).to_string())
-        .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
-        .dispatch();
-
-    let users_teams = get_user_team_links("some_mail@mail.com", &conn);
-
-    assert_eq!(
-        vec![
-            UserTeam {
-                user_mail: "some_mail@mail.com".to_string(),
-                team_slug: "".to_string(),
-                capabilities: vec![],
-                is_accepted: true,
-                rank: 1
-            },
-            UserTeam {
-                user_mail: "some_mail@mail.com".to_string(),
-                team_slug: "slug1".to_string(),
-                capabilities: vec![],
-                is_accepted: true,
-                rank: 0
-            }
-        ],
-        users_teams
-    );
-
-    assert_eq!(response.status(), Status::Ok);
-}
-
 #[async_test]
-async fn user_team_ranks() {
+async fn change_user_teams_rank() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -300,4 +249,132 @@ async fn user_team_ranks() {
         },
     )
     .await;
+}
+
+mod controller {
+    use super::*;
+
+    mod post {
+        use super::*;
+
+        #[test]
+        fn as_unknow_user_is_not_authorized() {
+            let (client, _conn) = launch_with("");
+
+            let response = client
+                .post("/go/user/teams/slug1")
+                .body(json!({ "rank": 0 }).to_string())
+                .dispatch();
+            assert_eq!(response.status(), Status::Unauthorized);
+        }
+
+        #[test]
+        fn as_user() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, false, &conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[],
+                &[Capability::UsersTeamsWrite],
+                &conn,
+            );
+
+            let response = client
+                .post("/go/user/teams/slug1")
+                .body(json!({ "rank": 0 }).to_string())
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+            assert_eq!(response.status(), Status::Created);
+        }
+    }
+
+    mod delete {
+        use super::*;
+
+        #[test]
+        fn as_unknow_user_is_not_authorized() {
+            let (client, _conn) = launch_with("");
+
+            let response = client.delete("/go/user/teams/slug1").dispatch();
+            assert_eq!(response.status(), Status::Unauthorized);
+        }
+
+        #[test]
+        fn delete_user_team() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, false, &conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[("slug1", &[], 0, true)],
+                &[Capability::UsersTeamsWrite],
+                &conn,
+            );
+
+            let response = client
+                .delete("/go/user/teams/slug1")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+            assert_eq!(response.status(), Status::Ok);
+        }
+    }
+
+    mod put {
+        use super::*;
+
+        #[test]
+        fn as_unknow_user_is_not_authorized() {
+            let (client, _conn) = launch_with("");
+
+            let response = client
+                .put("/go/user/teams/ranks")
+                .body(json!({ "": 1, "slug1": 0 }).to_string())
+                .dispatch();
+            assert_eq!(response.status(), Status::Unauthorized);
+        }
+
+        #[test]
+        fn put_user_teams_ranks() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, true, &conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[("", &[], 0, true), ("slug1", &[], 1, true)],
+                &[Capability::UsersTeamsWrite],
+                &conn,
+            );
+
+            let response = client
+                .put("/go/user/teams/ranks")
+                .body(json!({ "": 1, "slug1": 0 }).to_string())
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            let users_teams = get_user_team_links("some_mail@mail.com", &conn);
+
+            assert_eq!(
+                vec![
+                    UserTeam {
+                        user_mail: "some_mail@mail.com".to_string(),
+                        team_slug: "".to_string(),
+                        capabilities: vec![],
+                        is_accepted: true,
+                        rank: 1
+                    },
+                    UserTeam {
+                        user_mail: "some_mail@mail.com".to_string(),
+                        team_slug: "slug1".to_string(),
+                        capabilities: vec![],
+                        is_accepted: true,
+                        rank: 0
+                    }
+                ],
+                users_teams
+            );
+
+            assert_eq!(response.status(), Status::Ok);
+        }
+    }
 }
