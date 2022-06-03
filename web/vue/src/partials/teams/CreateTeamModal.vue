@@ -35,9 +35,15 @@ export default defineComponent({
   components: { CreateTeamForm, CreateTeamSuccess },
   props: {
     capabilities: Array,
+    start_create_count: Number,
   },
   data() {
     return { success: false };
+  },
+  watch: {
+    start_create_count(newVal, oldVal) {
+      this.reset();
+    },
   },
   emits: ["created"],
   methods: {
@@ -48,6 +54,9 @@ export default defineComponent({
           this.$emit("created", { ...team, is_accepted: false });
         }
       });
+    },
+    reset() {
+      this.success = false;
     },
   },
 });

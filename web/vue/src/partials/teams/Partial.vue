@@ -12,6 +12,7 @@
         class="align-self-center"
       >
         <button
+          @click="start_create"
           class="btn btn-lg btn-primary ms-2"
           aria-label="Start creating team"
           data-bs-toggle="modal"
@@ -47,7 +48,11 @@
       @delete_team="delete_team"
       @accept="accept"
     />
-    <CreateTeamModal @created="team_created" :capabilities="capabilities" />
+    <CreateTeamModal
+      :start_create_count="start_create_count"
+      @created="team_created"
+      :capabilities="capabilities"
+    />
   </div>
 </template>
 
@@ -73,6 +78,7 @@ interface Data {
   teams: Team[];
   capabilities: Capability[];
   administer: boolean;
+  start_create_count: number;
 }
 
 const CAPABILITIES = win.capabilities;
@@ -85,6 +91,7 @@ export default defineComponent({
       teams: TEAMS,
       capabilities: CAPABILITIES,
       administer: false,
+      start_create_count: 0,
     };
   },
   computed: {
@@ -185,6 +192,9 @@ export default defineComponent({
           },
         },
       ];
+    },
+    start_create() {
+      this.start_create_count = this.start_create_count + 1;
     },
   },
 });
