@@ -1,6 +1,5 @@
 export type Capability =
   | "Features"
-  | "TeamsRead"
   | "TeamsWrite"
   | "TeamsWriteWithValidation"
   | "UsersAdmin"
@@ -37,7 +36,6 @@ export interface User {
 
 export const ALL_CAPABILITIES = [
   "Features",
-  "TeamsRead",
   "TeamsWrite",
   "TeamsWriteWithValidation",
   "UsersAdmin",

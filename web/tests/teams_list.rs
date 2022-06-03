@@ -75,13 +75,7 @@ async fn with_icons() {
                 team("slug2", "team2", true, true, &con);
                 team("slug3", "team3", true, false, &con);
                 team("slug4", "team4", false, false, &con);
-                user(
-                    "some_mail@mail.com",
-                    "pwd",
-                    &[],
-                    &[Capability::TeamsRead],
-                    &con,
-                );
+                user("some_mail@mail.com", "pwd", &[], &[], &con);
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
@@ -153,7 +147,7 @@ async fn user_team_then_others() {
                     "some_mail@mail.com",
                     "pwd",
                     &[("slug1", &[], 0, true)],
-                    &[Capability::TeamsRead],
+                    &[],
                     &con,
                 );
                 // another user should not change the behaviour
@@ -164,7 +158,7 @@ async fn user_team_then_others() {
                         ("slug2", &[], 0, true),
                         ("slug3", &TeamCapability::all(), 0, true),
                     ],
-                    &[Capability::TeamsRead],
+                    &[],
                     &con,
                 );
 

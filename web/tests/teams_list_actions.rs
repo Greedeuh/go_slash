@@ -26,7 +26,7 @@ async fn as_admin_accept_team() {
                     "some_mail@mail.com",
                     "pwd",
                     &[("slug1", &[], 1, true)],
-                    &[Capability::TeamsRead, Capability::TeamsWrite],
+                    &[Capability::TeamsWrite],
                     &con,
                 );
 
@@ -105,7 +105,7 @@ mod delete {
                         "some_mail@mail.com",
                         "pwd",
                         &[("slug1", &[], 1, true)],
-                        &[Capability::TeamsRead, Capability::TeamsWrite],
+                        &[Capability::TeamsWrite],
                         &con,
                     );
 
@@ -131,7 +131,7 @@ mod delete {
                         "some_mail@mail.com",
                         "pwd",
                         &[("slug1", &[], 1, true)],
-                        &[Capability::TeamsRead],
+                        &[],
                         &con,
                     );
 
@@ -178,7 +178,7 @@ mod delete {
                             ("slug1", &[TeamCapability::TeamsWrite], 1, true),
                             ("", &[TeamCapability::TeamsWrite], 1, false),
                         ],
-                        &[Capability::TeamsRead],
+                        &[],
                         &con,
                     );
 
@@ -228,7 +228,7 @@ mod delete {
                         "some_mail@mail.com",
                         "pwd",
                         &[("slug1", &[TeamCapability::TeamsWrite], 1, true)],
-                        &[Capability::TeamsRead],
+                        &[],
                         &con,
                     );
 
@@ -320,7 +320,7 @@ mod create {
                         "some_mail@mail.com",
                         "pwd",
                         &[],
-                        &[Capability::TeamsRead, Capability::TeamsWrite],
+                        &[Capability::TeamsWrite],
                         &con,
                     );
 
@@ -359,7 +359,7 @@ mod create {
                         "some_mail@mail.com",
                         "pwd",
                         &[],
-                        &[Capability::TeamsRead, Capability::TeamsWriteWithValidation],
+                        &[Capability::TeamsWriteWithValidation],
                         &con,
                     );
 

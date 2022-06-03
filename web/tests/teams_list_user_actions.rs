@@ -23,11 +23,7 @@ async fn join_team() {
                     "some_mail@mail.com",
                     "pwd",
                     &[],
-                    &[
-                        Capability::TeamsRead,
-                        Capability::UsersTeamsRead,
-                        Capability::UsersTeamsWrite,
-                    ],
+                    &[Capability::UsersTeamsRead, Capability::UsersTeamsWrite],
                     &con,
                 );
 
@@ -88,11 +84,7 @@ async fn leave_team() {
                     "some_mail@mail.com",
                     "pwd",
                     &[("", &[], 0, true)],
-                    &[
-                        Capability::TeamsRead,
-                        Capability::UsersTeamsRead,
-                        Capability::UsersTeamsWrite,
-                    ],
+                    &[Capability::UsersTeamsRead, Capability::UsersTeamsWrite],
                     &con,
                 );
 
@@ -163,7 +155,7 @@ async fn change_user_teams_rank() {
                         ("slug1", &[], 2, true),
                         ("slug2", &[], 0, true),
                     ],
-                    &[Capability::TeamsRead, Capability::UsersTeamsWrite],
+                    &[Capability::UsersTeamsWrite],
                     &con,
                 );
 

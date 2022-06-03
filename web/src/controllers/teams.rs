@@ -29,8 +29,6 @@ use crate::{
 
 #[get("/go/teams")]
 pub fn list_teams(user: User, pool: &State<DbPool>) -> Result<Template, (Status, Template)> {
-    user.should_have_capability(Capability::TeamsRead)?;
-
     let conn = pool.get().map_err(AppError::from)?;
     let mut teams: Vec<TeamForOptUser> = dsl::teams
         .left_join(
@@ -187,8 +185,6 @@ pub fn show_team(
     user: User,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
-    user.should_have_capability(Capability::TeamsRead)?;
-
     let conn = pool.get().map_err(AppError::from)?;
 
     let team_with_user_if_some: Option<TeamForUserIfSome> = teams::table

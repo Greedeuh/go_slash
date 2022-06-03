@@ -61,7 +61,6 @@ pub struct UserTeam {
 #[sql_type = "diesel::sql_types::Text"]
 pub enum Capability {
     Features,
-    TeamsRead,
     TeamsWrite,
     TeamsWriteWithValidation,
     UsersTeamsRead,
@@ -118,7 +117,6 @@ impl Capability {
     pub fn all() -> Vec<Capability> {
         vec![
             Capability::Features,
-            Capability::TeamsRead,
             Capability::TeamsWrite,
             Capability::TeamsWriteWithValidation,
             Capability::UsersTeamsRead,

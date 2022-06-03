@@ -75,7 +75,7 @@ async fn as_admin_i_can_see_the_list() {
                     "another_mail@mail.com",
                     "pwd",
                     &[],
-                    &[Capability::TeamsRead],
+                    &[Capability::TeamsWrite],
                     &con,
                 );
 
@@ -98,8 +98,7 @@ async fn as_admin_i_can_see_the_list() {
 
                 let expeted_capabilities = vec![
                     ("false", Capability::Features),
-                    ("true", Capability::TeamsRead),
-                    ("false", Capability::TeamsWrite),
+                    ("true", Capability::TeamsWrite),
                     ("false", Capability::TeamsWriteWithValidation),
                     ("false", Capability::UsersAdmin),
                     ("false", Capability::UsersTeamsRead),
@@ -142,13 +141,7 @@ async fn as_admin_i_can_change_users_capabilities() {
                     &[Capability::UsersAdmin],
                     &con,
                 );
-                user(
-                    "another_mail@mail.com",
-                    "pwd",
-                    &[],
-                    &[Capability::TeamsRead],
-                    &con,
-                );
+                user("another_mail@mail.com", "pwd", &[], &[], &con);
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))

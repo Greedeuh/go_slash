@@ -36,13 +36,7 @@ fn show_public_team_require_user_with_capabilities() {
 fn show_team_that_do_not_exit_return_404() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
 
-    user(
-        "some_mail@mail.com",
-        "pwd",
-        &[],
-        &[Capability::TeamsRead],
-        &conn,
-    );
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
 
     let response = client
         .get("/go/teams/slug1")
@@ -57,13 +51,7 @@ fn show_private_team_user_not_in_return_404() {
     let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
     team("slug1", "team1", true, true, &conn);
 
-    user(
-        "some_mail@mail.com",
-        "pwd",
-        &[],
-        &[Capability::TeamsRead],
-        &conn,
-    );
+    user("some_mail@mail.com", "pwd", &[], &[], &conn);
 
     let response = client
         .get("/go/teams/slug1")
@@ -94,13 +82,7 @@ async fn show_team_with_shortcuts() {
                     &conn,
                 );
 
-                user(
-                    "some_mail@mail.com",
-                    "pwd",
-                    &[],
-                    &[Capability::TeamsRead],
-                    &conn,
-                );
+                user("some_mail@mail.com", "pwd", &[], &[], &conn);
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
@@ -149,7 +131,7 @@ async fn show_team_user_can_edit() {
                     "some_mail@mail.com",
                     "pwd",
                     &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
-                    &[Capability::TeamsRead],
+                    &[],
                     &conn,
                 );
 
@@ -188,7 +170,7 @@ async fn show_team_admin_can_edit() {
                     "some_mail@mail.com",
                     "pwd",
                     &[],
-                    &[Capability::TeamsRead, Capability::TeamsWrite],
+                    &[Capability::TeamsWrite],
                     &conn,
                 );
 
