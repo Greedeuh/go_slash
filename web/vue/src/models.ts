@@ -7,6 +7,8 @@ export type Capability =
   | "UsersTeamsRead"
   | "UsersTeamsWrite";
 
+export type TeamCapability = "ShortcutsWrite" | "TeamsWrite";
+
 export interface Team {
   slug: string;
   title: string;
@@ -16,7 +18,7 @@ export interface Team {
 }
 
 export interface UserTeamLink {
-  is_admin: boolean;
+  capabilities: TeamCapability[];
   is_accepted: boolean;
   rank: number;
   rank_modified?: boolean;
@@ -41,4 +43,9 @@ export const ALL_CAPABILITIES = [
   "UsersAdmin",
   "UsersTeamsRead",
   "UsersTeamsWrite",
-].sort();
+].sort() as Capability[];
+
+export const ALL_TEAM_CAPABILITIES = [
+  "ShortcutsWrite",
+  "TeamsWrite",
+].sort() as TeamCapability[];

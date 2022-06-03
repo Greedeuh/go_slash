@@ -1,4 +1,4 @@
-use diesel::{deserialize, prelude::*, serialize, Identifiable};
+use diesel::{deserialize, dsl::count, prelude::*, serialize, Identifiable};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use strum_macros::{Display, EnumString};
@@ -126,4 +126,29 @@ pub fn teams_with_shortcut_write(user: &User, conn: &DbConn) -> Result<Vec<Team>
         .select(TEAM_COLUMNS)
         .load::<Team>(conn)
         .map_err(AppError::from)
+}
+
+pub fn user_should_have_team_capability(
+    user: &User,
+    team_slug: &str,
+    conn: &DbConn,
+    capability: TeamCapability,
+) -> Result<(), AppError> {
+    if users_teams::table
+        .find((&user.mail, &team_slug))
+        .filter(users_teams::capabilities.contains(vec![capability]))
+        .filter(users_teams::is_accepted)
+        .select(count(users_teams::user_mail))
+        .first::<i64>(conn)
+        .map_err(AppError::from)?
+        == 0
+    {
+        error!(
+            "User {} miss capability or team capability ShortcutsWrite on team {}",
+            user.mail, team_slug
+        );
+        Err(AppError::Unauthorized)
+    } else {
+        Ok(())
+    }
 }

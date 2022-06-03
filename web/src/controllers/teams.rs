@@ -12,7 +12,8 @@ use crate::{
     models::{
         shortcuts::Shortcut,
         teams::{
-            teams_with_shortcut_write, Team, TeamCapability, TeamForOptUser, TeamForUserIfSome,
+            teams_with_shortcut_write, user_should_have_team_capability, Team, TeamCapability,
+            TeamForOptUser, TeamForUserIfSome,
         },
         users::{Capability, User, UserTeam},
         AppError,
@@ -68,9 +69,12 @@ pub fn delete_team(
 
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    user.should_have_capability(Capability::TeamsWrite)?;
-
     let conn = pool.get().map_err(AppError::from)?;
+
+    if !user.have_capability(Capability::TeamsWrite) {
+        user_should_have_team_capability(&user, &team, &conn, TeamCapability::TeamsWrite)?;
+    }
+
     diesel::delete(teams::table.find(team))
         .execute(&conn)
         .map_err(AppError::from)?;

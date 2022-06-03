@@ -120,10 +120,7 @@ export default defineComponent({
       return shortcuts_fuzzed.length ? shortcuts_fuzzed : this.shortcuts;
     },
     shortcut_write(): boolean {
-      return (
-        this.capabilities.includes("ShortcutsWrite") ||
-        (this.admin_teams !== undefined && this.admin_teams.length > 0)
-      );
+      return this.admin_teams !== undefined && this.admin_teams.length > 0;
     },
   },
   created() {

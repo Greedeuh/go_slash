@@ -12,7 +12,9 @@ use std::path::{Path, PathBuf};
 use crate::models::shortcuts::{
     sorted, NewShortcut, Shortcut, UpdatableShortcut, SHORTCUT_COLUMNS,
 };
-use crate::models::teams::{teams_with_shortcut_write, TeamCapability};
+use crate::models::teams::{
+    teams_with_shortcut_write, user_should_have_team_capability, TeamCapability,
+};
 use crate::models::users::User;
 use crate::models::AppError;
 use crate::schema::shortcuts::dsl;
@@ -157,7 +159,7 @@ pub fn put_shortcut(
     let conn = pool.get().map_err(AppError::from)?;
 
     team_should_be_accepted(&team_slug, &conn)?;
-    user_should_have_shortcut_write_for_team(&user, &team_slug, &conn)?;
+    user_should_have_team_capability(&user, &team_slug, &conn, TeamCapability::ShortcutsWrite)?;
 
     diesel::insert_into(shortcuts::table)
         .values(NewShortcut {
@@ -193,7 +195,7 @@ pub fn delete_shortcut(
     let conn = pool.get().map_err(AppError::from)?;
 
     team_should_be_accepted(&team_slug, &conn)?;
-    user_should_have_shortcut_write_for_team(&user, &team_slug, &conn)?;
+    user_should_have_team_capability(&user, &team_slug, &conn, TeamCapability::ShortcutsWrite)?;
 
     diesel::delete(shortcuts::table)
         .filter(dsl::shortcut.eq(shortcut).and(dsl::team_slug.eq(team_slug)))
@@ -231,28 +233,4 @@ fn team_should_be_accepted(team_slug: &str, conn: &DbConn) -> Result<(), AppErro
         return Err(AppError::Unauthorized);
     }
     Ok(())
-}
-
-fn user_should_have_shortcut_write_for_team(
-    user: &User,
-    team_slug: &str,
-    conn: &DbConn,
-) -> Result<(), AppError> {
-    if users_teams::table
-        .find((&user.mail, &team_slug))
-        .filter(users_teams::capabilities.contains(vec![TeamCapability::ShortcutsWrite]))
-        .filter(users_teams::is_accepted)
-        .select(count(users_teams::user_mail))
-        .first::<i64>(conn)
-        .map_err(AppError::from)?
-        == 0
-    {
-        error!(
-            "User {} miss capability or team capability ShortcutsWrite on team {}",
-            user.mail, team_slug
-        );
-        Err(AppError::Unauthorized)
-    } else {
-        Ok(())
-    }
 }

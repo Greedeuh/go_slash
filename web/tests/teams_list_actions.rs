@@ -90,265 +90,309 @@ async fn as_admin_accept_team() {
     .await;
 }
 
-#[async_test]
-async fn as_admin_delete_team() {
-    in_browser(
-        "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
-            async move {
-                let con = con.lock().await;
-                team("slug1", "team1", false, false, &con);
-                user(
-                    "some_mail@mail.com",
-                    "pwd",
-                    &[("slug1", &[], 1, true)],
-                    &[Capability::TeamsRead, Capability::TeamsWrite],
-                    &con,
-                );
+mod delete {
+    use super::*;
 
-                driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
-                    .await?;
+    #[async_test]
+    async fn as_admin() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let con = con.lock().await;
+                    team("slug1", "team1", false, false, &con);
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[], 1, true)],
+                        &[Capability::TeamsRead, Capability::TeamsWrite],
+                        &con,
+                    );
 
-                driver
-                    .get(format!("http://localhost:{}/go/teams", port))
-                    .await?;
+                    delete_team(driver, port).await;
 
-                assert!(driver
-                    .find_element(By::Css("button[aria-label='Delete team']"))
-                    .await
-                    .is_err());
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
 
-                driver
-                    .find_element(By::Css("button[aria-label='Administrate']"))
-                    .await?
-                    .click()
-                    .await?;
+    #[async_test]
+    async fn as_teamate() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let con = con.lock().await;
+                    team("slug1", "team1", false, false, &con);
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[TeamCapability::TeamsWrite], 1, true)],
+                        &[Capability::TeamsRead],
+                        &con,
+                    );
 
-                assert!(dbg!(
-                    driver
-                        .find_element(By::Css("[role='listitem']"))
-                        .await?
-                        .text()
-                        .await?
-                )
-                .starts_with("team1"));
+                    delete_team(driver, port).await;
 
-                let delete_btn = driver
-                    .find_element(By::Css("button[aria-label='Delete team']"))
-                    .await?;
-                delete_btn.click().await?;
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
 
-                assert!(!dbg!(
-                    driver
-                        .find_element(By::Css("[role='listitem']"))
-                        .await?
-                        .text()
-                        .await?
-                )
-                .starts_with("team1"));
+    async fn delete_team(driver: &WebDriver, port: u16) {
+        driver
+            .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+            .await
+            .unwrap();
 
-                driver
-                    .get(format!("http://localhost:{}/go/teams", port))
-                    .await?;
+        driver
+            .get(format!("http://localhost:{}/go/teams", port))
+            .await
+            .unwrap();
 
-                assert!(!dbg!(
-                    driver
-                        .find_element(By::Css("[role='listitem']"))
-                        .await?
-                        .text()
-                        .await?
-                )
-                .starts_with("team1"));
+        assert!(driver
+            .find_element(By::Css("button[aria-label='Delete team']"))
+            .await
+            .is_err());
 
-                Ok(())
-            }
-            .boxed()
-        },
-    )
-    .await;
-}
+        driver
+            .find_element(By::Css("button[aria-label='Administrate']"))
+            .await
+            .unwrap()
+            .click()
+            .await
+            .unwrap();
 
-#[async_test]
-async fn as_admin_create_team() {
-    in_browser(
-        "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
-            async move {
-                let con = con.lock().await;
-                user(
-                    "some_mail@mail.com",
-                    "pwd",
-                    &[],
-                    &[Capability::TeamsRead, Capability::TeamsWrite],
-                    &con,
-                );
-
-                create_team(driver, port).await?;
-
-                let create_dialog = driver.find_element(By::Css("[role='dialog']")).await?;
-                assert!(dbg!(
-                    create_dialog
-                        .find_element(By::Css("[aria-label='Create team result']"))
-                        .await?
-                        .text()
-                        .await?
-                )
-                .starts_with("Success !"));
-
-                dialog_close_then_open(driver).await;
-
-                assert_create_form_is_empty(driver).await;
-
-                Ok(())
-            }
-            .boxed()
-        },
-    )
-    .await;
-}
-
-#[async_test]
-async fn as_user_create_team() {
-    in_browser(
-        "some_session_id: some_mail@mail.com",
-        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
-            async move {
-                let con = con.lock().await;
-                user(
-                    "some_mail@mail.com",
-                    "pwd",
-                    &[],
-                    &[Capability::TeamsRead, Capability::TeamsWriteWithValidation],
-                    &con,
-                );
-
-                create_team(driver, port).await?;
-
-                let create_dialog = driver.find_element(By::Css("[role='dialog']")).await?;
-                assert!(dbg!(
-                    create_dialog
-                        .find_element(By::Css("[aria-label='Create team result']"))
-                        .await?
-                        .text()
-                        .await?
-                )
-                .starts_with("Success ! Your Admins will now have to validate your team."));
-
-                dialog_close_then_open(driver).await;
-
-                assert_create_form_is_empty(driver).await;
-
-                Ok(())
-            }
-            .boxed()
-        },
-    )
-    .await;
-}
-
-async fn create_team(driver: &WebDriver, port: u16) -> Result<(), WebDriverError> {
-    driver
-        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
-        .await?;
-
-    driver
-        .get(format!("http://localhost:{}/go/teams", port))
-        .await?;
-
-    assert!(
-        !driver
-            .find_element(By::Css("[role='dialog']"))
-            .await?
-            .is_displayed()
-            .await?
-    );
-
-    let create_btn = driver
-        .find_element(By::Css("button[aria-label='Start creating team']"))
-        .await?;
-    assert_eq!(create_btn.text().await?, "Create");
-    create_btn.click().await?;
-
-    let create_dialog = driver.find_element(By::Css("[role='dialog']")).await?;
-    create_dialog.wait_until().displayed().await?;
-    assert_eq!(
-        create_dialog
-            .find_element(By::Tag("h5"))
-            .await?
+        assert!(dbg!(driver
+            .find_element(By::Css("[role='listitem']"))
+            .await
+            .unwrap()
             .text()
-            .await?,
-        "Create team"
-    );
+            .await
+            .unwrap())
+        .starts_with("team1"));
 
-    assert_create_form_is_empty(driver).await;
+        let delete_btn = driver
+            .find_element(By::Css("button[aria-label='Delete team']"))
+            .await
+            .unwrap();
+        delete_btn.click().await.unwrap();
 
-    create_dialog
-        .find_element(By::Name("slug"))
-        .await?
-        .send_keys("slug1")
-        .await?;
+        assert!(!dbg!(driver
+            .find_element(By::Css("[role='listitem']"))
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap())
+        .starts_with("team1"));
 
-    create_dialog
-        .find_element(By::Name("title"))
-        .await?
-        .send_keys("title1")
-        .await?;
+        driver
+            .get(format!("http://localhost:{}/go/teams", port))
+            .await
+            .unwrap();
 
-    create_dialog
-        .find_element(By::Name("is_private"))
-        .await?
-        .click()
-        .await?;
-
-    create_dialog
-        .find_element(By::Css("button[aria-label='Create team']"))
-        .await?
-        .click()
-        .await?;
-
-    let teams = driver
-        .find_elements(By::Css("[aria-label='User teams'] span"))
-        .await?;
-    assert_eq!(teams.last().unwrap().text().await?, "title1");
-
-    Ok(())
+        assert!(!dbg!(driver
+            .find_element(By::Css("[role='listitem']"))
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap())
+        .starts_with("team1"));
+    }
 }
 
-async fn dialog_close_then_open(driver: &WebDriver) {
-    let close = driver
-        .find_element(By::Css("[aria-label='Close']"))
-        .await
-        .unwrap();
-    close.click().await.unwrap();
-    close.wait_until().not_displayed().await.unwrap();
+mod create {
+    use super::*;
 
-    driver
-        .find_element(By::Css("button[aria-label='Start creating team']"))
-        .await
-        .unwrap()
-        .click()
-        .await
-        .unwrap();
+    #[async_test]
+    async fn as_admin() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let con = con.lock().await;
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[],
+                        &[Capability::TeamsRead, Capability::TeamsWrite],
+                        &con,
+                    );
 
-    close.wait_until().displayed().await.unwrap();
-}
+                    create_team(driver, port).await?;
 
-async fn assert_create_form_is_empty(driver: &WebDriver) {
-    let slug = driver.find_element(By::Name("slug")).await.unwrap();
-    assert!(slug.is_displayed().await.unwrap());
-    assert_eq!(None, slug.value().await.unwrap());
+                    let create_dialog = driver.find_element(By::Css("[role='dialog']")).await?;
+                    assert!(dbg!(
+                        create_dialog
+                            .find_element(By::Css("[aria-label='Create team result']"))
+                            .await?
+                            .text()
+                            .await?
+                    )
+                    .starts_with("Success !"));
 
-    let title = driver.find_element(By::Name("title")).await.unwrap();
-    assert!(title.is_displayed().await.unwrap());
-    assert_eq!(None, title.value().await.unwrap());
+                    dialog_close_then_open(driver).await;
 
-    let is_private = driver.find_element(By::Name("is_private")).await.unwrap();
-    assert!(is_private.is_displayed().await.unwrap());
-    assert_eq!(
-        Some("false".to_string()),
-        is_private.get_property("checked").await.unwrap()
-    );
+                    assert_create_form_is_empty(driver).await;
+
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
+
+    #[async_test]
+    async fn as_user() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let con = con.lock().await;
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[],
+                        &[Capability::TeamsRead, Capability::TeamsWriteWithValidation],
+                        &con,
+                    );
+
+                    create_team(driver, port).await?;
+
+                    let create_dialog = driver.find_element(By::Css("[role='dialog']")).await?;
+                    assert!(dbg!(
+                        create_dialog
+                            .find_element(By::Css("[aria-label='Create team result']"))
+                            .await?
+                            .text()
+                            .await?
+                    )
+                    .starts_with("Success ! Your Admins will now have to validate your team."));
+
+                    dialog_close_then_open(driver).await;
+
+                    assert_create_form_is_empty(driver).await;
+
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
+
+    async fn create_team(driver: &WebDriver, port: u16) -> Result<(), WebDriverError> {
+        driver
+            .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+            .await?;
+
+        driver
+            .get(format!("http://localhost:{}/go/teams", port))
+            .await?;
+
+        assert!(
+            !driver
+                .find_element(By::Css("[role='dialog']"))
+                .await?
+                .is_displayed()
+                .await?
+        );
+
+        let create_btn = driver
+            .find_element(By::Css("button[aria-label='Start creating team']"))
+            .await?;
+        assert_eq!(create_btn.text().await?, "Create");
+        create_btn.click().await?;
+
+        let create_dialog = driver.find_element(By::Css("[role='dialog']")).await?;
+        create_dialog.wait_until().displayed().await?;
+        assert_eq!(
+            create_dialog
+                .find_element(By::Tag("h5"))
+                .await?
+                .text()
+                .await?,
+            "Create team"
+        );
+
+        assert_create_form_is_empty(driver).await;
+
+        create_dialog
+            .find_element(By::Name("slug"))
+            .await?
+            .send_keys("slug1")
+            .await?;
+
+        create_dialog
+            .find_element(By::Name("title"))
+            .await?
+            .send_keys("title1")
+            .await?;
+
+        create_dialog
+            .find_element(By::Name("is_private"))
+            .await?
+            .click()
+            .await?;
+
+        create_dialog
+            .find_element(By::Css("button[aria-label='Create team']"))
+            .await?
+            .click()
+            .await?;
+
+        let teams = driver
+            .find_elements(By::Css("[aria-label='User teams'] span"))
+            .await?;
+        assert_eq!(teams.last().unwrap().text().await?, "title1");
+
+        Ok(())
+    }
+
+    async fn dialog_close_then_open(driver: &WebDriver) {
+        let close = driver
+            .find_element(By::Css("[aria-label='Close']"))
+            .await
+            .unwrap();
+        close.click().await.unwrap();
+        close.wait_until().not_displayed().await.unwrap();
+
+        driver
+            .find_element(By::Css("button[aria-label='Start creating team']"))
+            .await
+            .unwrap()
+            .click()
+            .await
+            .unwrap();
+
+        close.wait_until().displayed().await.unwrap();
+    }
+
+    async fn assert_create_form_is_empty(driver: &WebDriver) {
+        let slug = driver.find_element(By::Name("slug")).await.unwrap();
+        assert!(slug.is_displayed().await.unwrap());
+        assert_eq!(None, slug.value().await.unwrap());
+
+        let title = driver.find_element(By::Name("title")).await.unwrap();
+        assert!(title.is_displayed().await.unwrap());
+        assert_eq!(None, title.value().await.unwrap());
+
+        let is_private = driver.find_element(By::Name("is_private")).await.unwrap();
+        assert!(is_private.is_displayed().await.unwrap());
+        assert_eq!(
+            Some("false".to_string()),
+            is_private.get_property("checked").await.unwrap()
+        );
+    }
 }
 
 mod controller {
@@ -413,6 +457,47 @@ mod controller {
 
             assert_eq!(response.status(), Status::Ok);
             assert!(get_team("slug1", &conn).is_none());
+        }
+
+        #[test]
+        fn as_teamate() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, true, &conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
+                &[],
+                &conn,
+            );
+
+            let response = client
+                .delete("/go/teams/slug1")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Ok);
+            assert!(get_team("slug1", &conn).is_none());
+        }
+
+        #[test]
+        fn as_teamate_not_accepted() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, true, &conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[("slug1", &[TeamCapability::TeamsWrite], 0, false)],
+                &[],
+                &conn,
+            );
+
+            let response = client
+                .delete("/go/teams/slug1")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
         }
     }
 

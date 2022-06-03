@@ -4,14 +4,12 @@
       <div class="alert alert-primary flex-fill m-0" role="alert">
         Drag and drop to prioritize team shortcuts in case of duplicates
       </div>
-      <div
-        v-if="
-          capabilities.includes('TeamsWrite') ||
-          capabilities.includes('TeamsWriteWithValidation')
-        "
-        class="align-self-center"
-      >
+      <div class="align-self-center">
         <button
+          v-if="
+            capabilities.includes('TeamsWrite') ||
+            capabilities.includes('TeamsWriteWithValidation')
+          "
           @click="start_create"
           class="btn btn-lg btn-primary ms-2"
           aria-label="Start creating team"
@@ -22,6 +20,10 @@
           <i class="icon-plus ms-1"></i>
         </button>
         <button
+          v-if="
+            capabilities.includes('TeamsWrite') ||
+            user_teams_capabilities.includes('TeamsWrite')
+          "
           @click="set_administer"
           class="btn btn-lg ms-2"
           :class="{ 'btn-light': !administer, 'btn-secondary': administer }"
@@ -59,12 +61,18 @@
 <script lang="ts">
 import axios from "axios";
 import { defineComponent } from "vue";
-import { Team, UserTeamLink, sort_by_rank } from "../../models";
+import {
+  Team,
+  UserTeamLink,
+  sort_by_rank,
+  TeamCapability,
+  Capability,
+  ALL_TEAM_CAPABILITIES,
+} from "../../models";
 import TeamList from "./TeamList.vue";
 import UserTeamList from "./UserTeamList.vue";
 import _ from "lodash";
 import CreateTeamModal from "./CreateTeamModal.vue";
-import { Capability } from "../../models";
 
 interface Window {
   teams: Team[];
@@ -106,6 +114,11 @@ export default defineComponent({
         return Math.max(rank ?? 0, team.user_link?.rank ?? 0);
       }, 0);
     },
+    user_teams_capabilities(): TeamCapability[] {
+      return this.user_teams.flatMap(
+        (team) => team.user_link?.capabilities ?? []
+      );
+    },
   },
   methods: {
     join(slug: string) {
@@ -115,9 +128,10 @@ export default defineComponent({
           let team = this.teams.find((t) => t.slug === slug);
           if (res.status === 201 && team) {
             team.user_link = {
-              is_admin: false,
               is_accepted: !team.is_private,
               rank: this.next_rank,
+              // TODO: real capacities
+              capabilities: [],
             };
           }
         })
@@ -187,8 +201,8 @@ export default defineComponent({
           ...team,
           user_link: {
             rank: this.next_rank,
-            is_admin: true,
             is_accepted: true,
+            capabilities: ALL_TEAM_CAPABILITIES,
           },
         },
       ];

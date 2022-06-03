@@ -41,7 +41,7 @@ export default defineComponent({
     return { success: false };
   },
   watch: {
-    start_create_count(newVal, oldVal) {
+    start_create_count() {
       this.reset();
     },
   },
