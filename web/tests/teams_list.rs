@@ -13,7 +13,7 @@ use go_web::guards::SESSION_COOKIE;
 use utils::*;
 
 #[async_test]
-async fn layout_with_team_link_if_feature_team() {
+async fn link_are_shown_on_other_pages() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -65,7 +65,7 @@ async fn layout_with_team_link_if_feature_team() {
 }
 
 #[async_test]
-async fn list_teams_with_infos() {
+async fn with_icons() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -139,7 +139,7 @@ async fn list_teams_with_infos() {
 }
 
 #[async_test]
-async fn teams_user_team_then_others() {
+async fn user_team_then_others() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
