@@ -50,7 +50,11 @@
         <i class="icon-check-sign ms-1"></i>
       </button>
       <button
-        v-if="administer"
+        v-if="
+          administer &&
+          (capabilities.includes('TeamsWrite') ||
+            team_capabilities.includes('TeamsWrite'))
+        "
         @click.prevent="delete_team(team.slug)"
         type="button"
         class="btn btn-danger"
@@ -63,15 +67,26 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, PropType } from "vue";
+import { Team, TeamCapability } from "../../models";
 
 export default defineComponent({
   name: "TeamRow",
   props: {
-    team: Object,
+    team: { required: true, type: Object as PropType<Team> },
     administer: Boolean,
+    capabilities: Array,
   },
   emits: ["join", "leave", "delete_team", "accept"],
+  computed: {
+    team_capabilities(): TeamCapability[] {
+      if (this.team.user_link?.is_accepted) {
+        return this.team.user_link.capabilities ?? [];
+      } else {
+        return [];
+      }
+    },
+  },
   methods: {
     join(slug: string) {
       this.$emit("join", slug);

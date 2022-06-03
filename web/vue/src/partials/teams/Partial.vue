@@ -41,6 +41,7 @@
       :administer="administer"
       @delete_team="delete_team"
       @accept="accept"
+      :capabilities="capabilities"
     />
     <TeamList
       aria-label="Other teams"
@@ -49,6 +50,7 @@
       :administer="administer"
       @delete_team="delete_team"
       @accept="accept"
+      :capabilities="capabilities"
     />
     <CreateTeamModal
       :start_create_count="start_create_count"

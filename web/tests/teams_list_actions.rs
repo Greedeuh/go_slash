@@ -120,6 +120,103 @@ mod delete {
     }
 
     #[async_test]
+    async fn as_teamate_without_capability_is_not_allowed() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let con = con.lock().await;
+                    team("slug1", "team1", false, false, &con);
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[], 1, true)],
+                        &[Capability::TeamsRead],
+                        &con,
+                    );
+
+                    driver
+                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .await
+                        .unwrap();
+
+                    driver
+                        .get(format!("http://localhost:{}/go/teams", port))
+                        .await
+                        .unwrap();
+
+                    assert!(driver
+                        .find_element(By::Css("button[aria-label='Delete team']"))
+                        .await
+                        .is_err());
+
+                    assert!(driver
+                        .find_element(By::Css("button[aria-label='Administrate']"))
+                        .await
+                        .is_err());
+
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
+
+    #[async_test]
+    async fn as_teamate_its_only_allowed_for_team_with_capability() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let con = con.lock().await;
+                    team("slug1", "team1", false, false, &con);
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[
+                            ("slug1", &[TeamCapability::TeamsWrite], 1, true),
+                            ("", &[TeamCapability::TeamsWrite], 1, false),
+                        ],
+                        &[Capability::TeamsRead],
+                        &con,
+                    );
+
+                    driver
+                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .await
+                        .unwrap();
+
+                    driver
+                        .get(format!("http://localhost:{}/go/teams", port))
+                        .await
+                        .unwrap();
+
+                    driver
+                        .find_element(By::Css("button[aria-label='Administrate']"))
+                        .await?
+                        .click()
+                        .await?;
+                    assert!(driver
+                        .find_element(By::Css(
+                            "[href='/go/teams/slug1'] [aria-label='Delete team']",
+                        ))
+                        .await
+                        .is_ok());
+                    assert!(driver
+                        .find_element(By::Css("[href='/go/teams/'] [aria-label='Delete team']"))
+                        .await
+                        .is_err());
+
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
+
+    #[async_test]
     async fn as_teamate() {
         in_browser(
             "some_session_id: some_mail@mail.com",

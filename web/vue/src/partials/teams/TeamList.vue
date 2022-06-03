@@ -8,6 +8,7 @@
       :administer="administer"
       @delete_team="delete_team"
       @accept="accept"
+      :capabilities="capabilities"
     />
   </div>
 </template>
@@ -25,6 +26,7 @@ export default defineComponent({
     teams: Array,
     ariaLabel: String,
     administer: Boolean,
+    capabilities: Array,
   },
   emits: ["join", "leave", "delete_team", "accept"],
   methods: {

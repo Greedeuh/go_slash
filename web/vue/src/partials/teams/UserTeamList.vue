@@ -8,6 +8,7 @@
           :administer="administer"
           @delete_team="delete_team"
           @accept="accept"
+          :capabilities="capabilities"
         />
       </template>
     </draggable>
@@ -39,6 +40,7 @@ export default defineComponent({
     teams: { required: true, type: Object as PropType<Team[]> },
     ariaLabel: String,
     administer: Boolean,
+    capabilities: Array,
   },
   emits: ["leave", "change_ranks", "delete_team", "accept"],
   methods: {
