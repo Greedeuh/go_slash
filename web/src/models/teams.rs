@@ -36,6 +36,13 @@ pub struct Team {
     pub is_accepted: bool,
 }
 
+#[derive(Debug, PartialEq, Eq, Serialize)]
+pub struct TeamWithUsers {
+    #[serde(flatten)]
+    pub team: Team,
+    pub user_links: Vec<UserTeam>,
+}
+
 #[derive(Queryable, Serialize)]
 pub struct TeamForOptUser {
     #[serde(flatten)]

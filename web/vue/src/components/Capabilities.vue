@@ -23,17 +23,22 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { ALL_CAPABILITIES } from "../../models";
+import { ALL_CAPABILITIES, ALL_TEAM_CAPABILITIES } from "../models";
 
 export default defineComponent({
-  name: "Partial",
+  name: "Capabilities",
   props: {
     user_capabilities: Array,
+    type: String,
   },
-  data() {
-    return {
-      capabilities: ALL_CAPABILITIES,
-    };
+  computed: {
+    capabilities() {
+      if (this.type === "team") {
+        return ALL_TEAM_CAPABILITIES;
+      } else {
+        return ALL_CAPABILITIES;
+      }
+    },
   },
   emits: ["toggle"],
   methods: {

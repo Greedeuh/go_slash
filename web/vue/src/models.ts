@@ -21,6 +21,7 @@ export interface UserTeamLink {
   is_accepted: boolean;
   rank: number;
   rank_modified?: boolean;
+  user_mail?: string;
 }
 
 export function sort_by_rank(a: Team, b: Team): number {

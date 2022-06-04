@@ -1,5 +1,5 @@
 <template>
-  <div role="list" class="list-group">
+  <div role="list" class="list-group" aria-label="Shortcut list">
     <a
       v-for="(shortcut, i) in shortcuts"
       :href="administer ? shortcut.shortcut + '?no_redirect' : shortcut.url"

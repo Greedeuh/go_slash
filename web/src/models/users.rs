@@ -30,15 +30,13 @@ pub struct UserWithPwd {
     pub capabilities: Vec<Capability>,
 }
 
-#[derive(Identifiable, Queryable, Associations, Insertable, PartialEq, Debug, Serialize)]
+#[derive(Identifiable, Queryable, Associations, Insertable, PartialEq, Debug, Serialize, Eq)]
 #[belongs_to(Team, foreign_key = team_slug)]
 #[belongs_to(User, foreign_key = user_mail)]
 #[table_name = "users_teams"]
 #[primary_key(user_mail, team_slug)]
 pub struct UserTeam {
-    #[serde(skip)]
     pub user_mail: String,
-    #[serde(skip)]
     pub team_slug: String,
     pub capabilities: Vec<TeamCapability>,
     pub is_accepted: bool,

@@ -1,4 +1,8 @@
-use crate::models::{shortcuts::Shortcut, teams::Team, users::User};
+use crate::models::{
+    shortcuts::Shortcut,
+    teams::{Team, TeamWithUsers},
+    users::User,
+};
 
 #[derive(Serialize)]
 pub struct IndexContext {
@@ -7,6 +11,6 @@ pub struct IndexContext {
     pub shortcuts: Vec<Shortcut>,
     pub user: User,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub team: Option<Team>,
+    pub team: Option<TeamWithUsers>,
     pub teams: Vec<Team>,
 }

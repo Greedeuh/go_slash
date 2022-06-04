@@ -13,7 +13,7 @@ use crate::{
         shortcuts::Shortcut,
         teams::{
             teams_with_shortcut_write, user_should_have_team_capability, Team, TeamCapability,
-            TeamForOptUser, TeamForUserIfSome,
+            TeamForOptUser, TeamForUserIfSome, TeamWithUsers,
         },
         users::{Capability, User, UserTeam},
         AppError,
@@ -209,9 +209,17 @@ pub fn show_team(
         .map_err(AppError::from)?;
 
     let team: Team = teams::table
-        .find(slug)
+        .find(&slug)
         .first(&conn)
         .map_err(AppError::from)?;
+
+    let user_links: Vec<UserTeam> = users_teams::table
+        .filter(users_teams::team_slug.eq(slug))
+        .order(users_teams::user_mail)
+        .load(&conn)
+        .map_err(AppError::from)?;
+
+    let team = TeamWithUsers { team, user_links };
 
     Ok(Template::render(
         "index",

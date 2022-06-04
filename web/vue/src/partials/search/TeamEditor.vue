@@ -1,46 +1,51 @@
 <template>
-  <form @submit.prevent="save" class="bg-light border rounded mb-4 p-4">
-    <div class="input-group mb-2">
-      <span class="input-group-text" id="basic-addon1">Title</span>
-      <input
-        type="text"
-        class="form-control"
-        name="title"
-        v-model="inner_team.title"
-      />
-    </div>
-    <div class="form-check form-switch">
-      <input
-        class="form-check-input"
-        type="checkbox"
-        role="switch"
-        name="is_private"
-        v-model="inner_team.is_private"
-      />
-      <label class="form-check-label" for="flexSwitchCheckDefault"
-        >Private</label
-      >
-    </div>
-    <div class="form-check form-switch">
-      <input
-        class="form-check-input"
-        type="checkbox"
-        role="switch"
-        name="is_accepted"
-        v-model="inner_team.is_accepted"
-      />
-      <label class="form-check-label" for="flexSwitchCheckDefault"
-        >Enable</label
-      >
-    </div>
-    <input type="submit" class="btn btn-primary mt-2" value="Save" />
-  </form>
+  <div aria-label="Team editor">
+    <form @submit.prevent="save" class="bg-light border rounded mb-4 p-4">
+      <div class="input-group mb-2">
+        <span class="input-group-text" id="basic-addon1">Title</span>
+        <input
+          type="text"
+          class="form-control"
+          name="title"
+          v-model="inner_team.title"
+        />
+      </div>
+      <div class="form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          role="switch"
+          name="is_private"
+          v-model="inner_team.is_private"
+        />
+        <label class="form-check-label" for="flexSwitchCheckDefault"
+          >Private</label
+        >
+      </div>
+      <div class="form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          role="switch"
+          name="is_accepted"
+          v-model="inner_team.is_accepted"
+        />
+        <label class="form-check-label" for="flexSwitchCheckDefault"
+          >Enable</label
+        >
+      </div>
+      <input type="submit" class="btn btn-primary mt-2" value="Save" />
+    </form>
+    <UserList :user_links="team.user_links" @toggle="toggle" />
+  </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
 import _ from "lodash";
-import { Team } from "../../models";
+import { Team, TeamCapability, UserTeamLink } from "../../models";
+import UserList from "./UserList.vue";
+import axios from "axios";
 
 interface Data {
   inner_team: Team;
@@ -48,6 +53,9 @@ interface Data {
 
 export default defineComponent({
   name: "TeamEditor",
+  components: {
+    UserList,
+  },
   props: {
     team: { required: true, type: Object as PropType<Team> },
   },
@@ -71,6 +79,35 @@ export default defineComponent({
 
       if (Object.keys(team).length !== 0) {
         this.$emit("save", { slug: this.team.slug, team });
+      }
+    },
+
+    toggle(
+      user_link: UserTeamLink,
+      { capability, value }: { capability: TeamCapability; value: boolean }
+    ) {
+      if (value) {
+        axios
+          .put(
+            `/go/teams/${this.team.slug}/users/${user_link.user_mail}/capabilities/${capability}`
+          )
+          .then((res) => {
+            if (res.status === 200) {
+              user_link.capabilities = [...user_link.capabilities, capability];
+            }
+          });
+      } else {
+        axios
+          .delete(
+            `/go/teams/${this.team.slug}/users/${user_link.user_mail}/capabilities/${capability}`
+          )
+          .then((res) => {
+            if (res.status === 200) {
+              user_link.capabilities = user_link.capabilities.filter(
+                (c) => c !== capability
+              );
+            }
+          });
       }
     },
   },

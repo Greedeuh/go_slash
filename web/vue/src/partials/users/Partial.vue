@@ -33,7 +33,7 @@
 import axios from "axios";
 import { defineComponent } from "vue";
 import { Capability, User } from "../../models";
-import Capabilities from "./Capabilities.vue";
+import Capabilities from "../../components/Capabilities.vue";
 
 interface Window {
   context: {

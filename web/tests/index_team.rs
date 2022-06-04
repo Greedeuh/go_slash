@@ -63,6 +63,55 @@ mod edit_team {
     use super::*;
 
     #[async_test]
+    async fn without_capabilities_is_not_authorized() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let conn = con.lock().await;
+                    team("slug1", "team1", false, true, &conn);
+                    shortcut(
+                        "newShortcut",
+                        &format!("http://localhost:{}/looped", port),
+                        "slug1",
+                        &conn,
+                    );
+                    shortcut(
+                        "newShortcut2",
+                        &format!("http://localhost:{}/claude", port),
+                        "slug1",
+                        &conn,
+                    );
+
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
+                        &[],
+                        &conn,
+                    );
+
+                    driver
+                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .await?;
+                    driver
+                        .get(format!("http://localhost:{}/go/teams/slug1", port))
+                        .await?;
+
+                    assert!(driver
+                        .find_element(By::Css("aria-label='Team editor'"))
+                        .await
+                        .is_err());
+
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
+
+    #[async_test]
     async fn as_teamate_can_edit() {
         in_browser(
             "some_session_id: some_mail@mail.com",
@@ -215,6 +264,200 @@ mod edit_team {
         }
 
         Ok(())
+    }
+}
+
+mod edit_user_team_link {
+    use super::*;
+
+    #[async_test]
+    async fn list_user() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let con = con.lock().await;
+                    team("slug1", "team1", false, true, &con);
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[], 0, true)],
+                        &[Capability::UsersAdmin],
+                        &con,
+                    );
+                    user(
+                        "another_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[], 0, true)],
+                        &[],
+                        &con,
+                    );
+
+                    driver
+                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .await?;
+
+                    driver
+                        .get(format!("http://localhost:{}/go/teams/slug1", port))
+                        .await?;
+
+                    let expected_users = vec!["another_mail@mail.com", "some_mail@mail.com"];
+
+                    let users = driver
+                        .find_elements(By::Css("[role='listitem'] h2"))
+                        .await
+                        .unwrap();
+                    for i in 0..expected_users.len() {
+                        assert_eq!(users[i].text().await.unwrap(), expected_users[i]);
+                    }
+
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
+
+    #[async_test]
+    async fn edit_user_capability_as_admin() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let con = con.lock().await;
+                    team("slug1", "team1", false, true, &con);
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[],
+                        &[Capability::TeamsWrite],
+                        &con,
+                    );
+                    user(
+                        "another_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[], 0, true)],
+                        &[],
+                        &con,
+                    );
+
+                    toggle_capability(driver, port).await;
+
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
+
+    #[async_test]
+    async fn edit_user_capability_as_teamate() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let con = con.lock().await;
+                    team("slug1", "team1", false, true, &con);
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
+                        &[],
+                        &con,
+                    );
+                    user(
+                        "another_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[], 0, true)],
+                        &[],
+                        &con,
+                    );
+
+                    toggle_capability(driver, port).await;
+
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
+
+    async fn toggle_capability(driver: &WebDriver, port: u16) {
+        driver
+            .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+            .await
+            .unwrap();
+
+        driver
+            .get(format!("http://localhost:{}/go/teams/slug1", port))
+            .await
+            .unwrap();
+
+        let user = driver
+            .find_element(By::Css("[aria-label='User list'] [role='listitem']"))
+            .await
+            .unwrap();
+        user.click().await.unwrap();
+
+        let switchs = user
+            .find_elements(By::Css("[role='switch']"))
+            .await
+            .unwrap();
+        let switch = switchs.first().unwrap();
+        let switchs_label = user.find_elements(By::Tag("label")).await.unwrap();
+        let switch_label = switchs_label.first().unwrap();
+
+        switch_label.wait_until().displayed().await.unwrap();
+        assert_eq!(
+            switch_label.text().await.unwrap(),
+            TeamCapability::ShortcutsWrite.to_string()
+        );
+        assert_eq!(
+            switch.get_property("checked").await.unwrap().unwrap(),
+            "false"
+        );
+
+        switch.click().await.unwrap();
+        assert_eq!(
+            switch.get_property("checked").await.unwrap().unwrap(),
+            "true"
+        );
+
+        driver
+            .get(format!("http://localhost:{}/go/teams/slug1", port))
+            .await
+            .unwrap();
+
+        driver
+            .find_element(By::Css("[aria-label='User list'] [role='listitem']"))
+            .await
+            .unwrap()
+            .click()
+            .await
+            .unwrap();
+
+        let switchs = driver
+            .find_elements(By::Css(
+                "[aria-label='User list'] [role='listitem'] [role='switch']",
+            ))
+            .await
+            .unwrap();
+        let switch = &switchs[0];
+
+        switch.wait_until().displayed().await.unwrap();
+        assert_eq!(
+            switch.get_property("checked").await.unwrap().unwrap(),
+            "true"
+        );
+
+        switch.click().await.unwrap();
+        assert_eq!(
+            switch.get_property("checked").await.unwrap().unwrap(),
+            "false"
+        );
     }
 }
 mod controller {
