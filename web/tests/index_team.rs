@@ -59,6 +59,55 @@ async fn as_user() {
     .await;
 }
 
+#[async_test]
+async fn list_user() {
+    in_browser(
+        "some_session_id: some_mail@mail.com",
+        |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+            async move {
+                let con = con.lock().await;
+                team("slug1", "team1", false, true, &con);
+                user(
+                    "some_mail@mail.com",
+                    "pwd",
+                    &[("slug1", &[], 0, true)],
+                    &[Capability::TeamsWrite],
+                    &con,
+                );
+                user(
+                    "another_mail@mail.com",
+                    "pwd",
+                    &[("slug1", &[], 0, true)],
+                    &[],
+                    &con,
+                );
+
+                driver
+                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .await?;
+
+                driver
+                    .get(format!("http://localhost:{}/go/teams/slug1", port))
+                    .await?;
+
+                let expected_users = vec!["another_mail@mail.com", "some_mail@mail.com"];
+
+                let users = driver
+                    .find_elements(By::Css("[role='listitem'] h2"))
+                    .await
+                    .unwrap();
+                for i in 0..expected_users.len() {
+                    assert_eq!(users[i].text().await.unwrap(), expected_users[i]);
+                }
+
+                Ok(())
+            }
+            .boxed()
+        },
+    )
+    .await;
+}
+
 mod edit_team {
     use super::*;
 
@@ -86,7 +135,7 @@ mod edit_team {
                     user(
                         "some_mail@mail.com",
                         "pwd",
-                        &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
+                        &[("slug1", &[], 0, true)],
                         &[],
                         &conn,
                     );
@@ -99,7 +148,7 @@ mod edit_team {
                         .await?;
 
                     assert!(driver
-                        .find_element(By::Css("aria-label='Team editor'"))
+                        .find_element(By::Css("[aria-label='Team editor']"))
                         .await
                         .is_err());
 
@@ -269,55 +318,6 @@ mod edit_team {
 
 mod edit_user_team_link {
     use super::*;
-
-    #[async_test]
-    async fn list_user() {
-        in_browser(
-            "some_session_id: some_mail@mail.com",
-            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
-                async move {
-                    let con = con.lock().await;
-                    team("slug1", "team1", false, true, &con);
-                    user(
-                        "some_mail@mail.com",
-                        "pwd",
-                        &[("slug1", &[], 0, true)],
-                        &[Capability::UsersAdmin],
-                        &con,
-                    );
-                    user(
-                        "another_mail@mail.com",
-                        "pwd",
-                        &[("slug1", &[], 0, true)],
-                        &[],
-                        &con,
-                    );
-
-                    driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
-                        .await?;
-
-                    driver
-                        .get(format!("http://localhost:{}/go/teams/slug1", port))
-                        .await?;
-
-                    let expected_users = vec!["another_mail@mail.com", "some_mail@mail.com"];
-
-                    let users = driver
-                        .find_elements(By::Css("[role='listitem'] h2"))
-                        .await
-                        .unwrap();
-                    for i in 0..expected_users.len() {
-                        assert_eq!(users[i].text().await.unwrap(), expected_users[i]);
-                    }
-
-                    Ok(())
-                }
-                .boxed()
-            },
-        )
-        .await;
-    }
 
     #[async_test]
     async fn edit_user_capability_as_admin() {
@@ -568,6 +568,166 @@ mod kick_user {
     }
 }
 
+mod accept_user {
+    use super::*;
+
+    #[async_test]
+    async fn already_accepted_cant_be_reaccepted() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let con = con.lock().await;
+                    team("slug1", "team1", false, true, &con);
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[],
+                        &[Capability::TeamsWrite],
+                        &con,
+                    );
+                    user(
+                        "another_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[], 0, true)],
+                        &[],
+                        &con,
+                    );
+
+                    driver
+                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .await
+                        .unwrap();
+
+                    driver
+                        .get(format!("http://localhost:{}/go/teams/slug1", port))
+                        .await
+                        .unwrap();
+
+                    assert!(driver
+                        .find_element(By::Css("[aria-label='Accept candidature']"))
+                        .await
+                        .is_err());
+
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
+
+    #[async_test]
+    async fn as_admin() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let con = con.lock().await;
+                    team("slug1", "team1", false, true, &con);
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[],
+                        &[Capability::TeamsWrite],
+                        &con,
+                    );
+                    user(
+                        "another_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[], 0, false)],
+                        &[],
+                        &con,
+                    );
+
+                    accept_candidature(driver, port).await;
+
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
+
+    #[async_test]
+    async fn as_teamate() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let con = con.lock().await;
+                    team("slug1", "team1", false, true, &con);
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
+                        &[],
+                        &con,
+                    );
+                    user(
+                        "another_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[], 0, false)],
+                        &[],
+                        &con,
+                    );
+
+                    accept_candidature(driver, port).await;
+
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
+
+    async fn accept_candidature(driver: &WebDriver, port: u16) {
+        driver
+            .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+            .await
+            .unwrap();
+
+        driver
+            .get(format!("http://localhost:{}/go/teams/slug1", port))
+            .await
+            .unwrap();
+
+        driver
+            .find_element(By::Css("[role='listitem'] h2"))
+            .await
+            .unwrap()
+            .click()
+            .await
+            .unwrap();
+
+        let accept_button = driver
+            .find_element(By::Css("[aria-label='Accept candidature']"))
+            .await
+            .unwrap();
+
+        accept_button.wait_until().displayed().await.unwrap();
+
+        assert_eq!("Accept candidature", accept_button.text().await.unwrap());
+        accept_button.click().await.unwrap();
+
+        assert!(driver
+            .find_element(By::Css("[aria-label='Accept candidature']"))
+            .await
+            .is_err());
+
+        driver
+            .get(format!("http://localhost:{}/go/teams/slug1", port))
+            .await
+            .unwrap();
+        assert!(driver
+            .find_element(By::Css("[aria-label='Accept candidature']"))
+            .await
+            .is_err());
+    }
+}
+
 mod controller {
     use super::*;
 
@@ -699,6 +859,118 @@ mod controller {
             assert_eq!(response.status(), Status::Ok);
 
             assert!(get_user_team_links("other_mail@mail.com", &conn).is_empty());
+        }
+    }
+
+    mod accept_candidature {
+        use super::*;
+
+        #[test]
+        fn without_capability_is_not_allowed() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", true, true, &conn);
+
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[("slug1", &[], 0, true)],
+                &[],
+                &conn,
+            );
+            user(
+                "other_mail@mail.com",
+                "pwd",
+                &[("slug1", &[], 0, false)],
+                &[],
+                &conn,
+            );
+
+            let response = client
+                .put("/go/teams/slug1/users/some_mail@mail.com/is_accepted/true")
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
+
+            let response = client
+                .put("/go/teams/slug1/users/some_mail@mail.com/is_accepted/true")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "other_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
+
+            let response = client
+                .put("/go/teams/slug1/users/some_mail@mail.com/is_accepted/true")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
+        }
+
+        #[test]
+        fn as_admin() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", true, true, &conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[],
+                &[Capability::TeamsWrite],
+                &conn,
+            );
+            user(
+                "other_mail@mail.com",
+                "pwd",
+                &[("slug1", &[], 0, false)],
+                &[],
+                &conn,
+            );
+            let response = client
+                .put("/go/teams/slug1/users/other_mail@mail.com/is_accepted/true")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Ok);
+
+            assert!(
+                get_user_team_links("other_mail@mail.com", &conn)
+                    .first()
+                    .unwrap()
+                    .is_accepted
+            );
+        }
+
+        #[test]
+        fn as_teamate() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", true, true, &conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
+                &[],
+                &conn,
+            );
+            user(
+                "other_mail@mail.com",
+                "pwd",
+                &[("slug1", &[], 0, false)],
+                &[],
+                &conn,
+            );
+
+            let response = client
+                .put("/go/teams/slug1/users/other_mail@mail.com/is_accepted/true")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Ok);
+
+            assert!(
+                get_user_team_links("other_mail@mail.com", &conn)
+                    .first()
+                    .unwrap()
+                    .is_accepted
+            );
         }
     }
 

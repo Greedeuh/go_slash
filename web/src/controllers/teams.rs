@@ -332,3 +332,25 @@ pub fn delete_user_link_capability(
 
     Ok(Status::Ok)
 }
+
+#[put("/go/teams/<team>/users/<mail>/is_accepted/<value>")]
+pub fn put_user_team_acceptation(
+    team: String,
+    mail: String,
+    value: bool,
+    user: User,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Value)> {
+    let conn = pool.get().map_err(AppError::from)?;
+
+    if !user.have_capability(Capability::TeamsWrite) {
+        user_should_have_team_capability(&user, &team, &conn, TeamCapability::TeamsWrite)?;
+    }
+
+    diesel::update(users_teams::table.find((&mail, &team)))
+        .set(users_teams::is_accepted.eq(value))
+        .execute(&conn)
+        .map_err(AppError::from)?;
+
+    Ok(Status::Ok)
+}

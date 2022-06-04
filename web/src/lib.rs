@@ -23,7 +23,7 @@ use controllers::{
     shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut},
     teams::{
         create_team, delete_team, delete_user_link_capability, kick_user, list_teams, patch_team,
-        put_user_link_capability, show_team,
+        put_user_link_capability, put_user_team_acceptation, show_team,
     },
     users::{
         delete_user_capability, join_global_team, join_team, leave_global_team, leave_team,
@@ -106,7 +106,8 @@ pub fn server(
                 login_redirect_google,
                 kick_user,
                 put_user_link_capability,
-                delete_user_link_capability
+                delete_user_link_capability,
+                put_user_team_acceptation
             ],
         )
         .mount("/public", FileServer::from("./public"))

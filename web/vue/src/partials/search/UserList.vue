@@ -27,7 +27,15 @@
           >
             Kick
           </button>
-
+          <button
+            v-if="!user_link.is_accepted"
+            @click="accept(user_link)"
+            type="button"
+            class="btn btn-success"
+            aria-label="Accept candidature"
+          >
+            Accept candidature
+          </button>
           <Capabilities
             :user_capabilities="user_link.capabilities"
             type="team"
@@ -50,13 +58,16 @@ export default defineComponent({
   props: {
     user_links: { required: true, type: Array as PropType<UserTeamLink[]> },
   },
-  emits: ["toggle", "kick"],
+  emits: ["toggle", "kick", "accept"],
   methods: {
     toggle(user_link: UserTeamLink, capability: string) {
       this.$emit("toggle", user_link, capability);
     },
     kick(user_link: UserTeamLink) {
       this.$emit("kick", user_link);
+    },
+    accept(user_link: UserTeamLink) {
+      this.$emit("accept", user_link);
     },
   },
 });

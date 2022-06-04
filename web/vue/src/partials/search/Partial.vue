@@ -3,7 +3,17 @@
     <div v-if="shortcut" role="alert" class="alert alert-warning">
       Shortcut "{{ shortcut.shortcut }}" does not exist yet.
     </div>
-    <TeamEditor v-if="team" :team="team" @save="save_team" />
+    <TeamEditor
+      v-if="
+        team &&
+        (capabilities.includes('TeamsWrite') ||
+          team.user_links.some(
+            (u) => u.user_mail === mail && u.capabilities.includes('TeamsWrite')
+          ))
+      "
+      :team="team"
+      @save="save_team"
+    />
     <SearchBar
       v-model="search"
       @keydown="reset_index_if_letter"
@@ -47,6 +57,7 @@ interface WindowContext {
   shortcut?: Shortcut;
   shortcuts: Shortcut[];
   user?: User;
+  // TODO rename or change => it's team with capability shortcut write
   teams?: Team[];
   team?: Team;
 }
@@ -79,6 +90,7 @@ const CONTROL_KEYS = ["ArrowUp", "ArrowDown", "Enter", "Tab", "Escape"];
 const SHORTCUTS = win.context.shortcuts;
 const SHORTCUT = win.context.shortcut;
 const CAPABILITIES = win.context.user?.capabilities;
+const MAIL = win.context.user?.mail;
 const ADMIN_TEAMS = win.context.teams;
 const TEAM = win.context.team;
 
@@ -94,6 +106,7 @@ interface Data {
   capabilities: Capability[];
   admin_teams?: Team[];
   team?: Team;
+  mail?: string;
 }
 
 export default defineComponent({
@@ -110,6 +123,7 @@ export default defineComponent({
       capabilities: CAPABILITIES ?? [],
       admin_teams: ADMIN_TEAMS,
       team: TEAM,
+      mail: MAIL,
     };
   },
   computed: {
