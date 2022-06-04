@@ -5,8 +5,8 @@ use diesel::{
 use rocket::{http::Status, serde::json::Json, State};
 use rocket_dyn_templates::Template;
 use serde::Deserialize;
-use serde_json::json;
-use std::cmp::Ordering;
+use serde_json::{json, Value};
+use std::{cmp::Ordering, str::FromStr};
 
 use crate::{
     models::{
@@ -226,4 +226,101 @@ pub fn show_team(
             }).to_string()
         }),
     ))
+}
+
+#[delete("/go/teams/<team>/users/<mail>")]
+pub fn kick_user(
+    team: String,
+    mail: String,
+    user: User,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Template)> {
+    let conn = pool.get().map_err(AppError::from)?;
+
+    // should be admin or (part of the team but can't change is_accepted)
+    if !user.have_capability(Capability::TeamsWrite) {
+        user_should_have_team_capability(&user, &team, &conn, TeamCapability::TeamsWrite)?;
+    }
+
+    diesel::delete(users_teams::table.find((mail, team)))
+        .execute(&conn)
+        .map_err(AppError::from)?;
+
+    Ok(Status::Ok)
+}
+
+#[put("/go/teams/<team>/users/<mail>/capabilities/<capability>")]
+pub fn put_user_link_capability(
+    team: String,
+    mail: String,
+    capability: String,
+    user: User,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Value)> {
+    let capability = TeamCapability::from_str(&capability).map_err(|_| AppError::BadRequest)?;
+
+    let conn = pool.get().map_err(AppError::from)?;
+
+    if !user.have_capability(Capability::TeamsWrite) {
+        user_should_have_team_capability(&user, &team, &conn, TeamCapability::TeamsWrite)?;
+    }
+
+    let user_link: UserTeam = users_teams::table
+        .find((&mail, &team))
+        .first(&conn)
+        .map_err(AppError::from)?;
+
+    let mut capabilities = user_link.capabilities;
+    if !capabilities.contains(&capability) {
+        capabilities.push(capability);
+        diesel::update(users_teams::table.find((&mail, &team)))
+            .set(users_teams::capabilities.eq(capabilities))
+            .execute(&conn)
+            .map_err(AppError::from)?;
+    } else {
+        warn!(
+            "User {} already has capability {} on team {}",
+            mail, capability, team
+        );
+    }
+
+    Ok(Status::Ok)
+}
+
+#[delete("/go/teams/<team>/users/<mail>/capabilities/<capability>")]
+pub fn delete_user_link_capability(
+    team: String,
+    mail: String,
+    capability: String,
+    user: User,
+    pool: &State<DbPool>,
+) -> Result<Status, (Status, Value)> {
+    let capability = TeamCapability::from_str(&capability).map_err(|_| AppError::BadRequest)?;
+
+    let conn = pool.get().map_err(AppError::from)?;
+
+    if !user.have_capability(Capability::TeamsWrite) {
+        user_should_have_team_capability(&user, &team, &conn, TeamCapability::TeamsWrite)?;
+    }
+
+    let user_link: UserTeam = users_teams::table
+        .find((&mail, &team))
+        .first(&conn)
+        .map_err(AppError::from)?;
+
+    let mut capabilities = user_link.capabilities;
+    if capabilities.contains(&capability) {
+        capabilities.retain(|&c| c != capability);
+        diesel::update(users_teams::table.find((&mail, &team)))
+            .set(users_teams::capabilities.eq(capabilities))
+            .execute(&conn)
+            .map_err(AppError::from)?;
+    } else {
+        warn!(
+            "User {} already has capability no {} on team {}",
+            mail, capability, team
+        );
+    }
+
+    Ok(Status::Ok)
 }

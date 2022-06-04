@@ -21,7 +21,10 @@ use controllers::{
     login::{google_login, login, login_redirect_google, simple_login},
     settings::{patch_settings, settings},
     shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut},
-    teams::{create_team, delete_team, list_teams, patch_team, show_team},
+    teams::{
+        create_team, delete_team, delete_user_link_capability, kick_user, list_teams, patch_team,
+        put_user_link_capability, show_team,
+    },
     users::{
         delete_user_capability, join_global_team, join_team, leave_global_team, leave_team,
         list_users, put_user_capability, put_user_team_ranks,
@@ -100,7 +103,10 @@ pub fn server(
                 put_user_capability,
                 delete_user_capability,
                 google_login,
-                login_redirect_google
+                login_redirect_google,
+                kick_user,
+                put_user_link_capability,
+                delete_user_link_capability
             ],
         )
         .mount("/public", FileServer::from("./public"))

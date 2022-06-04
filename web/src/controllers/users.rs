@@ -159,7 +159,6 @@ pub fn put_user_capability(
     mail: String,
     capability: String,
     user: User,
-
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
     let capability = Capability::from_str(&capability).map_err(|_| AppError::BadRequest)?;

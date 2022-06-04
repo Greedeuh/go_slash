@@ -266,4 +266,300 @@ mod controller {
 
         assert_eq!(response.status(), Status::NotFound);
     }
+
+    mod kick {
+        use super::*;
+
+        #[test]
+        fn without_capability_is_not_allowed() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", true, true, &conn);
+
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[("slug1", &[], 0, true)],
+                &[],
+                &conn,
+            );
+
+            let response = client
+                .delete("/go/teams/slug1/users/some_mail@mail.com")
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
+
+            let response = client
+                .delete("/go/teams/slug1/users/some_mail@mail.com")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "other_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
+
+            let response = client
+                .delete("/go/teams/slug1/users/some_mail@mail.com")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
+        }
+
+        #[test]
+        fn as_admin() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", true, true, &conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[],
+                &[Capability::TeamsWrite],
+                &conn,
+            );
+            user("other_mail@mail.com", "pwd", &[], &[], &conn);
+
+            let response = client
+                .delete("/go/teams/slug1/users/other_mail@mail.com")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Ok);
+
+            assert!(get_user_team_links("other_mail@mail.com", &conn).is_empty());
+        }
+
+        #[test]
+        fn as_teamate() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", true, true, &conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
+                &[],
+                &conn,
+            );
+            user("other_mail@mail.com", "pwd", &[], &[], &conn);
+
+            let response = client
+                .delete("/go/teams/slug1/users/other_mail@mail.com")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Ok);
+
+            assert!(get_user_team_links("other_mail@mail.com", &conn).is_empty());
+        }
+    }
+
+    mod put_user_capability {
+        use super::*;
+
+        #[test]
+        fn without_capability_is_not_allowed() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", true, true, &conn);
+
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[("slug1", &[], 0, true)],
+                &[],
+                &conn,
+            );
+
+            let response = client
+                .put("/go/teams/slug1/users/some_mail@mail.com/capabilities/TeamsWrite")
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
+
+            let response = client
+                .put("/go/teams/slug1/users/some_mail@mail.com/capabilities/TeamsWrite")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "other_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
+
+            let response = client
+                .put("/go/teams/slug1/users/some_mail@mail.com/capabilities/TeamsWrite")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
+        }
+
+        #[test]
+        fn as_admin() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", true, true, &conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[],
+                &[Capability::TeamsWrite],
+                &conn,
+            );
+            user(
+                "other_mail@mail.com",
+                "pwd",
+                &[("slug1", &[], 0, true)],
+                &[],
+                &conn,
+            );
+
+            let response = client
+                .put("/go/teams/slug1/users/other_mail@mail.com/capabilities/TeamsWrite")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Ok);
+
+            assert_eq!(
+                vec![TeamCapability::TeamsWrite],
+                get_user_team_links("other_mail@mail.com", &conn)
+                    .first()
+                    .unwrap()
+                    .capabilities
+            );
+        }
+
+        #[test]
+        fn as_teamate() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", true, true, &conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
+                &[],
+                &conn,
+            );
+            user(
+                "other_mail@mail.com",
+                "pwd",
+                &[("slug1", &[], 0, true)],
+                &[],
+                &conn,
+            );
+
+            let response = client
+                .put("/go/teams/slug1/users/other_mail@mail.com/capabilities/TeamsWrite")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Ok);
+
+            assert_eq!(
+                vec![TeamCapability::TeamsWrite],
+                get_user_team_links("other_mail@mail.com", &conn)
+                    .first()
+                    .unwrap()
+                    .capabilities
+            );
+        }
+    }
+
+    mod delete_user_capability {
+        use super::*;
+
+        #[test]
+        fn without_capability_is_not_allowed() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", true, true, &conn);
+
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[("slug1", &[], 0, true)],
+                &[],
+                &conn,
+            );
+
+            let response = client
+                .delete("/go/teams/slug1/users/some_mail@mail.com/capabilities/TeamsWrite")
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
+
+            let response = client
+                .delete("/go/teams/slug1/users/some_mail@mail.com/capabilities/TeamsWrite")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "other_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
+
+            let response = client
+                .delete("/go/teams/slug1/users/some_mail@mail.com/capabilities/TeamsWrite")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
+        }
+
+        #[test]
+        fn as_admin() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", true, true, &conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[],
+                &[Capability::TeamsWrite],
+                &conn,
+            );
+            user(
+                "other_mail@mail.com",
+                "pwd",
+                &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
+                &[],
+                &conn,
+            );
+
+            let response = client
+                .delete("/go/teams/slug1/users/other_mail@mail.com/capabilities/TeamsWrite")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Ok);
+
+            assert!(get_user_team_links("other_mail@mail.com", &conn)
+                .first()
+                .unwrap()
+                .capabilities
+                .is_empty(),);
+        }
+
+        #[test]
+        fn as_teamate() {
+            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", true, true, &conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
+                &[],
+                &conn,
+            );
+            user(
+                "other_mail@mail.com",
+                "pwd",
+                &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
+                &[],
+                &conn,
+            );
+
+            let response = client
+                .delete("/go/teams/slug1/users/other_mail@mail.com/capabilities/TeamsWrite")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Ok);
+
+            assert!(get_user_team_links("other_mail@mail.com", &conn)
+                .first()
+                .unwrap()
+                .capabilities
+                .is_empty(),);
+        }
+    }
 }
