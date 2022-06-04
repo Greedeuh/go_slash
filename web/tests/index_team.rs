@@ -460,6 +460,80 @@ mod edit_user_team_link {
         );
     }
 }
+
+mod kick_user {
+    use super::*;
+
+    #[async_test]
+    async fn as_admin() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let con = con.lock().await;
+                    team("slug1", "team1", false, true, &con);
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[],
+                        &[Capability::TeamsWrite],
+                        &con,
+                    );
+                    user(
+                        "another_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[], 0, true)],
+                        &[],
+                        &con,
+                    );
+
+                    driver
+                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .await?;
+
+                    driver
+                        .get(format!("http://localhost:{}/go/teams/slug1", port))
+                        .await?;
+
+                    driver
+                        .find_element(By::Css("[role='listitem'] h2"))
+                        .await
+                        .unwrap()
+                        .click()
+                        .await?;
+
+                    let kick_button = driver
+                        .find_element(By::Css("[aria-label='Kick user']"))
+                        .await
+                        .unwrap();
+
+                    kick_button.wait_until().displayed().await?;
+
+                    assert_eq!("Kick", kick_button.text().await?);
+                    kick_button.click().await.unwrap();
+
+                    assert!(driver
+                        .find_element(By::Css("[role='listitem'] h2"))
+                        .await
+                        .is_err());
+
+                    driver
+                        .get(format!("http://localhost:{}/go/teams/slug1", port))
+                        .await?;
+                    assert!(driver
+                        .find_element(By::Css("[role='listitem'] h2"))
+                        .await
+                        .is_err());
+
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    }
+}
+
 mod controller {
     use super::*;
 

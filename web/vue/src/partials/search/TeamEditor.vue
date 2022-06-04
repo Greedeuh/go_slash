@@ -36,7 +36,7 @@
       </div>
       <input type="submit" class="btn btn-primary mt-2" value="Save" />
     </form>
-    <UserList :user_links="team.user_links" @toggle="toggle" />
+    <UserList :user_links="team.user_links" @toggle="toggle" @kick="kick" />
   </div>
 </template>
 
@@ -81,7 +81,6 @@ export default defineComponent({
         this.$emit("save", { slug: this.team.slug, team });
       }
     },
-
     toggle(
       user_link: UserTeamLink,
       { capability, value }: { capability: TeamCapability; value: boolean }
@@ -109,6 +108,18 @@ export default defineComponent({
             }
           });
       }
+    },
+    kick(user_link: UserTeamLink) {
+      axios
+        .delete(`/go/teams/${this.team.slug}/users/${user_link.user_mail}`)
+        .then((res) => {
+          if (res.status === 200) {
+            // FIX not the good way to do this
+            this.team.user_links = this.team.user_links.filter(
+              (u) => u !== user_link
+            );
+          }
+        });
     },
   },
 });

@@ -19,6 +19,15 @@
       </h2>
       <div :id="'collapse' + index" class="accordion-collapse collapse">
         <div class="accordion-body">
+          <button
+            @click="kick(user_link)"
+            type="button"
+            class="btn btn-danger"
+            aria-label="Kick user"
+          >
+            Kick
+          </button>
+
           <Capabilities
             :user_capabilities="user_link.capabilities"
             type="team"
@@ -41,10 +50,13 @@ export default defineComponent({
   props: {
     user_links: { required: true, type: Array as PropType<UserTeamLink[]> },
   },
-  emits: ["toggle"],
+  emits: ["toggle", "kick"],
   methods: {
     toggle(user_link: UserTeamLink, capability: string) {
       this.$emit("toggle", user_link, capability);
+    },
+    kick(user_link: UserTeamLink) {
+      this.$emit("kick", user_link);
     },
   },
 });
