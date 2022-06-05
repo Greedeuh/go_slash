@@ -67,7 +67,7 @@ export default defineComponent({
   data(): Data {
     return { inner_team: _.clone(this.team) as Team };
   },
-  emits: ["save"],
+  emits: ["save", "kick", "accept"],
   methods: {
     save() {
       // eslint-disable-next-line
@@ -115,30 +115,10 @@ export default defineComponent({
       }
     },
     kick(user_link: UserTeamLink) {
-      axios
-        .delete(`/go/teams/${this.team.slug}/users/${user_link.user_mail}`)
-        .then((res) => {
-          if (res.status === 200) {
-            // FIX not the good way to do this
-            this.team.user_links = this.team.user_links.filter(
-              (u) => u !== user_link
-            );
-          }
-        });
+      this.$emit("kick", user_link);
     },
     accept(user_link: UserTeamLink) {
-      axios
-        .put(
-          `/go/teams/${this.team.slug}/users/${user_link.user_mail}/is_accepted/true`
-        )
-        .then((res) => {
-          if (res.status === 200) {
-            // FIX not the good way to do this
-            this.team.user_links = this.team.user_links.filter(
-              (u) => u !== user_link
-            );
-          }
-        });
+      this.$emit("accept", user_link);
     },
   },
 });

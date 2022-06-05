@@ -13,6 +13,8 @@
       "
       :team="team"
       @save="save_team"
+      @kick="kick"
+      @accept="accept"
     />
     <SearchBar
       v-model="search"
@@ -47,7 +49,7 @@ import SearchBar from "./Search.vue";
 import ShortcutList from "./ShortcutList.vue";
 import ShortcutInput from "./ShortcutInput.vue";
 import TeamEditor from "./TeamEditor.vue";
-import { User, Capability } from "../../models";
+import { User, Capability, UserTeamLink, Team } from "../../models";
 
 interface Window {
   context: WindowContext;
@@ -67,13 +69,6 @@ export interface Shortcut {
   url: string;
   team_slug: string;
   new: boolean;
-}
-
-interface Team {
-  slug: string;
-  title: string;
-  is_private: boolean;
-  is_accepted: boolean;
 }
 
 function setup_fuse(shortcuts: Shortcut[]) {
@@ -233,6 +228,31 @@ export default defineComponent({
           this.team = { ...this.team, ...team };
         }
       });
+    },
+
+    kick(user_link: UserTeamLink) {
+      const team = this.team as Team;
+      axios
+        .delete(`/go/teams/${team.slug}/users/${user_link.user_mail}`)
+        .then((res) => {
+          if (res.status === 200) {
+            // FIX not the good way to do this
+            team.user_links = team.user_links?.filter((u) => u !== user_link);
+          }
+        });
+    },
+    accept(user_link: UserTeamLink) {
+      const team = this.team as Team;
+      axios
+        .put(
+          `/go/teams/${team.slug}/users/${user_link.user_mail}/is_accepted/true`
+        )
+        .then((res) => {
+          if (res.status === 200) {
+            // FIX not the good way to do this
+            team.user_links = team.user_links?.filter((u) => u !== user_link);
+          }
+        });
     },
   },
 });

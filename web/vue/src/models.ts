@@ -14,6 +14,7 @@ export interface Team {
   is_private: boolean;
   is_accepted: boolean;
   user_link?: UserTeamLink;
+  user_links?: UserTeamLink[];
 }
 
 export interface UserTeamLink {
