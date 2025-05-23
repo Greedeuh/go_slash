@@ -1,5 +1,5 @@
 use diesel::PgConnection;
-use go_web::controllers::login::LoginSuccessfull;
+use go_web::login::LoginSuccessfull;
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;

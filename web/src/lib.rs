@@ -19,7 +19,6 @@ use rocket_dyn_templates::Template;
 pub mod guards;
 pub mod errors;
 pub mod users;
-pub mod controllers;
 pub mod teams;
 pub mod shortcuts;
 mod middlewares;
@@ -27,13 +26,14 @@ pub mod schema;
 pub mod services;
 mod views;
 pub mod settings;
+pub mod login;
 
 use teams::{
     create_team, delete_team, delete_user_link_capability, kick_user, list_teams, patch_team,
     put_user_link_capability, put_user_team_acceptation, show_team,
 };
 use settings::{patch_settings, settings as get_settings};
-use controllers::login::{google_login, login, login_redirect_google, simple_login};
+use login::{google_login, login as go_login, login_redirect_google, simple_login};
 use shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut};
     use users::{
         delete_user_capability, join_global_team, join_team, leave_global_team, leave_team,
@@ -91,7 +91,7 @@ pub fn server(
                 get_shortcut,
                 put_shortcut,
                 delete_shortcut,
-                login,
+                go_login,
                 list_users,
                 get_settings,
                 patch_settings,
