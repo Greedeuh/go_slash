@@ -34,7 +34,7 @@ impl Fairing for UnauthorizedAsLogin {
 
         let conf = match request.guard::<&State<AppConfig>>().await {
             Outcome::Success(x) => x,
-            Outcome::Failure(e) => {
+            Outcome::Error(e) => {
                 error!(
                     "UnauthorizedAsLogin fail getting State<AppConfig>: Failure {:?}",
                     e

@@ -3,7 +3,7 @@ use crate::models::AppError;
 use crate::schema::users;
 use crate::schema::*;
 use diesel::{deserialize, serialize, Associations, Identifiable, Insertable};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::str::FromStr;
 use std::vec;

@@ -35,7 +35,7 @@ impl<'r> FromRequest<'r> for SessionId {
             return Outcome::Success(session_id);
         }
 
-        Outcome::Failure(AppError::Unauthorized.into())
+        Outcome::Error(AppError::Unauthorized.into())
     }
 }
 
@@ -47,7 +47,7 @@ impl<'r> FromRequest<'r> for NonceOIDC {
         let sessions: Outcome<&State<Sessions>, Self::Error> = req
             .guard::<&State<Sessions>>()
             .await
-            .map_failure(|_| AppError::Guard.into());
+            .map_error(|_| AppError::Guard.into());
         let sessions = try_outcome!(sessions);
 
         let session_id = try_outcome!(req.guard::<SessionId>().await);
@@ -55,7 +55,7 @@ impl<'r> FromRequest<'r> for NonceOIDC {
         match sessions.is_logged_in(&session_id.0) {
             None => {
                 error!("Wrong session_id.");
-                Outcome::Failure(AppError::Unauthorized.into())
+                Outcome::Error(AppError::Unauthorized.into())
             }
             Some(nonce) => Outcome::Success(NonceOIDC(nonce)),
         }
@@ -70,20 +70,20 @@ impl<'r> FromRequest<'r> for User {
         let pool: Outcome<&State<DbPool>, Self::Error> = req
             .guard::<&State<DbPool>>()
             .await
-            .map_failure(|_| AppError::Guard.into());
+            .map_error(|_| AppError::Guard.into());
         let pool = try_outcome!(pool);
 
         let sessions: Outcome<&State<Sessions>, Self::Error> = req
             .guard::<&State<Sessions>>()
             .await
-            .map_failure(|_| AppError::Guard.into());
+            .map_error(|_| AppError::Guard.into());
         let sessions = try_outcome!(sessions);
 
         let session_id = try_outcome!(req.guard::<SessionId>().await);
 
         match get_user(&session_id, sessions, pool) {
             Ok(user) => Outcome::Success(user),
-            Err(err) => Outcome::Failure(err.into()),
+            Err(err) => Outcome::Error(err.into()),
         }
     }
 }

@@ -100,11 +100,10 @@ pub async fn google_login(
     sessions.put(&token, &nonce);
 
     cookies.add(
-        Cookie::build(SESSION_COOKIE, token)
+        Cookie::build((SESSION_COOKIE,token))
             .path("/")
             .secure(true)
             .same_site(SameSite::Lax)
-            .finish(),
     );
 
     Ok(Redirect::permanent(auth_url))
