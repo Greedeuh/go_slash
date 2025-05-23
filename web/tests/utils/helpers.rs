@@ -34,7 +34,7 @@ mod no_dead_code {
     }
 
     pub fn random_pg_url() -> (String, String) {
-        let uuid = dbg!(format!("go_{}", Uuid::new_v4().to_simple()));
+        let uuid = dbg!(format!("go_{}", Uuid::new_v4().simple()));
         (
             format!("postgres://postgres:postgres@localhost:6543/{}", uuid),
             uuid,

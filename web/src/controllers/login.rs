@@ -75,10 +75,10 @@ pub fn simple_login(
     };
 
     let token = Uuid::new_v4();
-    sessions.put(&token.to_simple().to_string(), &credentials.mail);
+    sessions.put(&token.simple().to_string(), &credentials.mail);
 
     Ok(Json(LoginSuccessfull {
-        token: token.to_simple().to_string(),
+        token: token.simple().to_string(),
     }))
 }
 
@@ -96,7 +96,7 @@ pub async fn google_login(
     let (auth_url, nonce) = oidc_service.redirect().map_err(AppError::from)?;
 
     let token = Uuid::new_v4();
-    let token = token.to_simple().to_string();
+    let token = token.simple().to_string();
     sessions.put(&token, &nonce);
 
     cookies.add(
