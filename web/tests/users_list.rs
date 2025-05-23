@@ -27,7 +27,7 @@ async fn link_are_shown_on_other_pages() {
                 driver.get(host(port, "")).await?;
 
                 assert!(driver
-                    .find_element(By::Css("a [href='/go/users']"))
+                    .find(By::Css("a [href='/go/users']"))
                     .await
                     .is_err());
 
@@ -40,7 +40,7 @@ async fn link_are_shown_on_other_pages() {
 
                     assert_eq!(
                         driver
-                            .find_element(By::Css("[href='/go/users']"))
+                            .find(By::Css("[href='/go/users']"))
                             .await?
                             .text()
                             .await?,
@@ -89,7 +89,7 @@ async fn as_admin_i_can_see_the_list() {
                 assert_users(driver, vec!["another_mail@mail.com", "some_mail@mail.com"]).await;
 
                 let user = driver
-                    .find_elements(By::Css("[role='listitem']"))
+                    .find_all(By::Css("[role='listitem']"))
                     .await?
                     .first()
                     .unwrap()
@@ -104,14 +104,14 @@ async fn as_admin_i_can_see_the_list() {
 
                 user.click().await?;
 
-                let switchs = user.find_elements(By::Css("[role='switch']")).await?;
-                let switchs_label = user.find_elements(By::Tag("label")).await?;
+                let switchs = user.find_all(By::Css("[role='switch']")).await?;
+                let switchs_label = user.find_all(By::Tag("label")).await?;
                 for i in 0..expeted_capabilities.len() {
                     let (checked, label) = expeted_capabilities[i];
                     switchs_label[i].wait_until().displayed().await?;
                     assert_eq!(switchs_label[i].text().await.unwrap(), label.to_string());
                     assert_eq!(
-                        switchs[i].get_property("checked").await?.unwrap(),
+                        switchs[i].prop("checked").await?.unwrap(),
                         checked.to_string()
                     );
                 }
@@ -151,7 +151,7 @@ async fn as_admin_i_can_change_users_capabilities() {
                 assert_users(driver, vec!["another_mail@mail.com", "some_mail@mail.com"]).await;
 
                 let user = driver
-                    .find_elements(By::Css("[role='listitem']"))
+                    .find_all(By::Css("[role='listitem']"))
                     .await?
                     .first()
                     .unwrap()
@@ -159,9 +159,9 @@ async fn as_admin_i_can_change_users_capabilities() {
 
                 user.click().await?;
 
-                let switchs = user.find_elements(By::Css("[role='switch']")).await?;
+                let switchs = user.find_all(By::Css("[role='switch']")).await?;
                 let switch = switchs.first().unwrap();
-                let switchs_label = user.find_elements(By::Tag("label")).await?;
+                let switchs_label = user.find_all(By::Tag("label")).await?;
                 let switch_label = switchs_label.first().unwrap();
 
                 switch_label.wait_until().displayed().await?;
@@ -169,31 +169,31 @@ async fn as_admin_i_can_change_users_capabilities() {
                     switch_label.text().await.unwrap(),
                     Capability::Features.to_string()
                 );
-                assert_eq!(switch.get_property("checked").await?.unwrap(), "false");
+                assert_eq!(switch.prop("checked").await?.unwrap(), "false");
 
                 switch.click().await?;
-                assert_eq!(switch.get_property("checked").await?.unwrap(), "true");
+                assert_eq!(switch.prop("checked").await?.unwrap(), "true");
 
                 driver
                     .get(host(port, "/go/users"))
                     .await?;
 
                 driver
-                    .find_elements(By::Css("[role='listitem']"))
+                    .find_all(By::Css("[role='listitem']"))
                     .await?
                     .first()
                     .unwrap()
                     .click()
                     .await?;
 
-                let switchs = driver.find_elements(By::Css("[role='switch']")).await?;
+                let switchs = driver.find_all(By::Css("[role='switch']")).await?;
                 let switch = &switchs[0];
 
                 switch.wait_until().displayed().await?;
-                assert_eq!(switch.get_property("checked").await?.unwrap(), "true");
+                assert_eq!(switch.prop("checked").await?.unwrap(), "true");
 
                 switch.click().await?;
-                assert_eq!(switch.get_property("checked").await?.unwrap(), "false");
+                assert_eq!(switch.prop("checked").await?.unwrap(), "false");
 
                 Ok(())
             }
@@ -205,7 +205,7 @@ async fn as_admin_i_can_change_users_capabilities() {
 
 async fn assert_users(driver: &WebDriver, expected_users: Vec<&str>) {
     let users = driver
-        .find_elements(By::Css("[role='listitem'] h2"))
+        .find_all(By::Css("[role='listitem'] h2"))
         .await
         .unwrap();
     for i in 0..expected_users.len() {

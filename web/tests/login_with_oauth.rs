@@ -1,5 +1,4 @@
 use diesel::PgConnection;
-use go_web::services::oidc::{OidcService, TokenRes};
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::http::Cookie;
@@ -176,7 +175,7 @@ async fn login_page_has_oauth_links() {
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css("a[aria-label='Login with google']"))
+                        .find(By::Css("a[aria-label='Login with google']"))
                         .await?
                         .text()
                         .await?,

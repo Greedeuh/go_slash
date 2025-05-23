@@ -53,12 +53,12 @@ async fn list_shortcuts() {
                     .await?;
                 driver.get(host(port, "")).await?;
 
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
 
                 for i in 0..texts_sorted.len() {
                     assert_eq!(articles[i].text().await?, texts_sorted[i]);
                     assert_eq!(
-                        articles[i].get_attribute("href").await?,
+                        articles[i].attr("href").await?,
                         Some(href_sorted[i].to_owned())
                     );
                 }
@@ -109,14 +109,14 @@ async fn sugest_when_typing() {
                     .await?;
                 driver.get(host(port, "")).await?;
 
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
                 // initial state
                 assert_eq!(3, articles.len());
 
-                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
+                let search_bar = driver.find(By::Css("input[type='search']")).await?;
                 search_bar.send_keys("t").await?;
 
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
 
                 // type in t should suggest tadadam first
                 assert_eq!(
@@ -127,7 +127,7 @@ async fn sugest_when_typing() {
 
                 search_bar.send_keys("uc").await?;
 
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
 
                 // type in tuc should suggest jeanLuc and newShortcut but not tadam
                 assert_eq!(
@@ -185,11 +185,11 @@ async fn with_click() {
                     .await?;
                 driver.get(host(port, "")).await?;
 
-                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
+                let search_bar = driver.find(By::Css("input[type='search']")).await?;
                 search_bar.send_keys("jeanLuc").await?;
 
                 driver
-                    .find_element(By::Css("[type='submit']"))
+                    .find(By::Css("[type='submit']"))
                     .await?
                     .click()
                     .await?;
@@ -246,10 +246,10 @@ async fn with_keyboard() {
                     .await?;
                 driver.get(host(port, "")).await?;
 
-                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
+                let search_bar = driver.find(By::Css("input[type='search']")).await?;
                 search_bar.send_keys(Key::Down).await?;
 
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
 
                 // down arrow select first
                 assert_eq!(
@@ -260,7 +260,7 @@ async fn with_keyboard() {
 
                 search_bar.send_keys(Key::Down).await?;
 
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
 
                 // down arrow again select snd & unselect first
                 assert_eq!(
@@ -292,7 +292,7 @@ async fn with_keyboard() {
 
                 // Tab take first
                 assert_eq!(
-                    search_bar.get_property("value").await?,
+                    search_bar.prop("value").await?,
                     Some("jeanLuc".to_owned())
                 );
 
@@ -308,7 +308,7 @@ async fn with_keyboard() {
                 driver.get(host(port, "")).await?;
                 // arow down then enter go to the first line shortcut
 
-                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
+                let search_bar = driver.find(By::Css("input[type='search']")).await?;
                 search_bar.send_keys(Key::Down).await?;
                 search_bar.send_keys(Key::Enter).await?;
 

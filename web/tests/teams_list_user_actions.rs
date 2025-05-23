@@ -36,7 +36,7 @@ async fn join_team() {
                     .await?;
 
                 let button = driver
-                    .find_element(By::Css(
+                    .find(By::Css(
                         "[aria-label='Other teams'] [role='listitem'] button",
                     ))
                     .await?;
@@ -45,7 +45,7 @@ async fn join_team() {
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css(
+                        .find(By::Css(
                             "[aria-label='User teams'] [role='listitem'] button"
                         ))
                         .await?
@@ -59,7 +59,7 @@ async fn join_team() {
                     .await?;
 
                 let leave = driver
-                    .find_element(By::Css(
+                    .find(By::Css(
                         "[aria-label='User teams'] [role='listitem'] button",
                     ))
                     .await?;
@@ -97,7 +97,7 @@ async fn leave_team() {
                     .await?;
 
                 let leave = driver
-                    .find_element(By::Css(
+                    .find(By::Css(
                         "[aria-label='User teams'] [role='listitem'] button",
                     ))
                     .await?;
@@ -106,7 +106,7 @@ async fn leave_team() {
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css(
+                        .find(By::Css(
                             "[aria-label='Other teams'] [role='listitem'] button"
                         ))
                         .await?
@@ -121,7 +121,7 @@ async fn leave_team() {
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css(
+                        .find(By::Css(
                             "[aria-label='Other teams'] [role='listitem'] button"
                         ))
                         .await?
@@ -169,14 +169,14 @@ async fn change_user_teams_rank() {
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css("[role='alert']"))
+                        .find(By::Css("[role='alert']"))
                         .await?
                         .text()
                         .await?,
                     "Drag and drop to prioritize team shortcuts in case of duplicates"
                 );
                 let teams = driver
-                    .find_elements(By::Css("[aria-label='User teams'] [role='listitem'] span"))
+                    .find_all(By::Css("[aria-label='User teams'] [role='listitem'] span"))
                     .await?;
 
                 let expected_teams_sorted = vec!["team2", "Global", "team1"];
@@ -185,7 +185,7 @@ async fn change_user_teams_rank() {
                 }
 
                 driver
-                    .find_element(By::Css(
+                    .find(By::Css(
                         "[aria-label='Other teams'] [role='listitem'] button",
                     ))
                     .await?
@@ -193,7 +193,7 @@ async fn change_user_teams_rank() {
                     .await?;
 
                 let teams = driver
-                    .find_elements(By::Css("[aria-label='User teams'] [role='listitem'] span"))
+                    .find_all(By::Css("[aria-label='User teams'] [role='listitem'] span"))
                     .await?;
 
                 let expected_teams_sorted = vec!["team2", "Global", "team1", "team3"];
@@ -203,20 +203,20 @@ async fn change_user_teams_rank() {
 
                 // drag & drop testing do not work
                 // let teams_rows = driver
-                //     .find_elements(By::Css("[aria-label='User teams'] [role='listitem']"))
+                //     .find_all(By::Css("[aria-label='User teams'] [role='listitem']"))
                 //     .await?;
 
                 // driver
                 //     .action_chain()
                 //     .drag_and_drop_element(
                 //         &teams_rows[2],
-                //         &driver.find_element(By::Id("draggable")).await?,
+                //         &driver.find(By::Id("draggable")).await?,
                 //     )
                 //     .perform()
                 //     .await?;
 
                 // let teams = driver
-                //     .find_elements(By::Css("[aria-label='User teams'] [role='listitem'] span"))
+                //     .find_all(By::Css("[aria-label='User teams'] [role='listitem'] span"))
                 //     .await?;
 
                 // let expected_teams_sorted = vec!["team1", "team2", "Global"];
@@ -229,7 +229,7 @@ async fn change_user_teams_rank() {
                 //     .await?;
 
                 // let teams = driver
-                //     .find_elements(By::Css("[aria-label='User teams'] [role='listitem'] span"))
+                //     .find_all(By::Css("[aria-label='User teams'] [role='listitem'] span"))
                 //     .await?;
                 // for i in 0..expected_teams_sorted.len() {
                 //     assert_eq!(expected_teams_sorted[i], teams[i].text().await?);

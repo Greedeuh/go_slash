@@ -5,7 +5,6 @@ use rocket::futures::FutureExt;
 use rocket::http::Status;
 use rocket::tokio::sync::Mutex;
 use rocket::{async_test, http};
-use serde_json::json;
 use thirtyfour::error::WebDriverError;
 use thirtyfour::prelude::*;
 
@@ -44,7 +43,7 @@ async fn as_user() {
                     .get(host(port, "/go/teams/slug1"))
                     .await?;
 
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
                 assert_eq!(
                     articles[0].text().await?,
                     format!("newShortcut {} slug1", host(port, "/looped"))
@@ -93,7 +92,7 @@ async fn list_user() {
                 let expected_users = vec!["another_mail@mail.com", "some_mail@mail.com"];
 
                 let users = driver
-                    .find_elements(By::Css("[role='listitem'] h2"))
+                    .find_all(By::Css("[role='listitem'] h2"))
                     .await
                     .unwrap();
                 for i in 0..expected_users.len() {
@@ -148,7 +147,7 @@ mod edit_team {
                         .await?;
 
                     assert!(driver
-                        .find_element(By::Css("[aria-label='Team editor']"))
+                        .find(By::Css("[aria-label='Team editor']"))
                         .await
                         .is_err());
 
@@ -250,31 +249,31 @@ mod edit_team {
             .get(host(port, "/go/teams/slug1"))
             .await?;
 
-        let title = driver.find_element(By::Css("[name='title']")).await?;
+        let title = driver.find(By::Css("[name='title']")).await?;
         assert_eq!(
-            title.get_property("value").await?,
+            title.prop("value").await?,
             Some("team1".to_string())
         );
         title.send_keys("2").await?;
 
-        let is_private = driver.find_element(By::Css("[name='is_private']")).await?;
+        let is_private = driver.find(By::Css("[name='is_private']")).await?;
         assert_eq!(
-            is_private.get_property("checked").await?,
+            is_private.prop("checked").await?,
             Some("false".to_string())
         );
         is_private.click().await?;
 
         if admin {
-            let is_accepted = driver.find_element(By::Css("[name='is_accepted']")).await?;
+            let is_accepted = driver.find(By::Css("[name='is_accepted']")).await?;
             assert_eq!(
-                is_accepted.get_property("checked").await?,
+                is_accepted.prop("checked").await?,
                 Some("true".to_string())
             );
             is_accepted.click().await?;
         }
 
         driver
-            .find_element(By::Css("[type='submit']"))
+            .find(By::Css("[type='submit']"))
             .await?
             .click()
             .await?;
@@ -285,18 +284,18 @@ mod edit_team {
 
         assert_eq!(
             driver
-                .find_element(By::Css("[name='title']"))
+                .find(By::Css("[name='title']"))
                 .await?
-                .get_property("value")
+                .prop("value")
                 .await?,
             Some("team12".to_string())
         );
 
         assert_eq!(
             driver
-                .find_element(By::Css("[name='is_private']"))
+                .find(By::Css("[name='is_private']"))
                 .await?
-                .get_property("checked")
+                .prop("checked")
                 .await?,
             Some("true".to_string())
         );
@@ -304,9 +303,9 @@ mod edit_team {
         if admin {
             assert_eq!(
                 driver
-                    .find_element(By::Css("[name='is_accepted']"))
+                    .find(By::Css("[name='is_accepted']"))
                     .await?
-                    .get_property("checked")
+                    .prop("checked")
                     .await?,
                 Some("false".to_string())
             );
@@ -397,17 +396,17 @@ mod edit_user_team_link {
             .unwrap();
 
         let user = driver
-            .find_element(By::Css("[aria-label='User list'] [role='listitem']"))
+            .find(By::Css("[aria-label='User list'] [role='listitem']"))
             .await
             .unwrap();
         user.click().await.unwrap();
 
         let switchs = user
-            .find_elements(By::Css("[role='switch']"))
+            .find_all(By::Css("[role='switch']"))
             .await
             .unwrap();
         let switch = switchs.first().unwrap();
-        let switchs_label = user.find_elements(By::Tag("label")).await.unwrap();
+        let switchs_label = user.find_all(By::Tag("label")).await.unwrap();
         let switch_label = switchs_label.first().unwrap();
 
         switch_label.wait_until().displayed().await.unwrap();
@@ -416,13 +415,13 @@ mod edit_user_team_link {
             TeamCapability::ShortcutsWrite.to_string()
         );
         assert_eq!(
-            switch.get_property("checked").await.unwrap().unwrap(),
+            switch.prop("checked").await.unwrap().unwrap(),
             "false"
         );
 
         switch.click().await.unwrap();
         assert_eq!(
-            switch.get_property("checked").await.unwrap().unwrap(),
+            switch.prop("checked").await.unwrap().unwrap(),
             "true"
         );
 
@@ -432,7 +431,7 @@ mod edit_user_team_link {
             .unwrap();
 
         driver
-            .find_element(By::Css("[aria-label='User list'] [role='listitem']"))
+            .find(By::Css("[aria-label='User list'] [role='listitem']"))
             .await
             .unwrap()
             .click()
@@ -440,7 +439,7 @@ mod edit_user_team_link {
             .unwrap();
 
         let switchs = driver
-            .find_elements(By::Css(
+            .find_all(By::Css(
                 "[aria-label='User list'] [role='listitem'] [role='switch']",
             ))
             .await
@@ -449,13 +448,13 @@ mod edit_user_team_link {
 
         switch.wait_until().displayed().await.unwrap();
         assert_eq!(
-            switch.get_property("checked").await.unwrap().unwrap(),
+            switch.prop("checked").await.unwrap().unwrap(),
             "true"
         );
 
         switch.click().await.unwrap();
         assert_eq!(
-            switch.get_property("checked").await.unwrap().unwrap(),
+            switch.prop("checked").await.unwrap().unwrap(),
             "false"
         );
     }
@@ -535,7 +534,7 @@ mod kick_user {
             .unwrap();
 
         driver
-            .find_element(By::Css("[role='listitem'] h2"))
+            .find(By::Css("[role='listitem'] h2"))
             .await
             .unwrap()
             .click()
@@ -543,7 +542,7 @@ mod kick_user {
             .unwrap();
 
         let kick_button = driver
-            .find_element(By::Css("[aria-label='Kick user']"))
+            .find(By::Css("[aria-label='Kick user']"))
             .await
             .unwrap();
 
@@ -553,7 +552,7 @@ mod kick_user {
         kick_button.click().await.unwrap();
 
         assert!(driver
-            .find_element(By::Css("[role='listitem'] h2"))
+            .find(By::Css("[role='listitem'] h2"))
             .await
             .is_err());
 
@@ -562,7 +561,7 @@ mod kick_user {
             .await
             .unwrap();
         assert!(driver
-            .find_element(By::Css("[role='listitem'] h2"))
+            .find(By::Css("[role='listitem'] h2"))
             .await
             .is_err());
     }
@@ -605,7 +604,7 @@ mod accept_user {
                         .unwrap();
 
                     assert!(driver
-                        .find_element(By::Css("[aria-label='Accept candidature']"))
+                        .find(By::Css("[aria-label='Accept candidature']"))
                         .await
                         .is_err());
 
@@ -695,7 +694,7 @@ mod accept_user {
             .unwrap();
 
         driver
-            .find_element(By::Css("[role='listitem'] h2"))
+            .find(By::Css("[role='listitem'] h2"))
             .await
             .unwrap()
             .click()
@@ -703,7 +702,7 @@ mod accept_user {
             .unwrap();
 
         let accept_button = driver
-            .find_element(By::Css("[aria-label='Accept candidature']"))
+            .find(By::Css("[aria-label='Accept candidature']"))
             .await
             .unwrap();
 
@@ -713,7 +712,7 @@ mod accept_user {
         accept_button.click().await.unwrap();
 
         assert!(driver
-            .find_element(By::Css("[aria-label='Accept candidature']"))
+            .find(By::Css("[aria-label='Accept candidature']"))
             .await
             .is_err());
 
@@ -722,7 +721,7 @@ mod accept_user {
             .await
             .unwrap();
         assert!(driver
-            .find_element(By::Css("[aria-label='Accept candidature']"))
+            .find(By::Css("[aria-label='Accept candidature']"))
             .await
             .is_err());
     }

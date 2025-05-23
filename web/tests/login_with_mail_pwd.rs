@@ -30,24 +30,24 @@ async fn as_user() {
                     .await?;
 
                 driver
-                    .find_element(By::Css("[type='email']"))
+                    .find(By::Css("[type='email']"))
                     .await?
                     .send_keys("some_mail@mail.go")
                     .await?;
                 driver
-                    .find_element(By::Css("[type='password']"))
+                    .find(By::Css("[type='password']"))
                     .await?
                     .send_keys("some_pwd")
                     .await?;
                 driver
-                    .find_element(By::Css("[type='submit']"))
+                    .find(By::Css("[type='submit']"))
                     .await?
                     .click()
                     .await?;
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css("[role='alert']"))
+                        .find(By::Css("[role='alert']"))
                         .await?
                         .text()
                         .await?,
@@ -88,24 +88,24 @@ async fn with_from_query_param_redirect_to_it() {
                     .await?;
 
                 driver
-                    .find_element(By::Css("[type='email']"))
+                    .find(By::Css("[type='email']"))
                     .await?
                     .send_keys("some_mail@mail.go")
                     .await?;
                 driver
-                    .find_element(By::Css("[type='password']"))
+                    .find(By::Css("[type='password']"))
                     .await?
                     .send_keys("some_pwd")
                     .await?;
                 driver
-                    .find_element(By::Css("[type='submit']"))
+                    .find(By::Css("[type='submit']"))
                     .await?
                     .click()
                     .await?;
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css("[role='alert']"))
+                        .find(By::Css("[role='alert']"))
                         .await?
                         .text()
                         .await?,
@@ -146,24 +146,24 @@ async fn with_wrong_credentials_show_an_error() {
                     .await?;
 
                 driver
-                    .find_element(By::Css("[type='email']"))
+                    .find(By::Css("[type='email']"))
                     .await?
                     .send_keys("some_mail@mail.go")
                     .await?;
                 driver
-                    .find_element(By::Css("[type='password']"))
+                    .find(By::Css("[type='password']"))
                     .await?
                     .send_keys("wrong_pwd")
                     .await?;
                 driver
-                    .find_element(By::Css("[type='submit']"))
+                    .find(By::Css("[type='submit']"))
                     .await?
                     .click()
                     .await?;
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css("[role='alert']"))
+                        .find(By::Css("[role='alert']"))
                         .await?
                         .text()
                         .await?,

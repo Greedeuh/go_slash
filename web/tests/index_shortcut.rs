@@ -43,13 +43,13 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
                     .get(&format!("{}?no_redirect=true", host(port, "/newShortcut")))
                     .await?;
 
-                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
+                let search_bar = driver.find(By::Css("input[type='search']")).await?;
                 assert_eq!(
-                    search_bar.get_property("value").await?,
+                    search_bar.prop("value").await?,
                     Some("newShortcut".to_owned())
                 );
 
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
                 assert_eq!(
                     articles[0].text().await?,
                     format!("newShortcut {} team", host(port, "/looped"))
@@ -58,27 +58,27 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css("input[name='shortcut']"))
+                        .find(By::Css("input[name='shortcut']"))
                         .await?
-                        .get_property("value")
+                        .prop("value")
                         .await?,
                     Some("newShortcut".to_owned())
                 );
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css("input[name='url']"))
+                        .find(By::Css("input[name='url']"))
                         .await?
-                        .get_property("value")
+                        .prop("value")
                         .await?,
                     Some(host(port, "/looped"))
                 );
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css("[name='team']"))
+                        .find(By::Css("[name='team']"))
                         .await?
-                        .get_property("value")
+                        .prop("value")
                         .await?
                         .unwrap(),
                     "team"
@@ -129,20 +129,20 @@ async fn with_not_existing_shortcut_return_search_and_edit_form_filled() {
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css("[role='alert']"))
+                        .find(By::Css("[role='alert']"))
                         .await?
                         .text()
                         .await?,
                     "Shortcut \"newShortcut\" does not exist yet."
                 );
 
-                let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
+                let search_bar = driver.find(By::Css("input[type='search']")).await?;
                 assert_eq!(
-                    search_bar.get_property("value").await?,
+                    search_bar.prop("value").await?,
                     Some("newShortcut".to_owned())
                 );
 
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
                 assert_eq!(
                     articles[0].text().await?,
                     format!("newShortcut1 {}", host(port, "/looped"))
@@ -151,9 +151,9 @@ async fn with_not_existing_shortcut_return_search_and_edit_form_filled() {
 
                 assert_eq!(
                     driver
-                        .find_element(By::Css("input[name='shortcut']"))
+                        .find(By::Css("input[name='shortcut']"))
                         .await?
-                        .get_property("value")
+                        .prop("value")
                         .await?,
                     Some("newShortcut".to_owned())
                 );

@@ -39,19 +39,19 @@ async fn as_admin_accept_team() {
                     .await?;
 
                 assert!(driver
-                    .find_element(By::Css("button[aria-label='Accept team']"))
+                    .find(By::Css("button[aria-label='Accept team']"))
                     .await
                     .is_err());
 
                 driver
-                    .find_element(By::Css("button[aria-label='Administrate']"))
+                    .find(By::Css("button[aria-label='Administrate']"))
                     .await?
                     .click()
                     .await?;
 
                 assert!(dbg!(
                     driver
-                        .find_element(By::Css("[role='listitem']"))
+                        .find(By::Css("[role='listitem']"))
                         .await?
                         .text()
                         .await?
@@ -59,11 +59,11 @@ async fn as_admin_accept_team() {
                 .starts_with("team1"));
 
                 let accept_btn = driver
-                    .find_element(By::Css("button[aria-label='Accept team']"))
+                    .find(By::Css("button[aria-label='Accept team']"))
                     .await?;
                 accept_btn.click().await?;
                 assert!(driver
-                    .find_element(By::Css("button[aria-label='Accept team']"))
+                    .find(By::Css("button[aria-label='Accept team']"))
                     .await
                     .is_err());
 
@@ -72,13 +72,13 @@ async fn as_admin_accept_team() {
                     .await?;
 
                 driver
-                    .find_element(By::Css("button[aria-label='Administrate']"))
+                    .find(By::Css("button[aria-label='Administrate']"))
                     .await?
                     .click()
                     .await?;
 
                 assert!(driver
-                    .find_element(By::Css("button[aria-label='Accept team']"))
+                    .find(By::Css("button[aria-label='Accept team']"))
                     .await
                     .is_err());
 
@@ -146,12 +146,12 @@ mod delete {
                         .unwrap();
 
                     assert!(driver
-                        .find_element(By::Css("button[aria-label='Delete team']"))
+                        .find(By::Css("button[aria-label='Delete team']"))
                         .await
                         .is_err());
 
                     assert!(driver
-                        .find_element(By::Css("button[aria-label='Administrate']"))
+                        .find(By::Css("button[aria-label='Administrate']"))
                         .await
                         .is_err());
 
@@ -193,18 +193,18 @@ mod delete {
                         .unwrap();
 
                     driver
-                        .find_element(By::Css("button[aria-label='Administrate']"))
+                        .find(By::Css("button[aria-label='Administrate']"))
                         .await?
                         .click()
                         .await?;
                     assert!(driver
-                        .find_element(By::Css(
+                        .find(By::Css(
                             "[href='/go/teams/slug1'] [aria-label='Delete team']",
                         ))
                         .await
                         .is_ok());
                     assert!(driver
-                        .find_element(By::Css("[href='/go/teams/'] [aria-label='Delete team']"))
+                        .find(By::Css("[href='/go/teams/'] [aria-label='Delete team']"))
                         .await
                         .is_err());
 
@@ -254,12 +254,12 @@ mod delete {
             .unwrap();
 
         assert!(driver
-            .find_element(By::Css("button[aria-label='Delete team']"))
+            .find(By::Css("button[aria-label='Delete team']"))
             .await
             .is_err());
 
         driver
-            .find_element(By::Css("button[aria-label='Administrate']"))
+            .find(By::Css("button[aria-label='Administrate']"))
             .await
             .unwrap()
             .click()
@@ -267,7 +267,7 @@ mod delete {
             .unwrap();
 
         assert!(dbg!(driver
-            .find_element(By::Css("[role='listitem']"))
+            .find(By::Css("[role='listitem']"))
             .await
             .unwrap()
             .text()
@@ -276,13 +276,13 @@ mod delete {
         .starts_with("team1"));
 
         let delete_btn = driver
-            .find_element(By::Css("button[aria-label='Delete team']"))
+            .find(By::Css("button[aria-label='Delete team']"))
             .await
             .unwrap();
         delete_btn.click().await.unwrap();
 
         assert!(!dbg!(driver
-            .find_element(By::Css("[role='listitem']"))
+            .find(By::Css("[role='listitem']"))
             .await
             .unwrap()
             .text()
@@ -296,7 +296,7 @@ mod delete {
             .unwrap();
 
         assert!(!dbg!(driver
-            .find_element(By::Css("[role='listitem']"))
+            .find(By::Css("[role='listitem']"))
             .await
             .unwrap()
             .text()
@@ -326,10 +326,10 @@ mod create {
 
                     create_team(driver, port).await?;
 
-                    let create_dialog = driver.find_element(By::Css("[role='dialog']")).await?;
+                    let create_dialog = driver.find(By::Css("[role='dialog']")).await?;
                     assert!(dbg!(
                         create_dialog
-                            .find_element(By::Css("[aria-label='Create team result']"))
+                            .find(By::Css("[aria-label='Create team result']"))
                             .await?
                             .text()
                             .await?
@@ -365,10 +365,10 @@ mod create {
 
                     create_team(driver, port).await?;
 
-                    let create_dialog = driver.find_element(By::Css("[role='dialog']")).await?;
+                    let create_dialog = driver.find(By::Css("[role='dialog']")).await?;
                     assert!(dbg!(
                         create_dialog
-                            .find_element(By::Css("[aria-label='Create team result']"))
+                            .find(By::Css("[aria-label='Create team result']"))
                             .await?
                             .text()
                             .await?
@@ -398,23 +398,23 @@ mod create {
 
         assert!(
             !driver
-                .find_element(By::Css("[role='dialog']"))
+                .find(By::Css("[role='dialog']"))
                 .await?
                 .is_displayed()
                 .await?
         );
 
         let create_btn = driver
-            .find_element(By::Css("button[aria-label='Start creating team']"))
+            .find(By::Css("button[aria-label='Start creating team']"))
             .await?;
         assert_eq!(create_btn.text().await?, "Create");
         create_btn.click().await?;
 
-        let create_dialog = driver.find_element(By::Css("[role='dialog']")).await?;
+        let create_dialog = driver.find(By::Css("[role='dialog']")).await?;
         create_dialog.wait_until().displayed().await?;
         assert_eq!(
             create_dialog
-                .find_element(By::Tag("h5"))
+                .find(By::Tag("h5"))
                 .await?
                 .text()
                 .await?,
@@ -424,31 +424,31 @@ mod create {
         assert_create_form_is_empty(driver).await;
 
         create_dialog
-            .find_element(By::Name("slug"))
+            .find(By::Name("slug"))
             .await?
             .send_keys("slug1")
             .await?;
 
         create_dialog
-            .find_element(By::Name("title"))
+            .find(By::Name("title"))
             .await?
             .send_keys("title1")
             .await?;
 
         create_dialog
-            .find_element(By::Name("is_private"))
+            .find(By::Name("is_private"))
             .await?
             .click()
             .await?;
 
         create_dialog
-            .find_element(By::Css("button[aria-label='Create team']"))
+            .find(By::Css("button[aria-label='Create team']"))
             .await?
             .click()
             .await?;
 
         let teams = driver
-            .find_elements(By::Css("[aria-label='User teams'] span"))
+            .find_all(By::Css("[aria-label='User teams'] span"))
             .await?;
         assert_eq!(teams.last().unwrap().text().await?, "title1");
 
@@ -457,14 +457,14 @@ mod create {
 
     async fn dialog_close_then_open(driver: &WebDriver) {
         let close = driver
-            .find_element(By::Css("[aria-label='Close']"))
+            .find(By::Css("[aria-label='Close']"))
             .await
             .unwrap();
         close.click().await.unwrap();
         close.wait_until().not_displayed().await.unwrap();
 
         driver
-            .find_element(By::Css("button[aria-label='Start creating team']"))
+            .find(By::Css("button[aria-label='Start creating team']"))
             .await
             .unwrap()
             .click()
@@ -475,19 +475,19 @@ mod create {
     }
 
     async fn assert_create_form_is_empty(driver: &WebDriver) {
-        let slug = driver.find_element(By::Name("slug")).await.unwrap();
+        let slug = driver.find(By::Name("slug")).await.unwrap();
         assert!(slug.is_displayed().await.unwrap());
         assert_eq!(None, slug.value().await.unwrap());
 
-        let title = driver.find_element(By::Name("title")).await.unwrap();
+        let title = driver.find(By::Name("title")).await.unwrap();
         assert!(title.is_displayed().await.unwrap());
         assert_eq!(None, title.value().await.unwrap());
 
-        let is_private = driver.find_element(By::Name("is_private")).await.unwrap();
+        let is_private = driver.find(By::Name("is_private")).await.unwrap();
         assert!(is_private.is_displayed().await.unwrap());
         assert_eq!(
             Some("false".to_string()),
-            is_private.get_property("checked").await.unwrap()
+            is_private.prop("checked").await.unwrap()
         );
     }
 }

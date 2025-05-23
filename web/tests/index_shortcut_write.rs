@@ -4,7 +4,6 @@ use go_web::models::teams::TeamCapability;
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
-use serde_json::json;
 mod utils;
 use thirtyfour::components::SelectElement;
 use thirtyfour::prelude::*;
@@ -34,7 +33,7 @@ async fn as_unknow_user_is_not_allowed() {
                 driver.get(host(port, "")).await?;
 
                 assert!(driver
-                    .find_element(By::Css("[aria-label='Switch administration mode']"))
+                    .find(By::Css("[aria-label='Switch administration mode']"))
                     .await
                     .is_err());
 
@@ -67,7 +66,7 @@ async fn as_user_without_capability_is_not_allowed() {
                 driver.get(host(port, "")).await?;
 
                 assert!(driver
-                    .find_element(By::Css("[aria-label='Switch administration mode']"))
+                    .find(By::Css("[aria-label='Switch administration mode']"))
                     .await
                     .is_err());
 
@@ -106,7 +105,7 @@ async fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
                 driver.get(host(port, "")).await?;
 
                 assert!(driver
-                    .find_element(By::Css("[aria-label='Switch administration mode']"))
+                    .find(By::Css("[aria-label='Switch administration mode']"))
                     .await
                     .is_err());
 
@@ -148,22 +147,22 @@ mod delete_shortcut {
                     driver.get(host(port, "")).await?;
 
                     driver
-                        .find_element(By::Css("[aria-label='Switch administration mode']"))
+                        .find(By::Css("[aria-label='Switch administration mode']"))
                         .await?
                         .click()
                         .await?;
 
                     driver
-                        .find_element(By::Css("[aria-label='Delete shortcut']"))
+                        .find(By::Css("[aria-label='Delete shortcut']"))
                         .await?
                         .click()
                         .await?;
 
-                    let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                    let articles = driver.find_all(By::Css("[role='listitem']")).await?;
                     assert_eq!(articles.len(), 0);
 
                     driver.refresh().await?;
-                    let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                    let articles = driver.find_all(By::Css("[role='listitem']")).await?;
                     assert_eq!(articles.len(), 0);
                     Ok(())
                 }
@@ -210,16 +209,16 @@ mod delete_shortcut {
                     driver.get(host(port, "")).await?;
 
                     driver
-                        .find_element(By::Css("[aria-label='Switch administration mode']"))
+                        .find(By::Css("[aria-label='Switch administration mode']"))
                         .await?
                         .click()
                         .await?;
 
-                    let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                    let articles = driver.find_all(By::Css("[role='listitem']")).await?;
                     let first = articles.first().unwrap();
 
                     assert!(first
-                        .find_element(By::Css("[aria-label='Delete shortcut']"))
+                        .find(By::Css("[aria-label='Delete shortcut']"))
                         .await
                         .is_err());
 
@@ -252,7 +251,7 @@ mod delete_shortcut {
                     driver.get(host(port, "")).await?;
 
                     assert!(driver
-                        .find_element(By::Css("[aria-label='Switch administration mode']"))
+                        .find(By::Css("[aria-label='Switch administration mode']"))
                         .await
                         .is_err());
 
@@ -286,7 +285,7 @@ mod delete_shortcut {
                     driver.get(host(port, "")).await?;
 
                     assert!(driver
-                        .find_element(By::Css("[aria-label='Switch administration mode']"))
+                        .find(By::Css("[aria-label='Switch administration mode']"))
                         .await
                         .is_err());
 
@@ -384,12 +383,12 @@ mod create_shortcut {
                     driver.get(host(port, "")).await?;
 
                     driver
-                        .find_element(By::Css("[aria-label='Switch administration mode']"))
+                        .find(By::Css("[aria-label='Switch administration mode']"))
                         .await?
                         .click()
                         .await?;
 
-                    let input = driver.find_element(By::Css("[name='team']")).await.unwrap();
+                    let input = driver.find(By::Css("[name='team']")).await.unwrap();
                     let select = SelectElement::new(&input).await.unwrap();
                     for opt in select.options().await?.iter() {
                         assert_ne!(opt.text().await?, "team")
@@ -425,12 +424,12 @@ mod create_shortcut {
                     driver.get(host(port, "")).await?;
 
                     driver
-                        .find_element(By::Css("[aria-label='Switch administration mode']"))
+                        .find(By::Css("[aria-label='Switch administration mode']"))
                         .await?
                         .click()
                         .await?;
 
-                    let input = driver.find_element(By::Css("[name='team']")).await.unwrap();
+                    let input = driver.find(By::Css("[name='team']")).await.unwrap();
                     let select = SelectElement::new(&input).await.unwrap();
                     for opt in select.options().await?.iter() {
                         assert_ne!(opt.text().await?, "team")
@@ -469,12 +468,12 @@ mod create_shortcut {
                     driver.get(host(port, "")).await?;
 
                     driver
-                        .find_element(By::Css("[aria-label='Switch administration mode']"))
+                        .find(By::Css("[aria-label='Switch administration mode']"))
                         .await?
                         .click()
                         .await?;
 
-                    let input = driver.find_element(By::Css("[name='team']")).await.unwrap();
+                    let input = driver.find(By::Css("[name='team']")).await.unwrap();
                     let select = SelectElement::new(&input).await.unwrap();
                     for opt in select.options().await?.iter() {
                         assert_ne!(opt.text().await?, "team")
@@ -496,7 +495,7 @@ mod create_shortcut {
             .unwrap();
 
         driver
-            .find_element(By::Css("[aria-label='Switch administration mode']"))
+            .find(By::Css("[aria-label='Switch administration mode']"))
             .await
             .unwrap()
             .click()
@@ -504,26 +503,26 @@ mod create_shortcut {
             .unwrap();
 
         driver
-            .find_element(By::Css("[name='shortcut']"))
+            .find(By::Css("[name='shortcut']"))
             .await
             .unwrap()
             .send_keys("jeanLuc")
             .await
             .unwrap();
         driver
-            .find_element(By::Css("[name='url']"))
+            .find(By::Css("[name='url']"))
             .await
             .unwrap()
             .send_keys(host(port, "/aShortcut"))
             .await
             .unwrap();
 
-        let input = driver.find_element(By::Css("[name='team']")).await.unwrap();
+        let input = driver.find(By::Css("[name='team']")).await.unwrap();
         let select = SelectElement::new(&input).await.unwrap();
         select.select_by_value(team).await.unwrap();
 
         driver
-            .find_element(By::Css("[aria-label='Add shortcut']"))
+            .find(By::Css("[aria-label='Add shortcut']"))
             .await
             .unwrap()
             .click()
@@ -531,7 +530,7 @@ mod create_shortcut {
             .unwrap();
 
         let article = driver
-            .find_element(By::Css("[role='listitem']"))
+            .find(By::Css("[role='listitem']"))
             .await
             .unwrap();
         assert_eq!(
@@ -540,26 +539,26 @@ mod create_shortcut {
         );
 
         assert_eq!(
-            article.get_property("href").await.unwrap(),
+            article.prop("href").await.unwrap(),
             Some(host(port, "/jeanLuc?no_redirect"))
         );
 
         assert_eq!(
             driver
-                .find_element(By::Css("[name='shortcut']"))
+                .find(By::Css("[name='shortcut']"))
                 .await
                 .unwrap()
-                .get_property("value")
+                .prop("value")
                 .await
                 .unwrap(),
             Some("".to_owned())
         );
         assert_eq!(
             driver
-                .find_element(By::Css("[name='url']"))
+                .find(By::Css("[name='url']"))
                 .await
                 .unwrap()
-                .get_property("value")
+                .prop("value")
                 .await
                 .unwrap(),
             Some("".to_owned())
@@ -567,10 +566,10 @@ mod create_shortcut {
 
         assert_eq!(
             driver
-                .find_element(By::Css("[name='team']"))
+                .find(By::Css("[name='team']"))
                 .await
                 .unwrap()
-                .get_property("value")
+                .prop("value")
                 .await
                 .unwrap(),
             Some("".to_owned())
@@ -579,7 +578,7 @@ mod create_shortcut {
         driver.refresh().await.unwrap();
 
         let article = driver
-            .find_element(By::Css("[role='listitem']"))
+            .find(By::Css("[role='listitem']"))
             .await
             .unwrap();
         assert_eq!(

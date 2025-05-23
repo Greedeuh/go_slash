@@ -14,13 +14,13 @@ async fn not_logged_in_should_redirect_to_login() {
             async move {
                 driver.get(host(port, "")).await?;
 
-                assert!(driver.find_element(By::Css("[type='email']")).await.is_ok());
+                assert!(driver.find(By::Css("[type='email']")).await.is_ok());
                 assert!(driver
-                    .find_element(By::Css("[type='password']"))
+                    .find(By::Css("[type='password']"))
                     .await
                     .is_ok());
                 assert!(driver
-                    .find_element(By::Css("[href='/go/login/google']"))
+                    .find(By::Css("[href='/go/login/google']"))
                     .await
                     .is_ok());
 

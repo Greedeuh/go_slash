@@ -34,7 +34,7 @@ async fn link_are_shown_on_other_pages() {
                 driver.get(host(port, "")).await?;
 
                 assert!(driver
-                    .find_element(By::Css("a [href='/go/teams']"))
+                    .find(By::Css("a [href='/go/teams']"))
                     .await
                     .is_err());
 
@@ -47,7 +47,7 @@ async fn link_are_shown_on_other_pages() {
 
                     assert_eq!(
                         driver
-                            .find_element(By::Css("[href='/go/teams']"))
+                            .find(By::Css("[href='/go/teams']"))
                             .await?
                             .text()
                             .await?,
@@ -92,32 +92,32 @@ async fn with_icons() {
                     .get(host(port, "/go/teams"))
                     .await?;
 
-                let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
+                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
 
                 for i in 0..texts_sorted.len() {
                     let article = &articles[i];
                     print!("{i}");
                     assert!(article.text().await?.starts_with(texts_sorted[i]));
                     assert_eq!(
-                        article.get_attribute("href").await?,
+                        article.attr("href").await?,
                         Some(href_sorted[i].to_owned())
                     );
 
                     println!("{i}");
                     if locks[i] {
-                        article.find_element(By::Css(".icon-lock")).await?;
+                        article.find(By::Css(".icon-lock")).await?;
                     } else {
-                        assert!(article.find_element(By::Css(".icon-lock")).await.is_err());
+                        assert!(article.find(By::Css(".icon-lock")).await.is_err());
                     }
                     if checks[i] {
-                        article.find_element(By::Css(".icon-check")).await?;
+                        article.find(By::Css(".icon-check")).await?;
                         assert!(article
-                            .find_element(By::Css(".icon-check-empty"))
+                            .find(By::Css(".icon-check-empty"))
                             .await
                             .is_err());
                     } else {
-                        assert!(article.find_element(By::Css(".icon-check")).await.is_err());
-                        article.find_element(By::Css(".icon-check-empty")).await?;
+                        assert!(article.find(By::Css(".icon-check")).await.is_err());
+                        article.find(By::Css(".icon-check-empty")).await?;
                     }
                 }
 
@@ -168,12 +168,12 @@ async fn user_team_then_others() {
                     .await?;
 
                 let user_team = driver
-                    .find_element(By::Css("[aria-label='User teams'] [role='listitem']"))
+                    .find(By::Css("[aria-label='User teams'] [role='listitem']"))
                     .await?;
                 assert!(dbg!(user_team.text().await?).starts_with("team1"));
 
                 let other_teams = driver
-                    .find_elements(By::Css("[aria-label='Other teams'] [role='listitem']"))
+                    .find_all(By::Css("[aria-label='Other teams'] [role='listitem']"))
                     .await?;
 
                 let texts_sorted = ["Global", "team2", "team3", "team4"];
