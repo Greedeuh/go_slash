@@ -1,4 +1,4 @@
-use crate::{models::AppError, services::oidc::OidcServiceError};
+use crate::{errors::AppError, services::oidc::OidcServiceError};
 
 pub mod oidc;
 

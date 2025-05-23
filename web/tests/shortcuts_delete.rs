@@ -1,5 +1,5 @@
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::teams::TeamCapability;
+use go_web::teams::TeamCapability;
 use rocket::http::{Cookie, Status};
 mod utils;
 use utils::*;

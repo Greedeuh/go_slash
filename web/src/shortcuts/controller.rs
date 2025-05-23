@@ -9,14 +9,14 @@ use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
-use crate::models::shortcuts::{
+use crate::shortcuts::{
     sorted, NewShortcut, Shortcut, UpdatableShortcut, SHORTCUT_COLUMNS,
 };
-use crate::models::teams::{
+use crate::teams::{
     teams_with_shortcut_write, user_should_have_team_capability, TeamCapability,
 };
-use crate::models::users::User;
-use crate::models::AppError;
+use crate::users::User;
+use crate::errors::AppError;
 use crate::schema::shortcuts::dsl;
 use crate::schema::users_teams;
 use crate::schema::{shortcuts, teams};

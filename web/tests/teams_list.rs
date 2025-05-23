@@ -1,6 +1,6 @@
 use diesel::PgConnection;
-use go_web::models::teams::TeamCapability;
-use go_web::models::users::Capability;
+use go_web::teams::TeamCapability;
+use go_web::users::Capability;
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;

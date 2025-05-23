@@ -1,8 +1,5 @@
-use crate::models::{
-    shortcuts::Shortcut,
-    teams::{Team, TeamWithUsers},
-    users::User,
-};
+use crate::{
+    shortcuts::Shortcut,teams::{Team, TeamWithUsers},users::User};
 use serde::Serialize;
 
 #[derive(Serialize)]

@@ -2,13 +2,9 @@ use rocket::http::Status;
 use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 
-use crate::models::AppError;
+use crate::errors::AppError;
 
 pub mod login;
-pub mod settings;
-pub mod shortcuts;
-pub mod teams;
-pub mod users;
 
 impl From<AppError> for (Status, Value) {
     fn from(e: AppError) -> Self {

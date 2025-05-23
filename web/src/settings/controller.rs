@@ -3,11 +3,9 @@ use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
 
 use crate::{
-    models::{
-        settings::{patch_features, PatchableFeatures},
-        users::{Capability, User},
-        AppError,
-    },
+    settings::{patch_features, PatchableFeatures},
+    users::{Capability, User},
+    errors::AppError,
     DbPool,
 };
 

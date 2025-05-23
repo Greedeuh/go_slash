@@ -13,33 +13,38 @@ use diesel::{
     PgConnection,
 };
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
-use rocket::{fairing::AdHoc, fs::FileServer, routes, Build, Config, Rocket};
+use rocket::{fairing::AdHoc, fs::FileServer, http::Status, routes, Build, Config, Rocket};
 use rocket_dyn_templates::Template;
 
-pub mod controllers;
-use controllers::{
-    health_check,
-    login::{google_login, login, login_redirect_google, simple_login},
-    settings::{patch_settings, settings},
-    shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut},
-    teams::{
-        create_team, delete_team, delete_user_link_capability, kick_user, list_teams, patch_team,
-        put_user_link_capability, put_user_team_acceptation, show_team,
-    },
-    users::{
-        delete_user_capability, join_global_team, join_team, leave_global_team, leave_team,
-        list_users, put_user_capability, put_user_team_ranks,
-    },
-};
 pub mod guards;
-pub mod models;
-use crate::{
-    middlewares::UnauthorizedAsLogin, models::users::Sessions, services::oidc::OidcService,
-};
+pub mod errors;
+pub mod users;
+pub mod controllers;
+pub mod teams;
+pub mod shortcuts;
 mod middlewares;
 pub mod schema;
 pub mod services;
 mod views;
+pub mod settings;
+
+use teams::{
+    create_team, delete_team, delete_user_link_capability, kick_user, list_teams, patch_team,
+    put_user_link_capability, put_user_team_acceptation, show_team,
+};
+use settings::{patch_settings, settings as get_settings};
+use controllers::login::{google_login, login, login_redirect_google, simple_login};
+use shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut};
+    use users::{
+        delete_user_capability, join_global_team, join_team, leave_global_team, leave_team,
+        list_users, put_user_capability, put_user_team_ranks,
+    };
+
+
+use crate::{
+    middlewares::UnauthorizedAsLogin, users::Sessions, services::oidc::OidcService,
+};
+
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
@@ -88,7 +93,7 @@ pub fn server(
                 delete_shortcut,
                 login,
                 list_users,
-                settings,
+                get_settings,
                 patch_settings,
                 simple_login,
                 health_check,
@@ -128,4 +133,9 @@ pub fn server(
                 }
             })
         }))
+}
+
+#[get("/go/health")]
+pub fn health_check() -> Status {
+    Status::Ok
 }

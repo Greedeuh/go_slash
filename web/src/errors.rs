@@ -1,11 +1,6 @@
 use rustbreak::RustbreakError;
 use serde::Deserialize;
 
-pub mod settings;
-pub mod shortcuts;
-pub mod teams;
-pub mod users;
-
 #[derive(Deserialize, Debug)]
 pub enum AppError {
     Db,

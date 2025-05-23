@@ -7,12 +7,10 @@ mod no_dead_code {
     use diesel::prelude::*;
     use go_web::{
         guards::SESSION_COOKIE,
-        models::{
             settings::DEFAULT_CAPABILITIES,
             shortcuts::NewShortcut,
             teams::{Team, TeamCapability},
             users::{Capability, UserTeam, UserWithPwd},
-        },
         schema::users,
         schema::{settings, teams},
         schema::{shortcuts, users_teams},

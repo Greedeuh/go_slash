@@ -101,7 +101,7 @@ mod after_google_redirect {
     #[cfg(feature = "mock")]
     #[test]
     fn as_unknown_user_create_user_ande_session() {
-        use go_web::models::users::User;
+        use go_web::users::User;
 
         let mut oidc_service = OidcService::faux();
         faux::when!(oidc_service.retrieve_token("code", "nonce"))
@@ -131,7 +131,7 @@ mod after_google_redirect {
     #[cfg(feature = "mock")]
     #[test]
     fn as_unknown_user_with_default_capabilities_create_user_with_default_capabilities() {
-        use go_web::models::users::{User, Capability};
+        use go_web::users::{User, Capability};
 
         let mut oidc_service = OidcService::faux();
         faux::when!(oidc_service.retrieve_token("code", "nonce"))

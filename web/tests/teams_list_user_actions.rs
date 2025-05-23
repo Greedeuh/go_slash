@@ -1,5 +1,5 @@
 use diesel::PgConnection;
-use go_web::models::users::{Capability, UserTeam};
+use go_web::users::{Capability, UserTeam};
 use rocket::futures::FutureExt;
 use rocket::http::Status;
 use rocket::tokio::sync::Mutex;

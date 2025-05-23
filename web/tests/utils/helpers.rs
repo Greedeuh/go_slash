@@ -3,7 +3,7 @@ pub use no_dead_code::*;
 #[allow(dead_code)]
 mod no_dead_code {
     use diesel::{prelude::*, sql_types::Bool, Connection, PgConnection};
-    use go_web::{models::users::Sessions, server, services::oidc::OidcService, AppConfig};
+    use go_web::{users::Sessions, server, services::oidc::OidcService, AppConfig};
     use lazy_static::lazy_static;
     use openidconnect::{
         core::{CoreClient, CoreProviderMetadata},

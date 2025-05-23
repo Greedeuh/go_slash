@@ -1,5 +1,5 @@
-use crate::models::teams::{Team, TeamCapability};
-use crate::models::AppError;
+use crate::teams::{Team, TeamCapability};
+use crate::errors::AppError;
 use crate::schema::users;
 use crate::schema::*;
 use diesel::{deserialize, serialize, Associations, Identifiable, Insertable};

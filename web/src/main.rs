@@ -8,7 +8,7 @@ use openidconnect::{
 };
 use std::env;
 
-use go_web::{models::users::Sessions, server, services::oidc::OidcService, AppConfig};
+use go_web::{users::Sessions, server, services::oidc::OidcService, AppConfig};
 
 #[launch]
 async fn rocket() -> _ {

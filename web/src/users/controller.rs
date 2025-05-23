@@ -5,17 +5,22 @@ use diesel::prelude::*;
 use lazy_static::lazy_static;
 use log::warn;
 use regex::Regex;
-use rocket::{http::Status, serde::json::Json, State};
+use rocket::request::{FromRequest, Outcome};
+use rocket::Request;
+use rocket::{http::Status, serde::json::Json, State,    outcome::try_outcome,
+};
 use rocket_dyn_templates::Template;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-use crate::models::teams::{Team, TeamCapability};
-use crate::models::users::{Capability, User, UserTeam, SAFE_USER_COLUMNS};
-use crate::models::AppError;
-use crate::schema::users::dsl;
+use crate::guards::SessionId;
+use crate::teams::{Team, TeamCapability};
+use crate::users::{Capability, User, UserTeam, SAFE_USER_COLUMNS};
+use crate::errors::AppError;
+use crate::schema::users::{self, dsl};
 use crate::schema::{teams, users_teams};
 use crate::DbPool;
+use super::models::*;
 
 lazy_static! {
    pub static ref MAIL_REGEX: Regex =
@@ -42,7 +47,6 @@ pub fn join_team(
     slug: String,
     team_user_link: Json<UserTeamLink>,
     user: User,
-
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
     user.should_have_capability(Capability::UsersTeamsWrite)?;
@@ -221,4 +225,50 @@ pub fn delete_user_capability(
     }
 
     Ok(Status::Ok)
+}
+
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for User {
+    type Error = serde_json::Value;
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let pool: Outcome<&State<DbPool>, Self::Error> = req
+            .guard::<&State<DbPool>>()
+            .await
+            .map_error(|_| AppError::Guard.into());
+        let pool = try_outcome!(pool);
+
+        let sessions: Outcome<&State<Sessions>, Self::Error> = req
+            .guard::<&State<Sessions>>()
+            .await
+            .map_error(|_| AppError::Guard.into());
+        let sessions = try_outcome!(sessions);
+
+        let session_id = try_outcome!(req.guard::<SessionId>().await);
+
+        match get_user(&session_id, sessions, pool) {
+            Ok(user) => Outcome::Success(user),
+            Err(err) => Outcome::Error(err.into()),
+        }
+    }
+}
+
+fn get_user(
+    session_id: &SessionId,
+    sessions: &State<Sessions>,
+    pool: &State<DbPool>,
+) -> Result<User, AppError> {
+    let mut conn = pool.get().map_err(AppError::from)?;
+
+    match sessions.is_logged_in(&session_id.0) {
+        None => {
+            error!("Wrong session_id.");
+            Err(AppError::Unauthorized)
+        }
+        Some(mail) => Ok(users::table
+            .find(&mail)
+            .select(SAFE_USER_COLUMNS)
+            .first::<User>(&mut conn)?),
+    }
 }

@@ -13,13 +13,13 @@ use sha256::digest;
 use uuid::Uuid;
 
 use crate::{
-    controllers::users::MAIL_REGEX,
+    users::MAIL_REGEX,
     guards::{NonceOIDC, SessionId, SESSION_COOKIE},
-    models::{
-        settings::default_capabilities,
-        users::{Sessions, User, UserWithPwd},
+    errors::{
         AppError,
     },
+    settings::default_capabilities,
+    users::{Sessions, User, UserWithPwd},
     schema::users,
     services::oidc::OidcService,
     AppConfig, DbConn, DbPool,

@@ -1,6 +1,6 @@
 use go_web::guards::SESSION_COOKIE;
-use go_web::models::shortcuts::Shortcut;
-use go_web::models::teams::TeamCapability;
+use go_web::shortcuts::Shortcut;
+use go_web::teams::TeamCapability;
 use rocket::http;
 use rocket::http::ContentType;
 use rocket::http::Cookie;

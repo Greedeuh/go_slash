@@ -2,8 +2,8 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::models::users::Capability;
-use crate::models::AppError;
+use crate::users::Capability;
+use crate::errors::AppError;
 use crate::schema::settings;
 use crate::DbConn;
 

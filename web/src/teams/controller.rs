@@ -9,15 +9,15 @@ use serde_json::{json, Value};
 use std::{cmp::Ordering, str::FromStr};
 
 use crate::{
-    models::{
-        shortcuts::Shortcut,
-        teams::{
-            teams_with_shortcut_write, user_should_have_team_capability, Team, TeamCapability,
-            TeamForOptUser, TeamForUserIfSome, TeamWithUsers,
-        },
-        users::{Capability, User, UserTeam},
+    errors::{
         AppError,
     },
+    shortcuts::Shortcut,
+    teams::{
+        teams_with_shortcut_write, user_should_have_team_capability, Team, TeamCapability,
+        TeamForOptUser, TeamForUserIfSome, TeamWithUsers,
+    },
+    users::{Capability, User, UserTeam},
     schema::{
         shortcuts,
         teams::{self, dsl},

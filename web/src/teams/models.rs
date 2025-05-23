@@ -4,10 +4,10 @@ use std::{io::Write, str::FromStr};
 use strum_macros::{Display, EnumString};
 
 use crate::{
-    models::{
-        users::{User, UserTeam},
+    errors::{
         AppError,
     },
+    users::{User, UserTeam},
     schema::{teams, users_teams},
     DbConn,
 };

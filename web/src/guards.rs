@@ -1,4 +1,3 @@
-use diesel::prelude::*;
 use rocket::{
     http::{CookieJar, HeaderMap},
     outcome::try_outcome,
@@ -7,12 +6,10 @@ use rocket::{
 };
 
 use crate::{
-    models::{
-        users::{Sessions, User, SAFE_USER_COLUMNS},
+    errors::{
         AppError,
     },
-    schema::users,
-    DbPool,
+    users::Sessions,
 };
 
 pub const SESSION_COOKIE: &str = "go_session_id";
@@ -62,32 +59,6 @@ impl<'r> FromRequest<'r> for NonceOIDC {
     }
 }
 
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for User {
-    type Error = serde_json::Value;
-
-    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let pool: Outcome<&State<DbPool>, Self::Error> = req
-            .guard::<&State<DbPool>>()
-            .await
-            .map_error(|_| AppError::Guard.into());
-        let pool = try_outcome!(pool);
-
-        let sessions: Outcome<&State<Sessions>, Self::Error> = req
-            .guard::<&State<Sessions>>()
-            .await
-            .map_error(|_| AppError::Guard.into());
-        let sessions = try_outcome!(sessions);
-
-        let session_id = try_outcome!(req.guard::<SessionId>().await);
-
-        match get_user(&session_id, sessions, pool) {
-            Ok(user) => Outcome::Success(user),
-            Err(err) => Outcome::Error(err.into()),
-        }
-    }
-}
-
 fn session_from_cookies(cookies: &CookieJar) -> Option<SessionId> {
     let cookie = cookies
         .iter()
@@ -102,23 +73,4 @@ fn session_from_headers(headers: &HeaderMap) -> Option<SessionId> {
         .find(|header| header.name() == "Authorization")?;
 
     Some(SessionId(cookie.value().to_string()))
-}
-
-fn get_user(
-    session_id: &SessionId,
-    sessions: &State<Sessions>,
-    pool: &State<DbPool>,
-) -> Result<User, AppError> {
-    let mut conn = pool.get().map_err(AppError::from)?;
-
-    match sessions.is_logged_in(&session_id.0) {
-        None => {
-            error!("Wrong session_id.");
-            Err(AppError::Unauthorized)
-        }
-        Some(mail) => Ok(users::table
-            .find(&mail)
-            .select(SAFE_USER_COLUMNS)
-            .first::<User>(&mut conn)?),
-    }
 }

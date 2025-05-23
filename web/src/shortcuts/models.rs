@@ -1,7 +1,7 @@
 use diesel::{prelude::*, Insertable};
 use serde::Serialize;
 
-use crate::models::AppError;
+use crate::errors::AppError;
 use crate::schema::shortcuts;
 use crate::DbConn;
 
