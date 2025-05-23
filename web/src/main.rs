@@ -91,7 +91,7 @@ async fn google_oidc_client() -> OidcService {
         Some(ClientSecret::new(client_secret)),
     )
     .set_redirect_uri(
-        RedirectUrl::new(format!("http://{}/go/login/redirect/google", hostname)).unwrap(),
+        RedirectUrl::new(format!("http://{hostname}/go/login/redirect/google")).unwrap(),
     );
 
     OidcService::new(client)

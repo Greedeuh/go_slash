@@ -89,25 +89,17 @@ impl<'r> FromRequest<'r> for User {
 }
 
 fn session_from_cookies(cookies: &CookieJar) -> Option<SessionId> {
-    let cookie = match cookies
+    let cookie = cookies
         .iter()
-        .find(|cookie| cookie.name() == SESSION_COOKIE)
-    {
-        Some(c) => c,
-        None => return None,
-    };
+        .find(|cookie| cookie.name() == SESSION_COOKIE)?;
 
     Some(SessionId(cookie.value().to_string()))
 }
 
 fn session_from_headers(headers: &HeaderMap) -> Option<SessionId> {
-    let cookie = match headers
+    let cookie = headers
         .iter()
-        .find(|header| header.name() == "Authorization")
-    {
-        Some(c) => c,
-        None => return None,
-    };
+        .find(|header| header.name() == "Authorization")?;
 
     Some(SessionId(cookie.value().to_string()))
 }
