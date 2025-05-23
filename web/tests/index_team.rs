@@ -38,7 +38,7 @@ async fn as_user() {
                 user("some_mail@mail.com", "pwd", &[], &[], &conn);
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
                 driver
                     .get(host(port, "/go/teams/slug1"))
@@ -83,7 +83,7 @@ async fn list_user() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
 
                 driver
@@ -141,7 +141,7 @@ mod edit_team {
                     );
 
                     driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                         .await?;
                     driver
                         .get(host(port, "/go/teams/slug1"))
@@ -244,7 +244,7 @@ mod edit_team {
         admin: bool,
     ) -> Result<(), WebDriverError> {
         driver
-            .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+            .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
             .await?;
         driver
             .get(host(port, "/go/teams/slug1"))
@@ -387,7 +387,7 @@ mod edit_user_team_link {
 
     async fn toggle_capability(driver: &WebDriver, port: u16) {
         driver
-            .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+            .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
             .await
             .unwrap();
 
@@ -525,7 +525,7 @@ mod kick_user {
 
     async fn kick(driver: &WebDriver, port: u16) {
         driver
-            .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+            .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
             .await
             .unwrap();
 
@@ -595,7 +595,7 @@ mod accept_user {
                     );
 
                     driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                         .await
                         .unwrap();
 
@@ -685,7 +685,7 @@ mod accept_user {
 
     async fn accept_candidature(driver: &WebDriver, port: u16) {
         driver
-            .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+            .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
             .await
             .unwrap();
 

@@ -31,7 +31,7 @@ async fn as_admin_accept_team() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
 
                 driver
@@ -136,7 +136,7 @@ mod delete {
                     );
 
                     driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                         .await
                         .unwrap();
 
@@ -183,7 +183,7 @@ mod delete {
                     );
 
                     driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                         .await
                         .unwrap();
 
@@ -244,7 +244,7 @@ mod delete {
 
     async fn delete_team(driver: &WebDriver, port: u16) {
         driver
-            .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+            .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
             .await
             .unwrap();
 
@@ -389,7 +389,7 @@ mod create {
 
     async fn create_team(driver: &WebDriver, port: u16) -> Result<(), WebDriverError> {
         driver
-            .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+            .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
             .await?;
 
         driver

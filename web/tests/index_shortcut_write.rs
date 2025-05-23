@@ -6,7 +6,7 @@ use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
 use serde_json::json;
 mod utils;
-use thirtyfour::components::select::SelectElement;
+use thirtyfour::components::SelectElement;
 use thirtyfour::prelude::*;
 use utils::*;
 
@@ -62,7 +62,7 @@ async fn as_user_without_capability_is_not_allowed() {
                 user("some_mail@mail.com", "pwd", &[], &[], &con);
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
                 driver.get(host(port, "")).await?;
 
@@ -101,7 +101,7 @@ async fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
                 driver.get(host(port, "")).await?;
 
@@ -143,7 +143,7 @@ mod delete_shortcut {
                     );
 
                     driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                         .await?;
                     driver.get(host(port, "")).await?;
 
@@ -205,7 +205,7 @@ mod delete_shortcut {
                     );
 
                     driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                         .await?;
                     driver.get(host(port, "")).await?;
 
@@ -247,7 +247,7 @@ mod delete_shortcut {
                     user("some_mail@mail.com", "pwd", &[], &[], &con);
 
                     driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                         .await?;
                     driver.get(host(port, "")).await?;
 
@@ -281,7 +281,7 @@ mod delete_shortcut {
                     user("some_mail@mail.com", "pwd", &[], &[], &con);
 
                     driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                         .await?;
                     driver.get(host(port, "")).await?;
 
@@ -318,7 +318,7 @@ mod create_shortcut {
                     );
 
                     driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                         .await?;
                     assert_create_shortcut_ok(driver, "", port).await;
 
@@ -347,7 +347,7 @@ mod create_shortcut {
                     );
 
                     driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                         .await?;
                     assert_create_shortcut_ok(driver, "team1", port).await;
 
@@ -379,7 +379,7 @@ mod create_shortcut {
                     );
 
                     driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                         .await?;
                     driver.get(host(port, "")).await?;
 
@@ -420,7 +420,7 @@ mod create_shortcut {
                     );
 
                     driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                         .await?;
                     driver.get(host(port, "")).await?;
 
@@ -464,7 +464,7 @@ mod create_shortcut {
                     );
 
                     driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                         .await?;
                     driver.get(host(port, "")).await?;
 

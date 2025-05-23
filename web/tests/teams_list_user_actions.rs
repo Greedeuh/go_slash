@@ -28,7 +28,7 @@ async fn join_team() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
 
                 driver
@@ -89,7 +89,7 @@ async fn leave_team() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
 
                 driver
@@ -160,7 +160,7 @@ async fn change_user_teams_rank() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
 
                 driver

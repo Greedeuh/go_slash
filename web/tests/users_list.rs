@@ -22,7 +22,7 @@ async fn link_are_shown_on_other_pages() {
                 user("some_mail@mail.com", "pwd", &[], &Capability::all(), &con);
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
 
                 driver.get(host(port, "")).await?;
@@ -80,7 +80,7 @@ async fn as_admin_i_can_see_the_list() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
 
                 driver
@@ -144,7 +144,7 @@ async fn as_admin_i_can_change_users_capabilities() {
                 user("another_mail@mail.com", "pwd", &[], &[], &con);
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
 
                 driver

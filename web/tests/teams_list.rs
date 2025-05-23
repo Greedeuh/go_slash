@@ -29,7 +29,7 @@ async fn link_are_shown_on_other_pages() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
 
                 driver.get(host(port, "")).await?;
@@ -78,7 +78,7 @@ async fn with_icons() {
                 user("some_mail@mail.com", "pwd", &[], &[], &con);
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
                 let texts_sorted = vec!["Global", "team1", "team2", "team3", "team4"];
                 let href_sorted = vec![
@@ -163,7 +163,7 @@ async fn user_team_then_others() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
 
                 driver

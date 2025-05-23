@@ -87,8 +87,8 @@ mod no_dead_code {
     }
 
     pub fn session_cookie(session_id: &str, port: u16) -> Cookie {
-        let mut cookie = Cookie::new(SESSION_COOKIE, json!(session_id));
-        cookie.set_domain(Some(format!("localhost:{}", port)));
+        let mut cookie = Cookie::new(SESSION_COOKIE, session_id);
+        cookie.set_domain(format!("localhost:{}", port));
         cookie
     }
 

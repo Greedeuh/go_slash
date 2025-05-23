@@ -4,7 +4,6 @@ use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
 mod utils;
-use serde_json::json;
 use thirtyfour::prelude::*;
 use utils::*;
 
@@ -54,7 +53,7 @@ async fn list_shortcuts() {
                 ];
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
                 driver.get(host(port, "")).await?;
 
@@ -110,7 +109,7 @@ async fn sugest_when_typing() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
                 driver.get(host(port, "")).await?;
 
@@ -186,7 +185,7 @@ async fn with_click() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
                 driver.get(host(port, "")).await?;
 
@@ -201,7 +200,7 @@ async fn with_click() {
                 sleep();
 
                 assert_eq!(
-                    driver.current_url().await?,
+                    driver.current_url().await?.to_string(),
                     host(port, "/aShortcut1")
                 );
 
@@ -247,12 +246,12 @@ async fn with_keyboard() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
                 driver.get(host(port, "")).await?;
 
                 let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
-                search_bar.send_keys(Keys::Down).await?;
+                search_bar.send_keys(Key::Down).await?;
 
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
 
@@ -263,7 +262,7 @@ async fn with_keyboard() {
                 );
                 assert!(articles[0].class_name().await?.unwrap().contains("active"));
 
-                search_bar.send_keys(Keys::Down).await?;
+                search_bar.send_keys(Key::Down).await?;
 
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
 
@@ -279,7 +278,7 @@ async fn with_keyboard() {
                 );
                 assert!(articles[1].class_name().await?.unwrap().contains("active"));
 
-                search_bar.send_keys(Keys::Up).await?;
+                search_bar.send_keys(Key::Up).await?;
 
                 // up arrow select first & unselect first
                 assert_eq!(
@@ -293,7 +292,7 @@ async fn with_keyboard() {
                 );
                 assert!(!articles[1].class_name().await?.unwrap().contains("active"));
 
-                search_bar.send_keys(Keys::Tab).await?;
+                search_bar.send_keys(Key::Tab).await?;
 
                 // Tab take first
                 assert_eq!(
@@ -301,12 +300,12 @@ async fn with_keyboard() {
                     Some("jeanLuc".to_owned())
                 );
 
-                search_bar.send_keys(Keys::Enter).await?;
+                search_bar.send_keys(Key::Enter).await?;
                 sleep();
 
                 // Enter launch search
                 assert_eq!(
-                    driver.current_url().await?,
+                    driver.current_url().await?.to_string(),
                     host(port, "/aShortcut1")
                 );
 
@@ -314,13 +313,13 @@ async fn with_keyboard() {
                 // arow down then enter go to the first line shortcut
 
                 let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
-                search_bar.send_keys(Keys::Down).await?;
-                search_bar.send_keys(Keys::Enter).await?;
+                search_bar.send_keys(Key::Down).await?;
+                search_bar.send_keys(Key::Enter).await?;
 
                 sleep();
 
                 assert_eq!(
-                    driver.current_url().await?,
+                    driver.current_url().await?.to_string(),
                     host(port, "/aShortcut1")
                 );
                 Ok(())

@@ -57,7 +57,7 @@ async fn as_user() {
                 std::thread::sleep(std::time::Duration::from_millis(500));
 
                 assert_eq!(
-                    driver.current_url().await?,
+                    driver.current_url().await?.to_string(),
                     host(port, "/")
                 );
                 Ok(())
@@ -115,7 +115,7 @@ async fn with_from_query_param_redirect_to_it() {
                 std::thread::sleep(std::time::Duration::from_millis(500));
 
                 assert_eq!(
-                    driver.current_url().await?,
+                    driver.current_url().await?.to_string(),
                     host(port, "/allo")
                 );
                 Ok(())

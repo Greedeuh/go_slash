@@ -18,7 +18,7 @@ mod no_dead_code {
         env, fmt::format, panic::{resume_unwind, AssertUnwindSafe}, time::Duration
     };
     pub use tf::*;
-    use thirtyfour::{error::WebDriverError, DesiredCapabilities, WebDriver};
+    use thirtyfour::{error::WebDriverError, ChromiumLikeCapabilities, DesiredCapabilities, WebDriver};
     use uuid::Uuid;
 
     const PORT: u16 = 8001;
@@ -231,7 +231,7 @@ mod no_dead_code {
             caps.set_headless().expect("Headless conf failed");
         }
 
-        let driver = WebDriver::new("http://localhost:4444", &caps)
+        let driver = WebDriver::new("http://localhost:4444", caps)
             .await
             .expect("Driver build failed");
 
@@ -287,7 +287,7 @@ mod no_dead_code {
         pub async fn session(driver: &WebDriver, session_id: &str) {
             driver.delete_cookie(SESSION_COOKIE).await.unwrap();
             driver
-                .add_cookie(Cookie::new(SESSION_COOKIE, json!(session_id)))
+                .add_cookie(Cookie::new(SESSION_COOKIE, session_id))
                 .await
                 .unwrap();
         }

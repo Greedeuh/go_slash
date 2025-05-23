@@ -38,7 +38,7 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
                 driver
                     .get(&format!("{}?no_redirect=true", host(port, "/newShortcut")))
@@ -121,7 +121,7 @@ async fn with_not_existing_shortcut_return_search_and_edit_form_filled() {
                 );
 
                 driver
-                    .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
+                    .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
 
                 driver
