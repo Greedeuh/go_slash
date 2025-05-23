@@ -4,7 +4,6 @@ use rocket::futures::FutureExt;
 use rocket::http::Status;
 use rocket::tokio::sync::Mutex;
 use rocket::{async_test, http};
-use serde_json::json;
 use thirtyfour::prelude::*;
 
 mod utils;
@@ -96,14 +95,12 @@ async fn as_admin_i_can_see_the_list() {
                     .unwrap()
                     .clone();
 
-                let expeted_capabilities = vec![
-                    ("false", Capability::Features),
+                let expeted_capabilities = [("false", Capability::Features),
                     ("true", Capability::TeamsWrite),
                     ("false", Capability::TeamsWriteWithValidation),
                     ("false", Capability::UsersAdmin),
                     ("false", Capability::UsersTeamsRead),
-                    ("false", Capability::UsersTeamsWrite),
-                ];
+                    ("false", Capability::UsersTeamsWrite)];
 
                 user.click().await?;
 

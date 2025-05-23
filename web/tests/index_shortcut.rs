@@ -5,7 +5,6 @@ use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
 mod utils;
-use serde_json::json;
 use thirtyfour::prelude::*;
 use utils::*;
 

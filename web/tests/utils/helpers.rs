@@ -15,8 +15,9 @@ mod no_dead_code {
         tokio::{spawn, sync::Mutex},
     };
     use std::{
-        env, fmt::format, panic::{resume_unwind, AssertUnwindSafe}, time::Duration
+        env, panic::{resume_unwind, AssertUnwindSafe}, time::Duration
     };
+    #[allow(unused_imports)]
     pub use tf::*;
     use thirtyfour::{error::WebDriverError, ChromiumLikeCapabilities, DesiredCapabilities, WebDriver};
     use uuid::Uuid;
@@ -30,13 +31,13 @@ mod no_dead_code {
     }
 
     pub fn host(port: u16, path: &str) -> String {
-        format!("{}:{}{}", HOST, port, path)
+        format!("{HOST}:{port}{path}")
     }
 
     pub fn random_pg_url() -> (String, String) {
         let uuid = dbg!(format!("go_{}", Uuid::new_v4().simple()));
         (
-            format!("postgres://postgres:postgres@localhost:6543/{}", uuid),
+            format!("postgres://postgres:postgres@localhost:6543/{uuid}"),
             uuid,
         )
     }
@@ -44,7 +45,7 @@ mod no_dead_code {
     pub fn setup_db_conn(db_url: &str, db: &str) -> PgConnection {
         let mut pg = PgConnection::establish("postgres://postgres:postgres@localhost:6543/postgres")
             .unwrap();
-        diesel::dsl::sql::<Bool>(&format!("CREATE DATABASE {};", db))
+        diesel::dsl::sql::<Bool>(&format!("CREATE DATABASE {db};"))
             .execute(&mut pg)
             .unwrap();
         PgConnection::establish(db_url).unwrap()
@@ -54,12 +55,11 @@ mod no_dead_code {
         diesel::dsl::sql::<Bool>(&format!(
             "SELECT pg_terminate_backend(pg_stat_activity.pid)
         FROM pg_stat_activity
-        WHERE pg_stat_activity.datname = '{}';",
-            db
+        WHERE pg_stat_activity.datname = '{db}';"
         ))
         .execute(pg)
         .unwrap();
-        diesel::dsl::sql::<Bool>(&format!("DROP DATABASE {};", db))
+        diesel::dsl::sql::<Bool>(&format!("DROP DATABASE {db};"))
             .execute(pg)
             .unwrap();
     }
@@ -137,7 +137,7 @@ mod no_dead_code {
             Some(ClientSecret::new(client_secret)),
         )
         .set_redirect_uri(
-            RedirectUrl::new(format!("http://{}/go/login/redirect/google", hostname)).unwrap(),
+            RedirectUrl::new(format!("http://{hostname}/go/login/redirect/google")).unwrap(),
         );
 
         OidcService::new(client)
@@ -251,7 +251,7 @@ mod no_dead_code {
 
         let may_panic;
         {
-            let mut db_conn = Mutex::new(db_conn);
+            let db_conn = Mutex::new(db_conn);
             may_panic = AssertUnwindSafe(async { f(&driver, db_conn, port).await.unwrap() });
         }
 
@@ -281,7 +281,7 @@ mod no_dead_code {
 
     pub mod tf {
         use go_web::guards::SESSION_COOKIE;
-        use serde_json::json;
+        
         use thirtyfour::{Cookie, WebDriver};
 
         pub async fn session(driver: &WebDriver, session_id: &str) {

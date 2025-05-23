@@ -4,7 +4,6 @@ use go_web::models::users::Capability;
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
-use serde_json::json;
 use thirtyfour::prelude::*;
 
 mod utils;
@@ -80,16 +79,14 @@ async fn with_icons() {
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
                     .await?;
-                let texts_sorted = vec!["Global", "team1", "team2", "team3", "team4"];
-                let href_sorted = vec![
-                    "/go/teams/",
+                let texts_sorted = ["Global", "team1", "team2", "team3", "team4"];
+                let href_sorted = ["/go/teams/",
                     "/go/teams/slug1",
                     "/go/teams/slug2",
                     "/go/teams/slug3",
-                    "/go/teams/slug4",
-                ];
-                let locks = vec![false, false, true, true, false];
-                let checks = vec![true, true, true, false, false];
+                    "/go/teams/slug4"];
+                let locks = [false, false, true, true, false];
+                let checks = [true, true, true, false, false];
 
                 driver
                     .get(host(port, "/go/teams"))
@@ -99,14 +96,14 @@ async fn with_icons() {
 
                 for i in 0..texts_sorted.len() {
                     let article = &articles[i];
-                    print!("{}", i);
+                    print!("{i}");
                     assert!(article.text().await?.starts_with(texts_sorted[i]));
                     assert_eq!(
                         article.get_attribute("href").await?,
                         Some(href_sorted[i].to_owned())
                     );
 
-                    println!("{}", i);
+                    println!("{i}");
                     if locks[i] {
                         article.find_element(By::Css(".icon-lock")).await?;
                     } else {
@@ -179,7 +176,7 @@ async fn user_team_then_others() {
                     .find_elements(By::Css("[aria-label='Other teams'] [role='listitem']"))
                     .await?;
 
-                let texts_sorted = vec!["Global", "team2", "team3", "team4"];
+                let texts_sorted = ["Global", "team2", "team3", "team4"];
                 for i in 0..texts_sorted.len() {
                     let article = &other_teams[i];
                     assert!(dbg!(article.text().await)?.starts_with(dbg!(texts_sorted[i])));

@@ -41,16 +41,12 @@ async fn list_shortcuts() {
                     &mut con,
                 );
 
-                let texts_sorted = vec![
-                    format!("aShortcut {} team1", host(port, "/aShortcut")),
+                let texts_sorted = [format!("aShortcut {} team1", host(port, "/aShortcut")),
                     format!("newShortcut {}", host(port, "/newShortcut")),
-                    format!("ssshortcut {}", host(port, "/ssshortcut")),
-                ];
-                let href_sorted = vec![
-                    host(port, "/aShortcut"),
+                    format!("ssshortcut {}", host(port, "/ssshortcut"))];
+                let href_sorted = [host(port, "/aShortcut"),
                     host(port, "/newShortcut"),
-                    host(port, "/ssshortcut"),
-                ];
+                    host(port, "/ssshortcut")];
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))

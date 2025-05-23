@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 pub use no_dead_code::*;
 
 #[allow(dead_code)]
