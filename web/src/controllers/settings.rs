@@ -26,8 +26,8 @@ pub fn patch_settings(
 ) -> Result<Status, (Status, Value)> {
     user.should_have_capability(Capability::Features)?;
 
-    let conn = pool.get().map_err(AppError::from)?;
-    patch_features(new_features.into_inner(), &conn)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
+    patch_features(new_features.into_inner(), &mut conn)?;
 
     Ok(Status::Ok)
 }

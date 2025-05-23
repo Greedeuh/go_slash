@@ -16,13 +16,13 @@ async fn as_user() {
         "",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let conn = con.lock().await;
+                let mut conn = con.lock().await;
                 user(
                     "some_mail@mail.go",
                     "4a4498acaf82759d929a7571b5bcea425c9275854d963e49333bf8056c673f60",
                     &[],
                     &[],
-                    &conn,
+                    &mut conn,
                 );
 
                 driver
@@ -74,13 +74,13 @@ async fn with_from_query_param_redirect_to_it() {
         "",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let conn = con.lock().await;
+                let mut conn = con.lock().await;
                 user(
                     "some_mail@mail.go",
                     "4a4498acaf82759d929a7571b5bcea425c9275854d963e49333bf8056c673f60",
                     &[],
                     &[],
-                    &conn,
+                    &mut conn,
                 );
 
                 driver
@@ -132,13 +132,13 @@ async fn with_wrong_credentials_show_an_error() {
         "",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let conn = con.lock().await;
+                let mut conn = con.lock().await;
                 user(
                     "some_mail@mail.go",
                     "4a4498acaf82759d929a7571b5bcea425c9275854d963e49333bf8056c673f60",
                     &[],
                     &[],
-                    &conn,
+                    &mut conn,
                 );
 
                 driver
@@ -182,13 +182,13 @@ mod controller {
 
     #[test]
     fn as_user() {
-        let (client, conn) = launch_with("");
+        let (client, mut conn) = launch_with("");
         user(
             "some_mail@mail.go",
             "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
             &[],
             &[],
-            &conn,
+            &mut conn,
         );
 
         let response = client
@@ -207,13 +207,13 @@ mod controller {
 
     #[test]
     fn as_user_with_wrong_pwd_is_not_allowed() {
-        let (client, conn) = launch_with("");
+        let (client, mut conn) = launch_with("");
         user(
             "some_mail@mail.go",
             "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
             &[],
             &[],
-            &conn,
+            &mut conn,
         );
 
         let response = client
@@ -226,13 +226,13 @@ mod controller {
 
     #[test]
     fn as_user_with_wrong_mail_is_not_allowed() {
-        let (client, conn) = launch_with("");
+        let (client, mut conn) = launch_with("");
         user(
             "some_mail@mail.go",
             "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
             &[],
             &[],
-            &conn,
+            &mut conn,
         );
 
         let response = client
@@ -245,13 +245,13 @@ mod controller {
 
     #[test]
     fn with_bad_mail_format_is_not_allowed() {
-        let (client, conn) = launch_with("");
+        let (client, mut conn) = launch_with("");
         user(
             "some_mail@mail.go",
             "b112aa82a7aafb32aea966cafd2f6bb2562c34d2f08bb1dee9fab4b2b223ea20",
             &[],
             &[],
-            &conn,
+            &mut conn,
         );
 
         let response = client

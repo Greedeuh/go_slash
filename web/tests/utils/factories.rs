@@ -19,7 +19,7 @@ mod no_dead_code {
     use serde_json::json;
     use thirtyfour::Cookie;
 
-    pub fn shortcut(shortcut: &str, url: &str, team_slug: &str, db_con: &PgConnection) {
+    pub fn shortcut(shortcut: &str, url: &str, team_slug: &str, db_con: &mut PgConnection) {
         diesel::insert_into(shortcuts::table)
             .values(&NewShortcut {
                 shortcut: shortcut.to_string(),
@@ -35,7 +35,7 @@ mod no_dead_code {
         pwd: &str,
         teams: &[(&str, &[TeamCapability], i16, bool)],
         capabilities: &[Capability],
-        db_con: &PgConnection,
+        db_con: &mut PgConnection,
     ) {
         diesel::insert_into(users::table)
             .values(&UserWithPwd {
@@ -60,7 +60,7 @@ mod no_dead_code {
         }
     }
 
-    pub fn default_capabilities(capabilities: &[Capability], db_con: &PgConnection) {
+    pub fn default_capabilities(capabilities: &[Capability], db_con: &mut PgConnection) {
         diesel::update(settings::table)
             .set(settings::content.eq(json!(capabilities).to_string()))
             .filter(settings::title.eq(DEFAULT_CAPABILITIES))
@@ -73,7 +73,7 @@ mod no_dead_code {
         title: &str,
         is_private: bool,
         is_accepted: bool,
-        db_con: &PgConnection,
+        db_con: &mut PgConnection,
     ) {
         diesel::insert_into(teams::table)
             .values(&Team {

@@ -12,13 +12,13 @@ use utils::*;
 
 #[test]
 fn with_invalid_url_return_400() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
     user(
         "some_mail@mail.com",
         "pwd",
         &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
         &[],
-        &conn,
+        &mut conn,
     );
 
     let response = client
@@ -37,13 +37,13 @@ fn with_invalid_url_return_400() {
 
 #[test]
 fn as_user_with_team_capability_is_ok() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
     user(
         "some_mail@mail.com",
         "pwd",
         &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
         &[],
-        &conn,
+        &mut conn,
     );
 
     let response = client
@@ -55,7 +55,7 @@ fn as_user_with_team_capability_is_ok() {
 
     assert_eq!(response.status(), Status::Ok);
 
-    let shortcut = get_shortcut("myShortCut/hop", &conn);
+    let shortcut = get_shortcut("myShortCut/hop", &mut conn);
     assert_eq!(
         shortcut.unwrap(),
         Shortcut {
@@ -68,14 +68,14 @@ fn as_user_with_team_capability_is_ok() {
 
 #[test]
 fn with_specific_team_is_ok() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    team("slug1", "team1", false, true, &conn);
+    let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("slug1", "team1", false, true, &mut conn);
     user(
         "some_mail@mail.com",
         "pwd",
         &[("slug1", &[TeamCapability::ShortcutsWrite], 0, true)],
         &[],
-        &conn,
+        &mut conn,
     );
 
     let response = client
@@ -87,7 +87,7 @@ fn with_specific_team_is_ok() {
 
     assert_eq!(response.status(), Status::Ok);
 
-    let shortcut = get_shortcut("myShortCut/hop", &conn);
+    let shortcut = get_shortcut("myShortCut/hop", &mut conn);
     assert_eq!(
         shortcut.unwrap(),
         Shortcut {
@@ -100,14 +100,14 @@ fn with_specific_team_is_ok() {
 
 #[test]
 fn that_already_exist_replace_it() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    shortcut("myShortCut/hop", "http://to_replace", "", &conn);
+    let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+    shortcut("myShortCut/hop", "http://to_replace", "", &mut conn);
     user(
         "some_mail@mail.com",
         "pwd",
         &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
         &[],
-        &conn,
+        &mut conn,
     );
 
     let response = client
@@ -119,7 +119,7 @@ fn that_already_exist_replace_it() {
 
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(
-        get_shortcut("myShortCut/hop", &conn),
+        get_shortcut("myShortCut/hop", &mut conn),
         Some(Shortcut {
             shortcut: "myShortCut/hop".to_string(),
             team_slug: "".to_string(),
@@ -130,15 +130,15 @@ fn that_already_exist_replace_it() {
 
 #[test]
 fn as_unknow_user_is_unauthorized() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    team("wrong_team", "team1", false, false, &conn);
-    shortcut("myShortCut/hop", "http://localhost", "", &conn);
+    let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("wrong_team", "team1", false, false, &mut conn);
+    shortcut("myShortCut/hop", "http://localhost", "", &mut conn);
     user(
         "some_mail@mail.com",
         "pwd",
         &[("wrong_team", &[TeamCapability::ShortcutsWrite], 0, true)],
         &[],
-        &conn,
+        &mut conn,
     );
 
     let response = client
@@ -152,10 +152,10 @@ fn as_unknow_user_is_unauthorized() {
 
 #[test]
 fn as_user_without_capability_is_unauthorized() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    team("wrong_team", "team1", false, false, &conn);
-    shortcut("myShortCut/hop", "http://localhost", "", &conn);
-    user("some_mail@mail.com", "pwd", &[], &[], &conn);
+    let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("wrong_team", "team1", false, false, &mut conn);
+    shortcut("myShortCut/hop", "http://localhost", "", &mut conn);
+    user("some_mail@mail.com", "pwd", &[], &[], &mut conn);
 
     let response = client
         .put("/myShortCut/hop")
@@ -169,15 +169,15 @@ fn as_user_without_capability_is_unauthorized() {
 
 #[test]
 fn as_user_without_team_capability_is_unauthorized() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    team("wrong_team", "team1", false, false, &conn);
-    shortcut("myShortCut/hop", "http://localhost", "", &conn);
+    let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("wrong_team", "team1", false, false, &mut conn);
+    shortcut("myShortCut/hop", "http://localhost", "", &mut conn);
     user(
         "some_mail@mail.com",
         "pwd",
         &[("wrong_team", &[TeamCapability::ShortcutsWrite], 0, true)],
         &[],
-        &conn,
+        &mut conn,
     );
 
     let response = client
@@ -192,13 +192,13 @@ fn as_user_without_team_capability_is_unauthorized() {
 
 #[test]
 fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
     user(
         "some_mail@mail.com",
         "pwd",
         &[("", &[TeamCapability::ShortcutsWrite], 0, false)],
         &[],
-        &conn,
+        &mut conn,
     );
 
     let response = client
@@ -213,14 +213,14 @@ fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
 
 #[test]
 fn with_team_not_yet_accepted_is_not_allowed() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    team("team1", "team1", false, false, &conn);
+    let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+    team("team1", "team1", false, false, &mut conn);
     user(
         "some_mail@mail.com",
         "pwd",
         &[("team1", &[TeamCapability::ShortcutsWrite], 0, true)],
         &[],
-        &conn,
+        &mut conn,
     );
 
     let response = client

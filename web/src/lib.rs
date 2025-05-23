@@ -12,6 +12,7 @@ use diesel::{
     r2d2::{ConnectionManager, Pool, PooledConnection},
     PgConnection,
 };
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
 use rocket::{fairing::AdHoc, fs::FileServer, routes, Build, Config, Rocket};
 use rocket_dyn_templates::Template;
 
@@ -40,7 +41,7 @@ pub mod schema;
 pub mod services;
 mod views;
 
-embed_migrations!("migrations");
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 pub struct AppConfig {
     pub simple_login_salt1: String,
@@ -65,7 +66,8 @@ pub fn server(
     let db_pool = Pool::builder().max_size(15).build(db_manager).unwrap();
 
     if run_migration {
-        embedded_migrations::run(&db_pool.get().unwrap()).unwrap();
+        let mut conn = db_pool.get().unwrap();
+        conn.run_pending_migrations(MIGRATIONS).unwrap();
     }
 
     let rocket_config = Config {

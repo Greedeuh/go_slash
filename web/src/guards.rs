@@ -109,7 +109,7 @@ fn get_user(
     sessions: &State<Sessions>,
     pool: &State<DbPool>,
 ) -> Result<User, AppError> {
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
     match sessions.is_logged_in(&session_id.0) {
         None => {
@@ -119,6 +119,6 @@ fn get_user(
         Some(mail) => Ok(users::table
             .find(&mail)
             .select(SAFE_USER_COLUMNS)
-            .first::<User>(&conn)?),
+            .first::<User>(&mut conn)?),
     }
 }

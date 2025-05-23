@@ -47,10 +47,10 @@ pub fn join_team(
 ) -> Result<Status, (Status, Value)> {
     user.should_have_capability(Capability::UsersTeamsWrite)?;
 
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
     let team: Option<Team> = teams::table
         .find(&slug)
-        .first(&conn)
+        .first(&mut conn)
         .optional()
         .map_err(AppError::from)?;
 
@@ -68,7 +68,7 @@ pub fn join_team(
             is_accepted: !team.is_private,
             rank: team_user_link.rank,
         })
-        .execute(&conn)
+        .execute(&mut conn)
         .map_err(AppError::from)?;
 
     Ok(Status::Created)
@@ -88,14 +88,14 @@ pub fn leave_team(
 ) -> Result<Status, (Status, Value)> {
     user.should_have_capability(Capability::UsersTeamsWrite)?;
 
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
     diesel::delete(users_teams::table)
         .filter(
             users_teams::user_mail
                 .eq(&user.mail)
                 .and(users_teams::team_slug.eq(&slug)),
         )
-        .execute(&conn)
+        .execute(&mut conn)
         .map_err(AppError::from)?;
 
     Ok(Status::Ok)
@@ -110,12 +110,12 @@ pub fn put_user_team_ranks(
 ) -> Result<Status, (Status, Template)> {
     user.should_have_capability(Capability::UsersTeamsWrite)?;
 
-    let conn = pool.get().map_err(AppError::from)?;
-    conn.transaction::<_, diesel::result::Error, _>(|| {
+    let mut conn = pool.get().map_err(AppError::from)?;
+    conn.transaction::<_, diesel::result::Error, _>(|conn| {
         for (slug, rank) in team_ranks.into_inner() {
             match diesel::update(users_teams::table.find((&user.mail, &slug)))
                 .set(users_teams::rank.eq(rank as i16))
-                .execute(&conn)
+                .execute(conn)
             {
                 Ok(_) => (),
                 Err(e) => {
@@ -136,11 +136,11 @@ pub fn put_user_team_ranks(
 
 #[get("/go/users")]
 pub fn list_users(user: User, pool: &State<DbPool>) -> Result<Template, (Status, Value)> {
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
     let users = dsl::users
         .select(SAFE_USER_COLUMNS)
         .order_by(dsl::mail)
-        .load::<User>(&conn)
+        .load::<User>(&mut conn)
         .map_err(AppError::from)?;
 
     Ok(Template::render(
@@ -163,14 +163,14 @@ pub fn put_user_capability(
 ) -> Result<Status, (Status, Value)> {
     let capability = Capability::from_str(&capability).map_err(|_| AppError::BadRequest)?;
 
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
     user.should_have_capability(Capability::UsersAdmin)?;
 
     let user: User = dsl::users
         .select(SAFE_USER_COLUMNS)
         .find(&mail)
-        .first(&conn)
+        .first(&mut conn)
         .map_err(AppError::from)?;
 
     let mut capabilities = user.capabilities;
@@ -178,7 +178,7 @@ pub fn put_user_capability(
         capabilities.push(capability);
         diesel::update(dsl::users.find(&mail))
             .set(dsl::capabilities.eq(capabilities))
-            .execute(&conn)
+            .execute(&mut conn)
             .map_err(AppError::from)?;
     } else {
         warn!("User {mail} already has capability {capability}");
@@ -197,14 +197,14 @@ pub fn delete_user_capability(
 ) -> Result<Status, (Status, Value)> {
     let capability = Capability::from_str(&capability).map_err(|_| AppError::BadRequest)?;
 
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
     user.should_have_capability(Capability::UsersAdmin)?;
 
     let user: User = dsl::users
         .select(SAFE_USER_COLUMNS)
         .find(&mail)
-        .first(&conn)
+        .first(&mut conn)
         .map_err(AppError::from)?;
 
     let mut capabilities = user.capabilities;
@@ -212,7 +212,7 @@ pub fn delete_user_capability(
         capabilities.retain(|&c| c != capability);
         diesel::update(dsl::users.find(&mail))
             .set(dsl::capabilities.eq(capabilities))
-            .execute(&conn)
+            .execute(&mut conn)
             .map_err(AppError::from)?;
     } else {
         warn!(

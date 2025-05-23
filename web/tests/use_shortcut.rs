@@ -6,13 +6,13 @@ use utils::*;
 
 #[test]
 fn but_undefined_return_a_404() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
     user(
         "some_mail@mail.com",
         "pwd",
         &[("", &[], 0, true)],
         &[],
-        &conn,
+        &mut conn,
     );
 
     let response = client
@@ -25,14 +25,14 @@ fn but_undefined_return_a_404() {
 
 #[test]
 fn with_user_redirect_to_target() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-    shortcut("myShortCut/hop", "https://thetarget.test.go.com", "", &conn);
+    let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+    shortcut("myShortCut/hop", "https://thetarget.test.go.com", "", &mut conn);
     user(
         "some_mail@mail.com",
         "pwd",
         &[("", &[], 0, true)],
         &[],
-        &conn,
+        &mut conn,
     );
 
     let response = client
@@ -49,31 +49,31 @@ fn with_user_redirect_to_target() {
 
 #[test]
 fn with_team_redirect_to_target_based_on_team_rank() {
-    let (client, conn) = launch_with(
+    let (client, mut conn) = launch_with(
         "some_session_id: some_mail@mail.com
 some_other_session_id: some_other_mail@mail.com",
     );
-    team("slug1", "team1", false, true, &conn);
-    shortcut("myShortCut/hop", "https://thetarget.test.go.com", "", &conn);
+    team("slug1", "team1", false, true, &mut conn);
+    shortcut("myShortCut/hop", "https://thetarget.test.go.com", "", &mut conn);
     shortcut(
         "myShortCut/hop",
         "https://theothertarget.test.go.com",
         "slug1",
-        &conn,
+        &mut conn,
     );
     user(
         "some_mail@mail.com",
         "pwd",
         &[("", &[], 0, true), ("slug1", &[], 1, true)],
         &[],
-        &conn,
+        &mut conn,
     );
     user(
         "some_other_mail@mail.com",
         "pwd",
         &[("", &[], 1, true), ("slug1", &[], 0, true)],
         &[],
-        &conn,
+        &mut conn,
     );
 
     let response = client

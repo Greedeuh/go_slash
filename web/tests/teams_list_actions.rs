@@ -20,14 +20,14 @@ async fn as_admin_accept_team() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
-                team("slug1", "team1", false, false, &con);
+                let mut con = con.lock().await;
+                team("slug1", "team1", false, false, &mut con);
                 user(
                     "some_mail@mail.com",
                     "pwd",
                     &[("slug1", &[], 1, true)],
                     &[Capability::TeamsWrite],
-                    &con,
+                    &mut con,
                 );
 
                 driver
@@ -99,14 +99,14 @@ mod delete {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
-                    team("slug1", "team1", false, false, &con);
+                    let mut con = con.lock().await;
+                    team("slug1", "team1", false, false, &mut con);
                     user(
                         "some_mail@mail.com",
                         "pwd",
                         &[("slug1", &[], 1, true)],
                         &[Capability::TeamsWrite],
-                        &con,
+                        &mut con,
                     );
 
                     delete_team(driver, port).await;
@@ -125,14 +125,14 @@ mod delete {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
-                    team("slug1", "team1", false, false, &con);
+                    let mut con = con.lock().await;
+                    team("slug1", "team1", false, false, &mut con);
                     user(
                         "some_mail@mail.com",
                         "pwd",
                         &[("slug1", &[], 1, true)],
                         &[],
-                        &con,
+                        &mut con,
                     );
 
                     driver
@@ -169,8 +169,8 @@ mod delete {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
-                    team("slug1", "team1", false, false, &con);
+                    let mut con = con.lock().await;
+                    team("slug1", "team1", false, false, &mut con);
                     user(
                         "some_mail@mail.com",
                         "pwd",
@@ -179,7 +179,7 @@ mod delete {
                             ("", &[TeamCapability::TeamsWrite], 1, false),
                         ],
                         &[],
-                        &con,
+                        &mut con,
                     );
 
                     driver
@@ -222,14 +222,14 @@ mod delete {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
-                    team("slug1", "team1", false, false, &con);
+                    let mut con = con.lock().await;
+                    team("slug1", "team1", false, false, &mut con);
                     user(
                         "some_mail@mail.com",
                         "pwd",
                         &[("slug1", &[TeamCapability::TeamsWrite], 1, true)],
                         &[],
-                        &con,
+                        &mut con,
                     );
 
                     delete_team(driver, port).await;
@@ -315,13 +315,13 @@ mod create {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
+                    let mut con = con.lock().await;
                     user(
                         "some_mail@mail.com",
                         "pwd",
                         &[],
                         &[Capability::TeamsWrite],
-                        &con,
+                        &mut con,
                     );
 
                     create_team(driver, port).await?;
@@ -354,13 +354,13 @@ mod create {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
+                    let mut con = con.lock().await;
                     user(
                         "some_mail@mail.com",
                         "pwd",
                         &[],
                         &[Capability::TeamsWriteWithValidation],
-                        &con,
+                        &mut con,
                     );
 
                     create_team(driver, port).await?;
@@ -500,9 +500,9 @@ mod controller {
 
         #[test]
         fn without_capabilities_is_not_authorized() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-            team("slug1", "team1", false, true, &conn);
-            user("some_mail@mail.com", "pwd", &[], &[], &conn);
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, true, &mut conn);
+            user("some_mail@mail.com", "pwd", &[], &[], &mut conn);
 
             let response = client.delete("/go/teams/slug1").dispatch();
 
@@ -518,13 +518,13 @@ mod controller {
 
         #[test]
         fn global_team_is_not_authorized() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[],
                 &[Capability::TeamsWrite],
-                &conn,
+                &mut conn,
             );
 
             client
@@ -532,19 +532,19 @@ mod controller {
                 .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
                 .dispatch();
 
-            assert!(get_team("", &conn).is_some());
+            assert!(get_team("", &mut conn).is_some());
         }
 
         #[test]
         fn as_admin() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-            team("slug1", "team1", false, true, &conn);
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, true, &mut conn);
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[],
                 &[Capability::TeamsWrite],
-                &conn,
+                &mut conn,
             );
 
             let response = client
@@ -553,19 +553,19 @@ mod controller {
                 .dispatch();
 
             assert_eq!(response.status(), Status::Ok);
-            assert!(get_team("slug1", &conn).is_none());
+            assert!(get_team("slug1", &mut conn).is_none());
         }
 
         #[test]
         fn as_teamate() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-            team("slug1", "team1", false, true, &conn);
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, true, &mut conn);
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
                 &[],
-                &conn,
+                &mut conn,
             );
 
             let response = client
@@ -574,19 +574,19 @@ mod controller {
                 .dispatch();
 
             assert_eq!(response.status(), Status::Ok);
-            assert!(get_team("slug1", &conn).is_none());
+            assert!(get_team("slug1", &mut conn).is_none());
         }
 
         #[test]
         fn as_teamate_not_accepted() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-            team("slug1", "team1", false, true, &conn);
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, true, &mut conn);
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[("slug1", &[TeamCapability::TeamsWrite], 0, false)],
                 &[],
-                &conn,
+                &mut conn,
             );
 
             let response = client
@@ -603,9 +603,9 @@ mod controller {
 
         #[test]
         fn withouy_capabilities_is_not_authorized() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-            team("slug1", "team1", false, true, &conn);
-            user("some_mail@mail.com", "pwd", &[], &[], &conn);
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, true, &mut conn);
+            user("some_mail@mail.com", "pwd", &[], &[], &mut conn);
 
             let response = client.delete("/go/teams/slug1").dispatch();
 
@@ -622,13 +622,13 @@ mod controller {
 
         #[test]
         fn global_team_is_not_authorized() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[],
                 &[Capability::TeamsWrite],
-                &conn,
+                &mut conn,
             );
 
             client
@@ -638,7 +638,7 @@ mod controller {
                 .dispatch();
 
             assert_eq!(
-                get_team("", &conn),
+                get_team("", &mut conn),
                 Some(Team {
                     slug: "".to_string(),
                     title: "Global".to_string(),
@@ -650,14 +650,14 @@ mod controller {
 
         #[test]
         fn as_teamate() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-            team("slug1", "team1", false, true, &conn);
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, true, &mut conn);
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
                 &[],
-                &conn,
+                &mut conn,
             );
 
             let response = client
@@ -668,7 +668,7 @@ mod controller {
 
             assert_eq!(response.status(), Status::Ok);
             assert_eq!(
-                get_team("slug1", &conn),
+                get_team("slug1", &mut conn),
                 Some(Team {
                     slug: "slug1".to_string(),
                     title: "newTitle".to_string(),
@@ -680,14 +680,14 @@ mod controller {
 
         #[test]
         fn accept_as_teamate_is_not_authorized() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-            team("slug1", "team1", false, true, &conn);
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, true, &mut conn);
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
                 &[],
-                &conn,
+                &mut conn,
             );
 
             let response = client
@@ -701,14 +701,14 @@ mod controller {
 
         #[test]
         fn as_admin() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-            team("slug1", "team1", false, true, &conn);
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, true, &mut conn);
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[],
                 &[Capability::TeamsWrite],
-                &conn,
+                &mut conn,
             );
 
             let response = client
@@ -719,7 +719,7 @@ mod controller {
 
             assert_eq!(response.status(), Status::Ok);
             assert_eq!(
-                get_team("slug1", &conn),
+                get_team("slug1", &mut conn),
                 Some(Team {
                     slug: "slug1".to_string(),
                     title: "newTitle".to_string(),
@@ -736,7 +736,7 @@ mod controller {
 
             assert_eq!(response.status(), Status::Ok);
             assert_eq!(
-                get_team("slug1", &conn),
+                get_team("slug1", &mut conn),
                 Some(Team {
                     slug: "slug1".to_string(),
                     title: "newTitle2".to_string(),
@@ -753,7 +753,7 @@ mod controller {
 
             assert_eq!(response.status(), Status::Ok);
             assert_eq!(
-                get_team("slug1", &conn),
+                get_team("slug1", &mut conn),
                 Some(Team {
                     slug: "slug1".to_string(),
                     title: "newTitle2".to_string(),
@@ -770,7 +770,7 @@ mod controller {
 
             assert_eq!(response.status(), Status::Ok);
             assert_eq!(
-                get_team("slug1", &conn),
+                get_team("slug1", &mut conn),
                 Some(Team {
                     slug: "slug1".to_string(),
                     title: "newTitle2".to_string(),
@@ -786,14 +786,14 @@ mod controller {
 
         #[test]
         fn already_existing_is_not_allowed() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-            team("slug1", "team1", false, true, &conn);
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", false, true, &mut conn);
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[],
                 &[Capability::TeamsWrite],
-                &conn,
+                &mut conn,
             );
 
             client
@@ -802,18 +802,18 @@ mod controller {
                 .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
                 .dispatch();
 
-            assert!(get_team("", &conn).is_some());
+            assert!(get_team("", &mut conn).is_some());
         }
 
         #[test]
         fn as_admin() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[],
                 &[Capability::TeamsWrite],
-                &conn,
+                &mut conn,
             );
 
             let response = client
@@ -824,7 +824,7 @@ mod controller {
 
             assert_eq!(response.status(), Status::Created);
             assert_eq!(
-                get_team("slug1", &conn),
+                get_team("slug1", &mut conn),
                 Some(Team {
                     slug: "slug1".to_string(),
                     title: "newTitle".to_string(),
@@ -836,13 +836,13 @@ mod controller {
 
         #[test]
         fn as_user() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[],
                 &[Capability::TeamsWriteWithValidation],
-                &conn,
+                &mut conn,
             );
 
             let response = client
@@ -853,7 +853,7 @@ mod controller {
 
             assert_eq!(response.status(), Status::Created);
             assert_eq!(
-                get_team("slug1", &conn),
+                get_team("slug1", &mut conn),
                 Some(Team {
                     slug: "slug1".to_string(),
                     title: "newTitle".to_string(),
@@ -865,14 +865,14 @@ mod controller {
 
         #[test]
         fn creator_should_be_in_team_as_admin_with_higher_rank() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-            team("slug", "title", true, false, &conn);
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug", "title", true, false, &mut conn);
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[("slug", &[], 0, true)],
                 &[Capability::TeamsWrite],
-                &conn,
+                &mut conn,
             );
 
             let response = client
@@ -883,7 +883,7 @@ mod controller {
 
             assert_eq!(response.status(), Status::Created);
             assert_eq!(
-                get_user_team_links("some_mail@mail.com", &conn),
+                get_user_team_links("some_mail@mail.com", &mut conn),
                 vec![
                     UserTeam {
                         user_mail: "some_mail@mail.com".to_string(),

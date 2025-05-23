@@ -15,26 +15,26 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
-                team("team", "team", false, true, &con);
+                let mut con = con.lock().await;
+                team("team", "team", false, true, &mut con);
                 shortcut(
                     "newShortcut",
                     &host(port, "/looped"),
                     "team",
-                    &con,
+                    &mut con,
                 );
                 shortcut(
                     "newShortcut2",
                     &host(port, "/claude"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 user(
                     "some_mail@mail.com",
                     "pwd",
                     &[("team", &[TeamCapability::ShortcutsWrite], 0, true)],
                     &[],
-                    &con,
+                    &mut con,
                 );
 
                 driver
@@ -99,25 +99,25 @@ async fn with_not_existing_shortcut_return_search_and_edit_form_filled() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
+                let mut con = con.lock().await;
                 shortcut(
                     "newShortcut1",
                     &host(port, "/looped"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 shortcut(
                     "newShortcut2",
                     &host(port, "/claude"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 user(
                     "some_mail@mail.com",
                     "pwd",
                     &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
                     &[],
-                    &con,
+                    &mut con,
                 );
 
                 driver

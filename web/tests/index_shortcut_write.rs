@@ -16,19 +16,19 @@ async fn as_unknow_user_is_not_allowed() {
         "",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
+                let mut con = con.lock().await;
                 shortcut(
                     "newShortcut",
                     &host(port, "/newShortcut"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 user(
                     "some_mail@mail.com",
                     "pwd",
                     &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
                     &[],
-                    &con,
+                    &mut con,
                 );
 
                 driver.get(host(port, "")).await?;
@@ -52,14 +52,14 @@ async fn as_user_without_capability_is_not_allowed() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
+                let mut con = con.lock().await;
                 shortcut(
                     "newShortcut",
                     &host(port, "/newShortcut"),
                     "",
-                    &con,
+                    &mut con,
                 );
-                user("some_mail@mail.com", "pwd", &[], &[], &con);
+                user("some_mail@mail.com", "pwd", &[], &[], &mut con);
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
@@ -85,19 +85,19 @@ async fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
+                let mut con = con.lock().await;
                 shortcut(
                     "newShortcut",
                     &host(port, "/newShortcut"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 user(
                     "some_mail@mail.com",
                     "pwd",
                     &[("", &[TeamCapability::ShortcutsWrite], 0, false)],
                     &[],
-                    &con,
+                    &mut con,
                 );
 
                 driver
@@ -127,19 +127,19 @@ mod delete_shortcut {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
+                    let mut con = con.lock().await;
                     shortcut(
                         "jeanLuc",
                         &host(port, "/aShortcut1"),
                         "",
-                        &con,
+                        &mut con,
                     );
                     user(
                         "some_mail@mail.com",
                         "pwd",
                         &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
                         &[],
-                        &con,
+                        &mut con,
                     );
 
                     driver
@@ -179,19 +179,19 @@ mod delete_shortcut {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
-                    team("slug", "title", true, true, &con);
+                    let mut con = con.lock().await;
+                    team("slug", "title", true, true, &mut con);
                     shortcut(
                         "first",
                         &host(port, "/aShortcut1"),
                         "slug",
-                        &con,
+                        &mut con,
                     );
                     shortcut(
                         "second",
                         &host(port, "/aShortcut1"),
                         "",
-                        &con,
+                        &mut con,
                     );
                     user(
                         "some_mail@mail.com",
@@ -201,7 +201,7 @@ mod delete_shortcut {
                             ("slug", &[], 0, true),
                         ],
                         &[],
-                        &con,
+                        &mut con,
                     );
 
                     driver
@@ -237,14 +237,14 @@ mod delete_shortcut {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
+                    let mut con = con.lock().await;
                     shortcut(
                         "jeanLuc",
                         &host(port, "/aShortcut1"),
                         "",
-                        &con,
+                        &mut con,
                     );
-                    user("some_mail@mail.com", "pwd", &[], &[], &con);
+                    user("some_mail@mail.com", "pwd", &[], &[], &mut con);
 
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
@@ -270,15 +270,15 @@ mod delete_shortcut {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
-                    team("team1", "Team 1", false, true, &con);
+                    let mut con = con.lock().await;
+                    team("team1", "Team 1", false, true, &mut con);
                     shortcut(
                         "jeanLuc",
                         &host(port, "/aShortcut1"),
                         "team1",
-                        &con,
+                        &mut con,
                     );
-                    user("some_mail@mail.com", "pwd", &[], &[], &con);
+                    user("some_mail@mail.com", "pwd", &[], &[], &mut con);
 
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
@@ -308,13 +308,13 @@ mod create_shortcut {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
+                    let mut con = con.lock().await;
                     user(
                         "some_mail@mail.com",
                         "pwd",
                         &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
                         &[],
-                        &con,
+                        &mut con,
                     );
 
                     driver
@@ -336,14 +336,14 @@ mod create_shortcut {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
-                    team("team1", "team1", true, true, &con);
+                    let mut con = con.lock().await;
+                    team("team1", "team1", true, true, &mut con);
                     user(
                         "some_mail@mail.com",
                         "pwd",
                         &[("team1", &[TeamCapability::ShortcutsWrite], 0, true)],
                         &[],
-                        &con,
+                        &mut con,
                     );
 
                     driver
@@ -365,8 +365,8 @@ mod create_shortcut {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
-                    team("team", "team", true, true, &con);
+                    let mut con = con.lock().await;
+                    team("team", "team", true, true, &mut con);
                     user(
                         "some_mail@mail.com",
                         "pwd",
@@ -375,7 +375,7 @@ mod create_shortcut {
                             ("team", &[TeamCapability::ShortcutsWrite], 0, false),
                         ],
                         &[],
-                        &con,
+                        &mut con,
                     );
 
                     driver
@@ -409,14 +409,14 @@ mod create_shortcut {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
-                    team("team", "team", true, false, &con);
+                    let mut con = con.lock().await;
+                    team("team", "team", true, false, &mut con);
                     user(
                         "some_mail@mail.com",
                         "pwd",
                         &[("", &[TeamCapability::ShortcutsWrite], 0, true)],
                         &[],
-                        &con,
+                        &mut con,
                     );
 
                     driver
@@ -450,8 +450,8 @@ mod create_shortcut {
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
                 async move {
-                    let con = con.lock().await;
-                    team("team", "team", true, false, &con);
+                    let mut con = con.lock().await;
+                    team("team", "team", true, false, &mut con);
                     user(
                         "some_mail@mail.com",
                         "pwd",
@@ -460,7 +460,7 @@ mod create_shortcut {
                             ("team", &[TeamCapability::ShortcutsWrite], 0, true),
                         ],
                         &[],
-                        &con,
+                        &mut con,
                     );
 
                     driver

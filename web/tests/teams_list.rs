@@ -18,14 +18,14 @@ async fn link_are_shown_on_other_pages() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
-                team("slug1", "team1", false, true, &con);
+                let mut con = con.lock().await;
+                team("slug1", "team1", false, true, &mut con);
                 user(
                     "some_mail@mail.com",
                     "pwd",
                     &[("slug1", &[], 0, true)],
                     &Capability::all(),
-                    &con,
+                    &mut con,
                 );
 
                 driver
@@ -70,12 +70,12 @@ async fn with_icons() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
-                team("slug1", "team1", false, true, &con);
-                team("slug2", "team2", true, true, &con);
-                team("slug3", "team3", true, false, &con);
-                team("slug4", "team4", false, false, &con);
-                user("some_mail@mail.com", "pwd", &[], &[], &con);
+                let mut con = con.lock().await;
+                team("slug1", "team1", false, true, &mut con);
+                team("slug2", "team2", true, true, &mut con);
+                team("slug3", "team3", true, false, &mut con);
+                team("slug4", "team4", false, false, &mut con);
+                user("some_mail@mail.com", "pwd", &[], &[], &mut con);
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
@@ -138,17 +138,17 @@ async fn user_team_then_others() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
-                team("slug1", "team1", false, true, &con);
-                team("slug2", "team2", true, true, &con);
-                team("slug3", "team3", true, false, &con);
-                team("slug4", "team4", false, false, &con);
+                let mut con = con.lock().await;
+                team("slug1", "team1", false, true, &mut con);
+                team("slug2", "team2", true, true, &mut con);
+                team("slug3", "team3", true, false, &mut con);
+                team("slug4", "team4", false, false, &mut con);
                 user(
                     "some_mail@mail.com",
                     "pwd",
                     &[("slug1", &[], 0, true)],
                     &[],
-                    &con,
+                    &mut con,
                 );
                 // another user should not change the behaviour
                 user(
@@ -159,7 +159,7 @@ async fn user_team_then_others() {
                         ("slug3", &TeamCapability::all(), 0, true),
                     ],
                     &[],
-                    &con,
+                    &mut con,
                 );
 
                 driver

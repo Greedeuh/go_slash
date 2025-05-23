@@ -59,12 +59,12 @@ pub fn simple_login(
 
     let pwd = digest(format!("{}{}", credentials.pwd, config.simple_login_salt2));
 
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
     let mail_pwd_match: i64 = users::table
         .select(count(users::mail))
         .filter(users::pwd.eq(&pwd))
         .find(&credentials.mail)
-        .first(&conn)
+        .first(&mut conn)
         .map_err(AppError::from)?;
 
     if mail_pwd_match != 1 {
@@ -128,15 +128,15 @@ pub async fn login_redirect_google(
 
     let mail = token_res.mail;
 
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
     let matching_user: i64 = users::table
         .select(count(users::mail))
         .find(&mail)
-        .first(&conn)
+        .first(&mut conn)
         .map_err(AppError::from)?;
 
     if matching_user == 0 {
-        register_user(&mail, &conn)?;
+        register_user(&mail, &mut conn)?;
     }
 
     sessions.put(&session_id.0, &mail);
@@ -144,7 +144,7 @@ pub async fn login_redirect_google(
     Ok(Redirect::permanent("/".to_string()))
 }
 
-fn register_user(mail: &str, conn: &DbConn) -> Result<(), AppError> {
+fn register_user(mail: &str, conn: &mut DbConn) -> Result<(), AppError> {
     let capabilities = default_capabilities(conn)?;
 
     diesel::insert_into(users::table)

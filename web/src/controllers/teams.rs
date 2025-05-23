@@ -29,14 +29,14 @@ use crate::{
 
 #[get("/go/teams")]
 pub fn list_teams(user: User, pool: &State<DbPool>) -> Result<Template, (Status, Template)> {
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
     let mut teams: Vec<TeamForOptUser> = dsl::teams
         .left_join(
             users_teams::table.on(dsl::slug
                 .eq(users_teams::team_slug)
                 .and(users_teams::user_mail.eq(&user.mail))),
         )
-        .load(&conn)
+        .load(&mut conn)
         .map_err(AppError::from)?;
 
     teams.sort_by(
@@ -67,14 +67,14 @@ pub fn delete_team(
 
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
     if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &team, &conn, TeamCapability::TeamsWrite)?;
+        user_should_have_team_capability(&user, &team, &mut conn, TeamCapability::TeamsWrite)?;
     }
 
     diesel::delete(teams::table.find(team))
-        .execute(&conn)
+        .execute(&mut conn)
         .map_err(AppError::from)?;
 
     Ok(Status::Ok)
@@ -99,8 +99,8 @@ pub fn create_team(
         Capability::TeamsWriteWithValidation,
     ])?;
 
-    let conn = pool.get().map_err(AppError::from)?;
-    conn.transaction::<_, diesel::result::Error, _>(|| {
+    let mut conn = pool.get().map_err(AppError::from)?;
+    conn.transaction::<_, diesel::result::Error, _>(|conn| {
         let NewTeam {
             slug,
             title,
@@ -114,12 +114,12 @@ pub fn create_team(
         };
         diesel::insert_into(teams::table)
             .values(team)
-            .execute(&conn)?;
+            .execute(conn)?;
 
         let previous_rank = (users_teams::table
             .select(max(users_teams::rank))
             .filter(users_teams::user_mail.eq(&user.mail))
-            .first::<Option<i16>>(&conn)?)
+            .first::<Option<i16>>(conn)?)
         .unwrap_or(0);
 
         let user_team = UserTeam {
@@ -131,7 +131,7 @@ pub fn create_team(
         };
         diesel::insert_into(users_teams::table)
             .values(user_team)
-            .execute(&conn)?;
+            .execute(conn)?;
         Ok(())
     })
     .map_err(AppError::from)?;
@@ -155,7 +155,7 @@ pub fn patch_team(
 
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
     // should be admin or (part of the team but can't change is_accepted)
     let global_right = user.should_have_capability(Capability::TeamsWrite);
@@ -164,7 +164,7 @@ pub fn patch_team(
             .find((&user.mail, &team))
             .filter(users_teams::capabilities.contains(vec![TeamCapability::TeamsWrite]))
             .select(count(users_teams::user_mail))
-            .first::<i64>(&conn)
+            .first::<i64>(&mut conn)
             .map_err(AppError::from)?
             != 1)
     {
@@ -173,7 +173,7 @@ pub fn patch_team(
 
     diesel::update(teams::table.find(team))
         .set(&data.into_inner())
-        .execute(&conn)
+        .execute(&mut conn)
         .map_err(AppError::from)?;
 
     Ok(Status::Ok)
@@ -185,12 +185,12 @@ pub fn show_team(
     user: User,
     pool: &State<DbPool>,
 ) -> Result<Template, (Status, Template)> {
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
     let team_with_user_if_some: Option<TeamForUserIfSome> = teams::table
         .find(&slug)
         .left_join(users_teams::table)
-        .first(&conn)
+        .first(&mut conn)
         .optional()
         .map_err(AppError::from)?;
 
@@ -205,18 +205,18 @@ pub fn show_team(
     let shortcuts = shortcuts::table
         .filter(shortcuts::team_slug.eq(&slug))
         .order(shortcuts::shortcut.asc())
-        .load::<Shortcut>(&conn)
+        .load::<Shortcut>(&mut conn)
         .map_err(AppError::from)?;
 
     let team: Team = teams::table
         .find(&slug)
-        .first(&conn)
+        .first(&mut conn)
         .map_err(AppError::from)?;
 
     let user_links: Vec<UserTeam> = users_teams::table
         .filter(users_teams::team_slug.eq(slug))
         .order(users_teams::user_mail)
-        .load(&conn)
+        .load(&mut conn)
         .map_err(AppError::from)?;
 
     let team = TeamWithUsers { team, user_links };
@@ -229,7 +229,7 @@ pub fn show_team(
                 shortcut: None,
                 shortcuts,
                 team: Some(team),
-                teams: teams_with_shortcut_write(&user, &conn)?,
+                teams: teams_with_shortcut_write(&user, &mut conn)?,
                 user
             }).to_string()
         }),
@@ -243,15 +243,15 @@ pub fn kick_user(
     user: User,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
     // should be admin or (part of the team but can't change is_accepted)
     if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &team, &conn, TeamCapability::TeamsWrite)?;
+        user_should_have_team_capability(&user, &team, &mut conn, TeamCapability::TeamsWrite)?;
     }
 
     diesel::delete(users_teams::table.find((mail, team)))
-        .execute(&conn)
+        .execute(&mut conn)
         .map_err(AppError::from)?;
 
     Ok(Status::Ok)
@@ -267,15 +267,15 @@ pub fn put_user_link_capability(
 ) -> Result<Status, (Status, Value)> {
     let capability = TeamCapability::from_str(&capability).map_err(|_| AppError::BadRequest)?;
 
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
     if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &team, &conn, TeamCapability::TeamsWrite)?;
+        user_should_have_team_capability(&user, &team, &mut conn, TeamCapability::TeamsWrite)?;
     }
 
     let user_link: UserTeam = users_teams::table
         .find((&mail, &team))
-        .first(&conn)
+        .first(&mut conn)
         .map_err(AppError::from)?;
 
     let mut capabilities = user_link.capabilities;
@@ -283,7 +283,7 @@ pub fn put_user_link_capability(
         capabilities.push(capability);
         diesel::update(users_teams::table.find((&mail, &team)))
             .set(users_teams::capabilities.eq(capabilities))
-            .execute(&conn)
+            .execute(&mut conn)
             .map_err(AppError::from)?;
     } else {
         warn!(
@@ -305,15 +305,15 @@ pub fn delete_user_link_capability(
 ) -> Result<Status, (Status, Value)> {
     let capability = TeamCapability::from_str(&capability).map_err(|_| AppError::BadRequest)?;
 
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
     if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &team, &conn, TeamCapability::TeamsWrite)?;
+        user_should_have_team_capability(&user, &team, &mut conn, TeamCapability::TeamsWrite)?;
     }
 
     let user_link: UserTeam = users_teams::table
         .find((&mail, &team))
-        .first(&conn)
+        .first(&mut conn)
         .map_err(AppError::from)?;
 
     let mut capabilities = user_link.capabilities;
@@ -321,7 +321,7 @@ pub fn delete_user_link_capability(
         capabilities.retain(|&c| c != capability);
         diesel::update(users_teams::table.find((&mail, &team)))
             .set(users_teams::capabilities.eq(capabilities))
-            .execute(&conn)
+            .execute(&mut conn)
             .map_err(AppError::from)?;
     } else {
         warn!(
@@ -341,15 +341,15 @@ pub fn put_user_team_acceptation(
     user: User,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
     if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &team, &conn, TeamCapability::TeamsWrite)?;
+        user_should_have_team_capability(&user, &team, &mut conn, TeamCapability::TeamsWrite)?;
     }
 
     diesel::update(users_teams::table.find((&mail, &team)))
         .set(users_teams::is_accepted.eq(value))
-        .execute(&conn)
+        .execute(&mut conn)
         .map_err(AppError::from)?;
 
     Ok(Status::Ok)

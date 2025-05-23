@@ -21,7 +21,7 @@ pub struct Setting {
     pub content: String,
 }
 
-pub fn get_global_features(conn: &DbConn) -> Result<FeaturesOld, AppError> {
+pub fn get_global_features(conn: &mut DbConn) -> Result<FeaturesOld, AppError> {
     let features: Setting = settings::table
         .find(FEATURES)
         .first(conn)
@@ -33,7 +33,7 @@ pub fn get_global_features(conn: &DbConn) -> Result<FeaturesOld, AppError> {
     })
 }
 
-pub fn default_capabilities(conn: &DbConn) -> Result<Vec<Capability>, AppError> {
+pub fn default_capabilities(conn: &mut DbConn) -> Result<Vec<Capability>, AppError> {
     let default_capabilities: Setting = settings::table
         .find(DEFAULT_CAPABILITIES)
         .first(conn)
@@ -48,7 +48,7 @@ pub fn default_capabilities(conn: &DbConn) -> Result<Vec<Capability>, AppError> 
     })
 }
 
-pub fn patch_features(_new_features: PatchableFeatures, conn: &DbConn) -> Result<usize, AppError> {
+pub fn patch_features(_new_features: PatchableFeatures, conn: &mut DbConn) -> Result<usize, AppError> {
     let features = get_global_features(conn)?;
 
     diesel::update(settings::table)

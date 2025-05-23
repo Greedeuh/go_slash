@@ -73,7 +73,7 @@ async fn features_should_list_editable_features() {
 
 #[test]
 fn should_be_logged_in_to_manage_features() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
 
     assert_eq!(
         client.get("/go/settings").dispatch().status(),
@@ -91,13 +91,13 @@ fn should_be_logged_in_to_manage_features() {
 
 #[test]
 fn should_be_logged_in_to_manage_features_ok_with_auth() {
-    let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+    let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
     user(
         "some_mail@mail.com",
         "pwd",
         &[],
         &[Capability::Features],
-        &conn,
+        &mut conn,
     );
 
     assert_ne!(

@@ -12,7 +12,7 @@ mod no_dead_code {
         schema::{shortcuts, teams, users, users_teams},
     };
 
-    pub fn get_shortcut(shortcut: &str, conn: &PgConnection) -> Option<Shortcut> {
+    pub fn get_shortcut(shortcut: &str, conn: &mut PgConnection) -> Option<Shortcut> {
         shortcuts::table
             .filter(shortcuts::shortcut.eq(shortcut))
             .first(conn)
@@ -23,7 +23,7 @@ mod no_dead_code {
     pub fn get_shortcut_with_team(
         shortcut: &str,
         team: &str,
-        conn: &PgConnection,
+        conn: &mut PgConnection,
     ) -> Option<Shortcut> {
         shortcuts::table
             .find((shortcut, team))
@@ -32,18 +32,18 @@ mod no_dead_code {
             .unwrap()
     }
 
-    pub fn get_user_team_links(mail: &str, conn: &PgConnection) -> Vec<UserTeam> {
+    pub fn get_user_team_links(mail: &str, conn: &mut PgConnection) -> Vec<UserTeam> {
         users_teams::table
             .filter(users_teams::user_mail.eq(mail))
             .load(conn)
             .unwrap()
     }
 
-    pub fn get_team(slug: &str, conn: &PgConnection) -> Option<Team> {
+    pub fn get_team(slug: &str, conn: &mut PgConnection) -> Option<Team> {
         teams::table.find(slug).first(conn).optional().unwrap()
     }
 
-    pub fn get_user(mail: &str, conn: &PgConnection) -> Option<User> {
+    pub fn get_user(mail: &str, conn: &mut PgConnection) -> Option<User> {
         users::table
             .find(mail)
             .select(SAFE_USER_COLUMNS)

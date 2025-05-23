@@ -18,8 +18,8 @@ async fn link_are_shown_on_other_pages() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
-                user("some_mail@mail.com", "pwd", &[], &Capability::all(), &con);
+                let mut con = con.lock().await;
+                user("some_mail@mail.com", "pwd", &[], &Capability::all(), &mut con);
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
@@ -63,20 +63,20 @@ async fn as_admin_i_can_see_the_list() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
+                let mut con = con.lock().await;
                 user(
                     "some_mail@mail.com",
                     "pwd",
                     &[],
                     &[Capability::UsersAdmin],
-                    &con,
+                    &mut con,
                 );
                 user(
                     "another_mail@mail.com",
                     "pwd",
                     &[],
                     &[Capability::TeamsWrite],
-                    &con,
+                    &mut con,
                 );
 
                 driver
@@ -133,15 +133,15 @@ async fn as_admin_i_can_change_users_capabilities() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
+                let mut con = con.lock().await;
                 user(
                     "some_mail@mail.com",
                     "pwd",
                     &[],
                     &[Capability::UsersAdmin],
-                    &con,
+                    &mut con,
                 );
-                user("another_mail@mail.com", "pwd", &[], &[], &con);
+                user("another_mail@mail.com", "pwd", &[], &[], &mut con);
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
@@ -221,8 +221,8 @@ mod controller {
 
     #[test]
     fn with_unknow_user_is_not_unauthorized() {
-        let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-        user("some_mail@mail.com", "pwd", &[], &[], &conn);
+        let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+        user("some_mail@mail.com", "pwd", &[], &[], &mut conn);
 
         let response = client
             .put("/go/users/some_mail@mail.com/capabilities/Features")
@@ -242,8 +242,8 @@ mod controller {
         use super::*;
         #[test]
         fn as_unknown_user_is_not_unauthorized() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-            user("some_mail@mail.com", "pwd", &[], &[], &conn);
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+            user("some_mail@mail.com", "pwd", &[], &[], &mut conn);
 
             let response = client
                 .put("/go/users/some_mail@mail.com/capabilities/Features")
@@ -261,13 +261,13 @@ mod controller {
 
         #[test]
         fn as_user() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[],
                 &[Capability::UsersAdmin],
-                &conn,
+                &mut conn,
             );
 
             let response = client
@@ -277,7 +277,7 @@ mod controller {
 
             assert_eq!(response.status(), Status::Ok);
 
-            let user = get_user("some_mail@mail.com", &conn).unwrap();
+            let user = get_user("some_mail@mail.com", &mut conn).unwrap();
             assert_eq!(
                 user.capabilities,
                 &[Capability::UsersAdmin, Capability::Features]
@@ -289,8 +289,8 @@ mod controller {
         use super::*;
         #[test]
         fn as_unknown_user_is_not_unauthorized() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-            user("some_mail@mail.com", "pwd", &[], &[], &conn);
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+            user("some_mail@mail.com", "pwd", &[], &[], &mut conn);
 
             let response = client
                 .delete("/go/users/some_mail@mail.com/capabilities/Features")
@@ -308,13 +308,13 @@ mod controller {
 
         #[test]
         fn as_user() {
-            let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
             user(
                 "some_mail@mail.com",
                 "pwd",
                 &[],
                 &[Capability::UsersAdmin, Capability::Features],
-                &conn,
+                &mut conn,
             );
 
             let response = client
@@ -324,7 +324,7 @@ mod controller {
 
             assert_eq!(response.status(), Status::Ok);
 
-            let user = get_user("some_mail@mail.com", &conn).unwrap();
+            let user = get_user("some_mail@mail.com", &mut conn).unwrap();
             assert_eq!(user.capabilities, &[Capability::UsersAdmin,])
         }
     }

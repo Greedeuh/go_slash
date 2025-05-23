@@ -2,7 +2,7 @@ pub use no_dead_code::*;
 
 #[allow(dead_code)]
 mod no_dead_code {
-    use diesel::{prelude::*, Connection, PgConnection};
+    use diesel::{prelude::*, sql_types::Bool, Connection, PgConnection};
     use go_web::{models::users::Sessions, server, services::oidc::OidcService, AppConfig};
     use lazy_static::lazy_static;
     use openidconnect::{
@@ -42,16 +42,16 @@ mod no_dead_code {
     }
 
     pub fn setup_db_conn(db_url: &str, db: &str) -> PgConnection {
-        let pg = PgConnection::establish("postgres://postgres:postgres@localhost:6543/postgres")
+        let mut pg = PgConnection::establish("postgres://postgres:postgres@localhost:6543/postgres")
             .unwrap();
-        diesel::dsl::sql::<bool>(&format!("CREATE DATABASE {};", db))
-            .execute(&pg)
+        diesel::dsl::sql::<Bool>(&format!("CREATE DATABASE {};", db))
+            .execute(&mut pg)
             .unwrap();
         PgConnection::establish(db_url).unwrap()
     }
 
-    fn drop_db(db: &str, pg: &PgConnection) {
-        diesel::dsl::sql::<bool>(&format!(
+    fn drop_db(db: &str, pg: &mut PgConnection) {
+        diesel::dsl::sql::<Bool>(&format!(
             "SELECT pg_terminate_backend(pg_stat_activity.pid)
         FROM pg_stat_activity
         WHERE pg_stat_activity.datname = '{}';",
@@ -59,7 +59,7 @@ mod no_dead_code {
         ))
         .execute(pg)
         .unwrap();
-        diesel::dsl::sql::<bool>(&format!("DROP DATABASE {};", db))
+        diesel::dsl::sql::<Bool>(&format!("DROP DATABASE {};", db))
             .execute(pg)
             .unwrap();
     }
@@ -251,7 +251,7 @@ mod no_dead_code {
 
         let may_panic;
         {
-            let db_conn = Mutex::new(db_conn);
+            let mut db_conn = Mutex::new(db_conn);
             may_panic = AssertUnwindSafe(async { f(&driver, db_conn, port).await.unwrap() });
         }
 
@@ -269,10 +269,10 @@ mod no_dead_code {
             resume_unwind(panic)
         }
 
-        let db_conn =
+        let mut db_conn =
             PgConnection::establish("postgres://postgres:postgres@localhost:6543/postgres")
                 .unwrap();
-        drop_db(&db, &db_conn);
+        drop_db(&db, &mut db_conn);
     }
 
     pub fn sleep() {

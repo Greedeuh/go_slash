@@ -30,9 +30,9 @@ lazy_static! {
 
 #[get("/")]
 pub fn index(user: User, pool: &State<DbPool>) -> Result<Template, (Status, Template)> {
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
-    let admin_teams = teams_with_shortcut_write(&user, &conn)?;
+    let admin_teams = teams_with_shortcut_write(&user, &mut conn)?;
 
     Ok(Template::render(
         "index",
@@ -40,7 +40,7 @@ pub fn index(user: User, pool: &State<DbPool>) -> Result<Template, (Status, Temp
             "mail": &user.mail,
             "context": json!(IndexContext {
                 shortcut: None,
-                shortcuts:  sorted(&conn)?,
+                shortcuts:  sorted(&mut conn)?,
                  user,
                 team: None,
                 teams: admin_teams,
@@ -69,7 +69,7 @@ pub fn get_shortcut(
 ) -> Result<ShortcutRes, (Status, Template)> {
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
     let shortcut_found = dsl::shortcuts
         .inner_join(
@@ -81,11 +81,11 @@ pub fn get_shortcut(
         .filter(dsl::shortcut.eq(shortcut))
         .select(SHORTCUT_COLUMNS)
         .order_by(users_teams::rank.asc())
-        .first::<Shortcut>(&conn)
+        .first::<Shortcut>(&mut conn)
         .optional()
         .map_err(AppError::from)?;
 
-    let admin_teams = teams_with_shortcut_write(&user, &conn)?;
+    let admin_teams = teams_with_shortcut_write(&user, &mut conn)?;
 
     Ok(match shortcut_found {
         Some(shortcut_found) => {
@@ -96,7 +96,7 @@ pub fn get_shortcut(
                         "mail": &user.mail,
                         "context": json!(IndexContext {
                             shortcut: Some(shortcut_found),
-                            shortcuts:  sorted(&conn)?,
+                            shortcuts:  sorted(&mut conn)?,
                             user,
                             team: None,
                             teams: admin_teams,
@@ -118,7 +118,7 @@ pub fn get_shortcut(
                         team_slug:"".to_string(),
                         url:"".to_string()
                     }),
-                    shortcuts:  sorted(&conn)?,
+                    shortcuts:  sorted(&mut conn)?,
                     user,
                     team: None,
                     teams: admin_teams,
@@ -156,10 +156,10 @@ pub fn put_shortcut(
         "".to_string()
     };
 
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
-    team_should_be_accepted(&team_slug, &conn)?;
-    user_should_have_team_capability(&user, &team_slug, &conn, TeamCapability::ShortcutsWrite)?;
+    team_should_be_accepted(&team_slug, &mut conn)?;
+    user_should_have_team_capability(&user, &team_slug, &mut conn, TeamCapability::ShortcutsWrite)?;
 
     diesel::insert_into(shortcuts::table)
         .values(NewShortcut {
@@ -170,7 +170,7 @@ pub fn put_shortcut(
         .on_conflict((shortcuts::shortcut, shortcuts::team_slug))
         .do_update()
         .set(UpdatableShortcut { url, team_slug })
-        .execute(&conn)
+        .execute(&mut conn)
         .map_err(AppError::from)?;
 
     Ok(Status::Ok)
@@ -192,14 +192,14 @@ pub fn delete_shortcut(
         "".to_string()
     };
 
-    let conn = pool.get().map_err(AppError::from)?;
+    let mut conn = pool.get().map_err(AppError::from)?;
 
-    team_should_be_accepted(&team_slug, &conn)?;
-    user_should_have_team_capability(&user, &team_slug, &conn, TeamCapability::ShortcutsWrite)?;
+    team_should_be_accepted(&team_slug, &mut conn)?;
+    user_should_have_team_capability(&user, &team_slug, &mut conn, TeamCapability::ShortcutsWrite)?;
 
     diesel::delete(shortcuts::table)
         .filter(dsl::shortcut.eq(shortcut).and(dsl::team_slug.eq(team_slug)))
-        .execute(&conn)
+        .execute(&mut conn)
         .map_err(AppError::from)?;
 
     Ok(Template::render(
@@ -221,7 +221,7 @@ fn parse_shortcut_path_buff(shortcut: &'_ Path) -> Result<&'_ str, AppError> {
     }
 }
 
-fn team_should_be_accepted(team_slug: &str, conn: &DbConn) -> Result<(), AppError> {
+fn team_should_be_accepted(team_slug: &str, conn: &mut DbConn) -> Result<(), AppError> {
     if teams::table
         .find(&team_slug)
         .filter(teams::is_accepted)

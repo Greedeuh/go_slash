@@ -1,9 +1,10 @@
-use crate::models::teams::TeamCapability;
+use crate::models::teams::{Team, TeamCapability};
 use crate::models::AppError;
 use crate::schema::users;
-use crate::schema::users_teams;
+use crate::schema::*;
 use diesel::{deserialize, serialize, Associations, Identifiable, Insertable};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use std::io::Write;
 use std::str::FromStr;
 use std::vec;
 use std::{collections::HashMap, sync::Mutex};
@@ -31,8 +32,10 @@ pub struct UserWithPwd {
 }
 
 #[derive(Identifiable, Queryable, Associations, Insertable, PartialEq, Debug, Serialize, Eq)]
-#[belongs_to(Team, foreign_key = team_slug)]
-#[belongs_to(User, foreign_key = user_mail)]
+// #[belongs_to(Team, foreign_key = team_slug )]
+#[diesel(belongs_to(Team, foreign_key = team_slug))]
+#[diesel(belongs_to(User, foreign_key = user_mail))]
+// #[belongs_to(User, foreign_key = user_mail)]
 #[table_name = "users_teams"]
 #[primary_key(user_mail, team_slug)]
 pub struct UserTeam {
@@ -125,11 +128,11 @@ impl Capability {
 }
 
 impl deserialize::FromSql<diesel::sql_types::Text, diesel::pg::Pg> for Capability {
-    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: <diesel::pg::Pg as diesel::backend::Backend>::RawValue<'_>) -> deserialize::Result<Self> {
         let s: String =
-            deserialize::FromSql::<diesel::sql_types::Text, diesel::pg::Pg>::from_sql(bytes)?;
-        let r = Capability::from_str(&s)?;
-        Ok(r)
+        deserialize::FromSql::<diesel::sql_types::Text, diesel::pg::Pg>::from_sql(bytes)?;
+    let r = Capability::from_str(&s)?;
+    Ok(r)
     }
 }
 
@@ -137,18 +140,9 @@ impl serialize::ToSql<diesel::sql_types::Text, diesel::pg::Pg> for Capability
 where
     String: serialize::ToSql<diesel::sql_types::Text, diesel::pg::Pg>,
 {
-    fn to_sql<W>(
-        &self,
-        out: &mut diesel::serialize::Output<'_, W, diesel::pg::Pg>,
-    ) -> std::result::Result<
-        diesel::serialize::IsNull,
-        std::boxed::Box<(dyn std::error::Error + std::marker::Send + std::marker::Sync + 'static)>,
-    >
-    where
-        W: std::io::Write,
-    {
+    fn to_sql<'b>(&'b self, out: &mut serialize::Output<'b, '_, diesel::pg::Pg>) -> serialize::Result {
         out.write_all(self.to_string().as_bytes())?;
-        Ok(diesel::types::IsNull::No)
+        Ok(diesel::serialize::IsNull::No)
     }
 }
 

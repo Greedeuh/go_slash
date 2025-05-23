@@ -32,7 +32,7 @@ pub struct UpdatableShortcut {
     pub team_slug: String,
 }
 
-pub fn sorted(conn: &DbConn) -> Result<Vec<Shortcut>, AppError> {
+pub fn sorted(conn: &mut DbConn) -> Result<Vec<Shortcut>, AppError> {
     use crate::schema::shortcuts::dsl::*;
 
     Ok(shortcuts.order(shortcut.asc()).load::<Shortcut>(conn)?)

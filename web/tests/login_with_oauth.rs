@@ -16,8 +16,8 @@ mod with_google{
     use super::*;
     #[test]
     fn with_connected_user_is_not_allowed() {
-        let (client, conn) = launch_with("some_session_id: some_mail@mail.com");
-        user("some_mail@mail.com", "pwd", &[], &[], &conn);
+        let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+        user("some_mail@mail.com", "pwd", &[], &[], &mut conn);
         
 
         let response = client
@@ -59,8 +59,8 @@ mod after_google_redirect {
     use super::*;
     #[test]
     fn with_wrong_nonce_is_not_allowed() {
-        let (client, conn) = launch_with("");
-        user("some_mail@mail.com", "pwd", &[], &[], &conn);
+        let (client, mut conn) = launch_with("");
+        user("some_mail@mail.com", "pwd", &[], &[], &mut conn);
         
 
         let response = client        
@@ -80,9 +80,9 @@ mod after_google_redirect {
             .then_return(Ok(TokenRes {mail: "some_mail@mail.com".to_string()}));
 
 
-        let (client, conn) = launch_with_sessions_and_mock("some_session_id: nonce", oidc_service);
+        let (client, mut conn) = launch_with_sessions_and_mock("some_session_id: nonce", oidc_service);
 
-        user("some_mail@mail.com", "pwd", &[], &[], &conn);
+        user("some_mail@mail.com", "pwd", &[], &[], &mut conn);
         
 
         let response = client        
@@ -109,7 +109,7 @@ mod after_google_redirect {
             .then_return(Ok(TokenRes {mail: "some_mail@mail.com".to_string()}));
 
 
-        let (client, conn) = launch_with_sessions_and_mock("some_session_id: nonce", oidc_service);
+        let (client, mut conn) = launch_with_sessions_and_mock("some_session_id: nonce", oidc_service);
 
         
 
@@ -125,7 +125,7 @@ mod after_google_redirect {
         assert_eq!(url, "/");
         assert!(     location.next().is_none()); 
 
-        assert_eq!(get_user("some_mail@mail.com", &conn), Some(User {mail: "some_mail@mail.com".to_string(), capabilities: vec![]}));
+        assert_eq!(get_user("some_mail@mail.com", &mut conn), Some(User {mail: "some_mail@mail.com".to_string(), capabilities: vec![]}));
 
     }
 
@@ -139,9 +139,9 @@ mod after_google_redirect {
             .then_return(Ok(TokenRes {mail: "some_mail@mail.com".to_string()}));
 
 
-        let (client, conn) = launch_with_sessions_and_mock("some_session_id: nonce", oidc_service);
+        let (client, mut conn) = launch_with_sessions_and_mock("some_session_id: nonce", oidc_service);
 
-        default_capabilities(&[ Capability::TeamsWriteWithValidation],&conn);
+        default_capabilities(&[ Capability::TeamsWriteWithValidation],&mut conn);
         
 
         let response = client        
@@ -156,7 +156,7 @@ mod after_google_redirect {
         assert_eq!(url, "/");
         assert!(     location.next().is_none()); 
 
-        assert_eq!(get_user("some_mail@mail.com", &conn), Some(User {mail: "some_mail@mail.com".to_string(), capabilities: vec![ Capability::TeamsWriteWithValidation]}));
+        assert_eq!(get_user("some_mail@mail.com", &mut conn), Some(User {mail: "some_mail@mail.com".to_string(), capabilities: vec![ Capability::TeamsWriteWithValidation]}));
 
     }
 }

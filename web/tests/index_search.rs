@@ -13,32 +13,32 @@ async fn list_shortcuts() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
-                team("team1", "Team 1", false, true, &con);
+                let mut con = con.lock().await;
+                team("team1", "Team 1", false, true, &mut con);
                 shortcut(
                     "newShortcut",
                     &host(port, "/newShortcut"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 shortcut(
                     "aShortcut",
                     &host(port, "/aShortcut"),
                     "team1",
-                    &con,
+                    &mut con,
                 );
                 shortcut(
                     "ssshortcut",
                     &host(port, "/ssshortcut"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 user(
                     "some_mail@mail.com",
                     "pwd",
                     &[("", &[], 0, true), ("team1", &[], 0, true)],
                     &[],
-                    &con,
+                    &mut con,
                 );
 
                 let texts_sorted = vec![
@@ -80,32 +80,32 @@ async fn sugest_when_typing() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
-                team("slug1", "Team 1", false, true, &con);
+                let mut con = con.lock().await;
+                team("slug1", "Team 1", false, true, &mut con);
                 shortcut(
                     "newShortcut",
                     &host(port, "/newShortcut"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 shortcut(
                     "jeanLuc",
                     &host(port, "/aShortcut"),
                     "slug1",
-                    &con,
+                    &mut con,
                 );
                 shortcut(
                     "tadadam",
                     &host(port, "/ssshortcut"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 user(
                     "some_mail@mail.com",
                     "pwd",
                     &[("", &[], 0, true), ("slug1", &[], 0, true)],
                     &[],
-                    &con,
+                    &mut con,
                 );
 
                 driver
@@ -157,31 +157,31 @@ async fn with_click() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
+                let mut con = con.lock().await;
                 shortcut(
                     "newShortcut",
                     &host(port, "/newShortcut"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 shortcut(
                     "jeanLuc",
                     &host(port, "/aShortcut1"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 shortcut(
                     "tadadam",
                     &host(port, "/ssshortcut"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 user(
                     "some_mail@mail.com",
                     "pwd",
                     &[("", &[], 0, true)],
                     &[],
-                    &con,
+                    &mut con,
                 );
 
                 driver
@@ -218,31 +218,31 @@ async fn with_keyboard() {
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
             async move {
-                let con = con.lock().await;
+                let mut con = con.lock().await;
                 shortcut(
                     "newShortcut",
                     &host(port, "/newShortcut"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 shortcut(
                     "jeanLuc",
                     &host(port, "/aShortcut1"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 shortcut(
                     "tadadam",
                     &host(port, "/ssshortcut"),
                     "",
-                    &con,
+                    &mut con,
                 );
                 user(
                     "some_mail@mail.com",
                     "pwd",
                     &[("", &[], 0, true)],
                     &[],
-                    &con,
+                    &mut con,
                 );
 
                 driver

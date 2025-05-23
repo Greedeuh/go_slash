@@ -1,6 +1,6 @@
 use diesel::{deserialize, dsl::count, prelude::*, serialize, Identifiable};
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+use std::{io::Write, str::FromStr};
 use strum_macros::{Display, EnumString};
 
 use crate::{
@@ -90,7 +90,7 @@ impl TeamCapability {
 }
 
 impl deserialize::FromSql<diesel::sql_types::Text, diesel::pg::Pg> for TeamCapability {
-    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: <diesel::pg::Pg as diesel::backend::Backend>::RawValue<'_>) -> deserialize::Result<Self> {
         let s: String =
             deserialize::FromSql::<diesel::sql_types::Text, diesel::pg::Pg>::from_sql(bytes)?;
         let r = TeamCapability::from_str(&s)?;
@@ -102,22 +102,21 @@ impl serialize::ToSql<diesel::sql_types::Text, diesel::pg::Pg> for TeamCapabilit
 where
     String: serialize::ToSql<diesel::sql_types::Text, diesel::pg::Pg>,
 {
-    fn to_sql<W>(
+    fn to_sql(
         &self,
-        out: &mut diesel::serialize::Output<'_, W, diesel::pg::Pg>,
+        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
     ) -> std::result::Result<
         diesel::serialize::IsNull,
         std::boxed::Box<(dyn std::error::Error + std::marker::Send + std::marker::Sync + 'static)>,
     >
-    where
-        W: std::io::Write,
+
     {
         out.write_all(self.to_string().as_bytes())?;
-        Ok(diesel::types::IsNull::No)
+        Ok(diesel::serialize::IsNull::No)
     }
 }
 
-pub fn teams_with_shortcut_write(user: &User, conn: &DbConn) -> Result<Vec<Team>, AppError> {
+pub fn teams_with_shortcut_write(user: &User, conn: &mut DbConn) -> Result<Vec<Team>, AppError> {
     teams::table
         .inner_join(
             users_teams::table.on(teams::slug
@@ -138,7 +137,7 @@ pub fn teams_with_shortcut_write(user: &User, conn: &DbConn) -> Result<Vec<Team>
 pub fn user_should_have_team_capability(
     user: &User,
     team_slug: &str,
-    conn: &DbConn,
+    conn: &mut DbConn,
     capability: TeamCapability,
 ) -> Result<(), AppError> {
     if users_teams::table
