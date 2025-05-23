@@ -35,7 +35,7 @@ async fn as_admin_accept_team() {
                     .await?;
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/teams", port))
+                    .get(host(port, "/go/teams"))
                     .await?;
 
                 assert!(driver
@@ -68,7 +68,7 @@ async fn as_admin_accept_team() {
                     .is_err());
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/teams", port))
+                    .get(host(port, "/go/teams"))
                     .await?;
 
                 driver
@@ -141,7 +141,7 @@ mod delete {
                         .unwrap();
 
                     driver
-                        .get(format!("http://host.docker.internal:{}/go/teams", port))
+                        .get(host(port, "/go/teams"))
                         .await
                         .unwrap();
 
@@ -188,7 +188,7 @@ mod delete {
                         .unwrap();
 
                     driver
-                        .get(format!("http://host.docker.internal:{}/go/teams", port))
+                        .get(host(port, "/go/teams"))
                         .await
                         .unwrap();
 
@@ -249,7 +249,7 @@ mod delete {
             .unwrap();
 
         driver
-            .get(format!("http://host.docker.internal:{}/go/teams", port))
+            .get(host(port, "/go/teams"))
             .await
             .unwrap();
 
@@ -291,7 +291,7 @@ mod delete {
         .starts_with("team1"));
 
         driver
-            .get(format!("http://host.docker.internal:{}/go/teams", port))
+            .get(host(port, "/go/teams"))
             .await
             .unwrap();
 
@@ -393,7 +393,7 @@ mod create {
             .await?;
 
         driver
-            .get(format!("http://host.docker.internal:{}/go/teams", port))
+            .get(host(port, "/go/teams"))
             .await?;
 
         assert!(

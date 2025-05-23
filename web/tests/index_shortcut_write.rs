@@ -19,7 +19,7 @@ async fn as_unknow_user_is_not_allowed() {
                 let con = con.lock().await;
                 shortcut(
                     "newShortcut",
-                    &format!("http://host.docker.internal:{}/newShortcut", port),
+                    &host(port, "/newShortcut"),
                     "",
                     &con,
                 );
@@ -55,7 +55,7 @@ async fn as_user_without_capability_is_not_allowed() {
                 let con = con.lock().await;
                 shortcut(
                     "newShortcut",
-                    &format!("http://host.docker.internal:{}/newShortcut", port),
+                    &host(port, "/newShortcut"),
                     "",
                     &con,
                 );
@@ -88,7 +88,7 @@ async fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
                 let con = con.lock().await;
                 shortcut(
                     "newShortcut",
-                    &format!("http://host.docker.internal:{}/newShortcut", port),
+                    &host(port, "/newShortcut"),
                     "",
                     &con,
                 );
@@ -130,7 +130,7 @@ mod delete_shortcut {
                     let con = con.lock().await;
                     shortcut(
                         "jeanLuc",
-                        &format!("http://host.docker.internal:{}/aShortcut1", port),
+                        &host(port, "/aShortcut1"),
                         "",
                         &con,
                     );
@@ -183,13 +183,13 @@ mod delete_shortcut {
                     team("slug", "title", true, true, &con);
                     shortcut(
                         "first",
-                        &format!("http://host.docker.internal:{}/aShortcut1", port),
+                        &host(port, "/aShortcut1"),
                         "slug",
                         &con,
                     );
                     shortcut(
                         "second",
-                        &format!("http://host.docker.internal:{}/aShortcut1", port),
+                        &host(port, "/aShortcut1"),
                         "",
                         &con,
                     );
@@ -240,7 +240,7 @@ mod delete_shortcut {
                     let con = con.lock().await;
                     shortcut(
                         "jeanLuc",
-                        &format!("http://host.docker.internal:{}/aShortcut1", port),
+                        &host(port, "/aShortcut1"),
                         "",
                         &con,
                     );
@@ -274,7 +274,7 @@ mod delete_shortcut {
                     team("team1", "Team 1", false, true, &con);
                     shortcut(
                         "jeanLuc",
-                        &format!("http://host.docker.internal:{}/aShortcut1", port),
+                        &host(port, "/aShortcut1"),
                         "team1",
                         &con,
                     );
@@ -514,7 +514,7 @@ mod create_shortcut {
             .find_element(By::Css("[name='url']"))
             .await
             .unwrap()
-            .send_keys(format!("http://host.docker.internal:{}/aShortcut", port))
+            .send_keys(host(port, "/aShortcut"))
             .await
             .unwrap();
 
@@ -541,7 +541,7 @@ mod create_shortcut {
 
         assert_eq!(
             article.get_property("href").await.unwrap(),
-            Some(format!("http://host.docker.internal:{}/jeanLuc?no_redirect", port))
+            Some(host(port, "/jeanLuc?no_redirect"))
         );
 
         assert_eq!(

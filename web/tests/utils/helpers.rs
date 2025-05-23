@@ -15,9 +15,7 @@ mod no_dead_code {
         tokio::{spawn, sync::Mutex},
     };
     use std::{
-        env,
-        panic::{resume_unwind, AssertUnwindSafe},
-        time::Duration,
+        env, fmt::format, panic::{resume_unwind, AssertUnwindSafe}, time::Duration
     };
     pub use tf::*;
     use thirtyfour::{error::WebDriverError, DesiredCapabilities, WebDriver};
@@ -25,9 +23,14 @@ mod no_dead_code {
 
     const PORT: u16 = 8001;
     const ADDR: &str = "127.0.0.1";
+    const HOST: &str = "http://host.docker.internal";
 
     lazy_static! {
         static ref AVAILABLE_PORTS: Mutex<Vec<u16>> = Mutex::new((8001..9000).collect());
+    }
+
+    pub fn host(port: u16, path: &str) -> String {
+        format!("{}:{}{}", HOST, port, path)
     }
 
     pub fn random_pg_url() -> (String, String) {
@@ -234,7 +237,7 @@ mod no_dead_code {
 
         let mut count = 0;
         while driver
-            .get(format!("http://host.docker.internal:{}/go/health", port))
+            .get(host(port, "/go/health"))
             .await
             .is_err()
             && count < 50

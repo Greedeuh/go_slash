@@ -170,7 +170,7 @@ async fn login_page_has_oauth_links() {
                
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/login?from=allo", port))
+                    .get(host(port, "/go/login?from=allo"))
                     .await?;
                 
 

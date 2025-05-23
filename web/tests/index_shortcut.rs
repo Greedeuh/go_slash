@@ -19,13 +19,13 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
                 team("team", "team", false, true, &con);
                 shortcut(
                     "newShortcut",
-                    &format!("http://host.docker.internal:{}/looped", port),
+                    &host(port, "/looped"),
                     "team",
                     &con,
                 );
                 shortcut(
                     "newShortcut2",
-                    &format!("http://host.docker.internal:{}/claude", port),
+                    &host(port, "/claude"),
                     "",
                     &con,
                 );
@@ -41,10 +41,7 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
                 driver
-                    .get(format!(
-                        "http://host.docker.internal:{}/newShortcut?no_redirect=true",
-                        port
-                    ))
+                    .get(&format!("{}?no_redirect=true", host(port, "/newShortcut")))
                     .await?;
 
                 let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
@@ -56,7 +53,7 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
                 assert_eq!(
                     articles[0].text().await?,
-                    format!("newShortcut http://host.docker.internal:{}/looped team", port)
+                    format!("newShortcut {} team", host(port, "/looped"))
                 );
                 assert_eq!(articles.len(), 2);
 
@@ -75,7 +72,7 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
                         .await?
                         .get_property("value")
                         .await?,
-                    Some(format!("http://host.docker.internal:{}/looped", port))
+                    Some(host(port, "/looped"))
                 );
 
                 assert_eq!(
@@ -105,13 +102,13 @@ async fn with_not_existing_shortcut_return_search_and_edit_form_filled() {
                 let con = con.lock().await;
                 shortcut(
                     "newShortcut1",
-                    &format!("http://host.docker.internal:{}/looped", port),
+                    &host(port, "/looped"),
                     "",
                     &con,
                 );
                 shortcut(
                     "newShortcut2",
-                    &format!("http://host.docker.internal:{}/claude", port),
+                    &host(port, "/claude"),
                     "",
                     &con,
                 );
@@ -128,7 +125,7 @@ async fn with_not_existing_shortcut_return_search_and_edit_form_filled() {
                     .await?;
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/newShortcut", port))
+                    .get(host(port, "/newShortcut"))
                     .await?;
 
                 assert_eq!(
@@ -149,7 +146,7 @@ async fn with_not_existing_shortcut_return_search_and_edit_form_filled() {
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
                 assert_eq!(
                     articles[0].text().await?,
-                    format!("newShortcut1 http://host.docker.internal:{}/looped", port)
+                    format!("newShortcut1 {}", host(port, "/looped"))
                 );
                 assert_eq!(articles.len(), 2);
 

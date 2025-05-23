@@ -32,7 +32,7 @@ async fn join_team() {
                     .await?;
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/teams", port))
+                    .get(host(port, "/go/teams"))
                     .await?;
 
                 let button = driver
@@ -55,7 +55,7 @@ async fn join_team() {
                 );
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/teams", port))
+                    .get(host(port, "/go/teams"))
                     .await?;
 
                 let leave = driver
@@ -93,7 +93,7 @@ async fn leave_team() {
                     .await?;
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/teams", port))
+                    .get(host(port, "/go/teams"))
                     .await?;
 
                 let leave = driver
@@ -116,7 +116,7 @@ async fn leave_team() {
                 );
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/teams", port))
+                    .get(host(port, "/go/teams"))
                     .await?;
 
                 assert_eq!(
@@ -164,7 +164,7 @@ async fn change_user_teams_rank() {
                     .await?;
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/teams", port))
+                    .get(host(port, "/go/teams"))
                     .await?;
 
                 assert_eq!(
@@ -225,7 +225,7 @@ async fn change_user_teams_rank() {
                 // }
 
                 // driver
-                //     .get(format!("http://host.docker.internal:{}/go/teams", port))
+                //     .get(host(port, "/go/teams"))
                 //     .await?;
 
                 // let teams = driver

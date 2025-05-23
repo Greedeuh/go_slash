@@ -24,13 +24,13 @@ async fn as_user() {
                 team("slug1", "team1", false, true, &conn);
                 shortcut(
                     "newShortcut",
-                    &format!("http://host.docker.internal:{}/looped", port),
+                    &host(port, "/looped"),
                     "slug1",
                     &conn,
                 );
                 shortcut(
                     "newShortcut2",
-                    &format!("http://host.docker.internal:{}/claude", port),
+                    &host(port, "/claude"),
                     "slug1",
                     &conn,
                 );
@@ -41,7 +41,7 @@ async fn as_user() {
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/teams/slug1", port))
+                    .get(host(port, "/go/teams/slug1"))
                     .await?;
 
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
@@ -87,7 +87,7 @@ async fn list_user() {
                     .await?;
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/teams/slug1", port))
+                    .get(host(port, "/go/teams/slug1"))
                     .await?;
 
                 let expected_users = vec!["another_mail@mail.com", "some_mail@mail.com"];
@@ -121,13 +121,13 @@ mod edit_team {
                     team("slug1", "team1", false, true, &conn);
                     shortcut(
                         "newShortcut",
-                        &format!("http://host.docker.internal:{}/looped", port),
+                        &host(port, "/looped"),
                         "slug1",
                         &conn,
                     );
                     shortcut(
                         "newShortcut2",
-                        &format!("http://host.docker.internal:{}/claude", port),
+                        &host(port, "/claude"),
                         "slug1",
                         &conn,
                     );
@@ -144,7 +144,7 @@ mod edit_team {
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
                     driver
-                        .get(format!("http://host.docker.internal:{}/go/teams/slug1", port))
+                        .get(host(port, "/go/teams/slug1"))
                         .await?;
 
                     assert!(driver
@@ -170,13 +170,13 @@ mod edit_team {
                     team("slug1", "team1", false, true, &conn);
                     shortcut(
                         "newShortcut",
-                        &format!("http://host.docker.internal:{}/looped", port),
+                        &host(port, "/looped"),
                         "slug1",
                         &conn,
                     );
                     shortcut(
                         "newShortcut2",
-                        &format!("http://host.docker.internal:{}/claude", port),
+                        &host(port, "/claude"),
                         "slug1",
                         &conn,
                     );
@@ -209,13 +209,13 @@ mod edit_team {
                     team("slug1", "team1", false, true, &conn);
                     shortcut(
                         "newShortcut",
-                        &format!("http://host.docker.internal:{}/looped", port),
+                        &host(port, "/looped"),
                         "slug1",
                         &conn,
                     );
                     shortcut(
                         "newShortcut2",
-                        &format!("http://host.docker.internal:{}/claude", port),
+                        &host(port, "/claude"),
                         "slug1",
                         &conn,
                     );
@@ -247,7 +247,7 @@ mod edit_team {
             .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
             .await?;
         driver
-            .get(format!("http://host.docker.internal:{}/go/teams/slug1", port))
+            .get(host(port, "/go/teams/slug1"))
             .await?;
 
         let title = driver.find_element(By::Css("[name='title']")).await?;
@@ -280,7 +280,7 @@ mod edit_team {
             .await?;
 
         driver
-            .get(format!("http://host.docker.internal:{}/go/teams/slug1", port))
+            .get(host(port, "/go/teams/slug1"))
             .await?;
 
         assert_eq!(
@@ -392,7 +392,7 @@ mod edit_user_team_link {
             .unwrap();
 
         driver
-            .get(format!("http://host.docker.internal:{}/go/teams/slug1", port))
+            .get(host(port, "/go/teams/slug1"))
             .await
             .unwrap();
 
@@ -427,7 +427,7 @@ mod edit_user_team_link {
         );
 
         driver
-            .get(format!("http://host.docker.internal:{}/go/teams/slug1", port))
+            .get(host(port, "/go/teams/slug1"))
             .await
             .unwrap();
 
@@ -530,7 +530,7 @@ mod kick_user {
             .unwrap();
 
         driver
-            .get(format!("http://host.docker.internal:{}/go/teams/slug1", port))
+            .get(host(port, "/go/teams/slug1"))
             .await
             .unwrap();
 
@@ -558,7 +558,7 @@ mod kick_user {
             .is_err());
 
         driver
-            .get(format!("http://host.docker.internal:{}/go/teams/slug1", port))
+            .get(host(port, "/go/teams/slug1"))
             .await
             .unwrap();
         assert!(driver
@@ -600,7 +600,7 @@ mod accept_user {
                         .unwrap();
 
                     driver
-                        .get(format!("http://host.docker.internal:{}/go/teams/slug1", port))
+                        .get(host(port, "/go/teams/slug1"))
                         .await
                         .unwrap();
 
@@ -690,7 +690,7 @@ mod accept_user {
             .unwrap();
 
         driver
-            .get(format!("http://host.docker.internal:{}/go/teams/slug1", port))
+            .get(host(port, "/go/teams/slug1"))
             .await
             .unwrap();
 
@@ -718,7 +718,7 @@ mod accept_user {
             .is_err());
 
         driver
-            .get(format!("http://host.docker.internal:{}/go/teams/slug1", port))
+            .get(host(port, "/go/teams/slug1"))
             .await
             .unwrap();
         assert!(driver

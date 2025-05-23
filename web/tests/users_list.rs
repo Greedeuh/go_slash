@@ -84,7 +84,7 @@ async fn as_admin_i_can_see_the_list() {
                     .await?;
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/users", port))
+                    .get(host(port, "/go/users"))
                     .await?;
 
                 assert_users(driver, vec!["another_mail@mail.com", "some_mail@mail.com"]).await;
@@ -148,7 +148,7 @@ async fn as_admin_i_can_change_users_capabilities() {
                     .await?;
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/users", port))
+                    .get(host(port, "/go/users"))
                     .await?;
 
                 assert_users(driver, vec!["another_mail@mail.com", "some_mail@mail.com"]).await;
@@ -178,7 +178,7 @@ async fn as_admin_i_can_change_users_capabilities() {
                 assert_eq!(switch.get_property("checked").await?.unwrap(), "true");
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/users", port))
+                    .get(host(port, "/go/users"))
                     .await?;
 
                 driver

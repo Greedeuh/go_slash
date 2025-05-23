@@ -92,7 +92,7 @@ async fn with_icons() {
                 let checks = vec![true, true, true, false, false];
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/teams", port))
+                    .get(host(port, "/go/teams"))
                     .await?;
 
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
@@ -167,7 +167,7 @@ async fn user_team_then_others() {
                     .await?;
 
                 driver
-                    .get(format!("http://host.docker.internal:{}/go/teams", port))
+                    .get(host(port, "/go/teams"))
                     .await?;
 
                 let user_team = driver
