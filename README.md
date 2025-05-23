@@ -39,6 +39,17 @@ eg.
 
 #### Manage DB
 
+1. Open a terminal or command prompt.
+2. Connect to PostgreSQL using the superuser postgres on the specified port:
+   psql -h localhost -p 6543 -U postgres
+3. Create a new user 'go_user' with password 'go_pwd':
+   CREATE USER go_user WITH PASSWORD 'go_pwd';
+4. Create a new database named 'go':
+   CREATE DATABASE go;
+5. Grant all privileges on the new database to 'go_user':
+   GRANT ALL PRIVILEGES ON DATABASE go TO go_user;
+6. Verify that 'go_user' can successfully connect and has the correct privileges.
+
 For now only postgres is available.
 Use [diesel](https://diesel.rs/) cli to manage db migrations.
 
@@ -51,3 +62,6 @@ Please make sure to update tests as appropriate.
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
+
+
+

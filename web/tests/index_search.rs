@@ -18,19 +18,19 @@ async fn list_shortcuts() {
                 team("team1", "Team 1", false, true, &con);
                 shortcut(
                     "newShortcut",
-                    &format!("http://localhost:{}/newShortcut", port),
+                    &format!("http://host.docker.internal:{}/newShortcut", port),
                     "",
                     &con,
                 );
                 shortcut(
                     "aShortcut",
-                    &format!("http://localhost:{}/aShortcut", port),
+                    &format!("http://host.docker.internal:{}/aShortcut", port),
                     "team1",
                     &con,
                 );
                 shortcut(
                     "ssshortcut",
-                    &format!("http://localhost:{}/ssshortcut", port),
+                    &format!("http://host.docker.internal:{}/ssshortcut", port),
                     "",
                     &con,
                 );
@@ -43,20 +43,20 @@ async fn list_shortcuts() {
                 );
 
                 let texts_sorted = vec![
-                    format!("aShortcut http://localhost:{}/aShortcut team1", port),
-                    format!("newShortcut http://localhost:{}/newShortcut", port),
-                    format!("ssshortcut http://localhost:{}/ssshortcut", port),
+                    format!("aShortcut http://host.docker.internal:{}/aShortcut team1", port),
+                    format!("newShortcut http://host.docker.internal:{}/newShortcut", port),
+                    format!("ssshortcut http://host.docker.internal:{}/ssshortcut", port),
                 ];
                 let href_sorted = vec![
-                    format!("http://localhost:{}/aShortcut", port),
-                    format!("http://localhost:{}/newShortcut", port),
-                    format!("http://localhost:{}/ssshortcut", port),
+                    format!("http://host.docker.internal:{}/aShortcut", port),
+                    format!("http://host.docker.internal:{}/newShortcut", port),
+                    format!("http://host.docker.internal:{}/ssshortcut", port),
                 ];
 
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
-                driver.get(format!("http://localhost:{}", port)).await?;
+                driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
 
@@ -85,19 +85,19 @@ async fn sugest_when_typing() {
                 team("slug1", "Team 1", false, true, &con);
                 shortcut(
                     "newShortcut",
-                    &format!("http://localhost:{}/newShortcut", port),
+                    &format!("http://host.docker.internal:{}/newShortcut", port),
                     "",
                     &con,
                 );
                 shortcut(
                     "jeanLuc",
-                    &format!("http://localhost:{}/aShortcut", port),
+                    &format!("http://host.docker.internal:{}/aShortcut", port),
                     "slug1",
                     &con,
                 );
                 shortcut(
                     "tadadam",
-                    &format!("http://localhost:{}/ssshortcut", port),
+                    &format!("http://host.docker.internal:{}/ssshortcut", port),
                     "",
                     &con,
                 );
@@ -112,7 +112,7 @@ async fn sugest_when_typing() {
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
-                driver.get(format!("http://localhost:{}", port)).await?;
+                driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
                 // initial state
@@ -126,7 +126,7 @@ async fn sugest_when_typing() {
                 // type in t should suggest tadadam first
                 assert_eq!(
                     articles[0].text().await?,
-                    format!("tadadam http://localhost:{}/ssshortcut", port)
+                    format!("tadadam http://host.docker.internal:{}/ssshortcut", port)
                 );
                 assert_eq!(articles.len(), 3);
 
@@ -137,11 +137,11 @@ async fn sugest_when_typing() {
                 // type in tuc should suggest jeanLuc and newShortcut but not tadam
                 assert_eq!(
                     articles[0].text().await?,
-                    format!("jeanLuc http://localhost:{}/aShortcut slug1", port)
+                    format!("jeanLuc http://host.docker.internal:{}/aShortcut slug1", port)
                 );
                 assert_eq!(
                     articles[1].text().await?,
-                    format!("newShortcut http://localhost:{}/newShortcut", port)
+                    format!("newShortcut http://host.docker.internal:{}/newShortcut", port)
                 );
                 assert_eq!(articles.len(), 2);
                 Ok(())
@@ -161,19 +161,19 @@ async fn with_click() {
                 let con = con.lock().await;
                 shortcut(
                     "newShortcut",
-                    &format!("http://localhost:{}/newShortcut", port),
+                    &format!("http://host.docker.internal:{}/newShortcut", port),
                     "",
                     &con,
                 );
                 shortcut(
                     "jeanLuc",
-                    &format!("http://localhost:{}/aShortcut1", port),
+                    &format!("http://host.docker.internal:{}/aShortcut1", port),
                     "",
                     &con,
                 );
                 shortcut(
                     "tadadam",
-                    &format!("http://localhost:{}/ssshortcut", port),
+                    &format!("http://host.docker.internal:{}/ssshortcut", port),
                     "",
                     &con,
                 );
@@ -188,7 +188,7 @@ async fn with_click() {
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
-                driver.get(format!("http://localhost:{}", port)).await?;
+                driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                 let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
                 search_bar.send_keys("jeanLuc").await?;
@@ -202,7 +202,7 @@ async fn with_click() {
 
                 assert_eq!(
                     driver.current_url().await?,
-                    format!("http://localhost:{}/aShortcut1", port)
+                    format!("http://host.docker.internal:{}/aShortcut1", port)
                 );
 
                 Ok(())
@@ -222,19 +222,19 @@ async fn with_keyboard() {
                 let con = con.lock().await;
                 shortcut(
                     "newShortcut",
-                    &format!("http://localhost:{}/newShortcut", port),
+                    &format!("http://host.docker.internal:{}/newShortcut", port),
                     "",
                     &con,
                 );
                 shortcut(
                     "jeanLuc",
-                    &format!("http://localhost:{}/aShortcut1", port),
+                    &format!("http://host.docker.internal:{}/aShortcut1", port),
                     "",
                     &con,
                 );
                 shortcut(
                     "tadadam",
-                    &format!("http://localhost:{}/ssshortcut", port),
+                    &format!("http://host.docker.internal:{}/ssshortcut", port),
                     "",
                     &con,
                 );
@@ -249,7 +249,7 @@ async fn with_keyboard() {
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
-                driver.get(format!("http://localhost:{}", port)).await?;
+                driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                 let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
                 search_bar.send_keys(Keys::Down).await?;
@@ -259,7 +259,7 @@ async fn with_keyboard() {
                 // down arrow select first
                 assert_eq!(
                     articles[0].text().await?,
-                    format!("jeanLuc http://localhost:{}/aShortcut1", port)
+                    format!("jeanLuc http://host.docker.internal:{}/aShortcut1", port)
                 );
                 assert!(articles[0].class_name().await?.unwrap().contains("active"));
 
@@ -270,12 +270,12 @@ async fn with_keyboard() {
                 // down arrow again select snd & unselect first
                 assert_eq!(
                     articles[0].text().await?,
-                    format!("jeanLuc http://localhost:{}/aShortcut1", port)
+                    format!("jeanLuc http://host.docker.internal:{}/aShortcut1", port)
                 );
                 assert!(!articles[0].class_name().await?.unwrap().contains("active"));
                 assert_eq!(
                     articles[1].text().await?,
-                    format!("newShortcut http://localhost:{}/newShortcut", port)
+                    format!("newShortcut http://host.docker.internal:{}/newShortcut", port)
                 );
                 assert!(articles[1].class_name().await?.unwrap().contains("active"));
 
@@ -284,12 +284,12 @@ async fn with_keyboard() {
                 // up arrow select first & unselect first
                 assert_eq!(
                     articles[0].text().await?,
-                    format!("jeanLuc http://localhost:{}/aShortcut1", port)
+                    format!("jeanLuc http://host.docker.internal:{}/aShortcut1", port)
                 );
                 assert!(articles[0].class_name().await?.unwrap().contains("active"));
                 assert_eq!(
                     articles[1].text().await?,
-                    format!("newShortcut http://localhost:{}/newShortcut", port)
+                    format!("newShortcut http://host.docker.internal:{}/newShortcut", port)
                 );
                 assert!(!articles[1].class_name().await?.unwrap().contains("active"));
 
@@ -307,10 +307,10 @@ async fn with_keyboard() {
                 // Enter launch search
                 assert_eq!(
                     driver.current_url().await?,
-                    format!("http://localhost:{}/aShortcut1", port)
+                    format!("http://host.docker.internal:{}/aShortcut1", port)
                 );
 
-                driver.get(format!("http://localhost:{}", port)).await?;
+                driver.get(format!("http://host.docker.internal:{}", port)).await?;
                 // arow down then enter go to the first line shortcut
 
                 let search_bar = driver.find_element(By::Css("input[type='search']")).await?;
@@ -321,7 +321,7 @@ async fn with_keyboard() {
 
                 assert_eq!(
                     driver.current_url().await?,
-                    format!("http://localhost:{}/aShortcut1", port)
+                    format!("http://host.docker.internal:{}/aShortcut1", port)
                 );
                 Ok(())
             }

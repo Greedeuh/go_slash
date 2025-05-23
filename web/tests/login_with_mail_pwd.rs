@@ -26,7 +26,7 @@ async fn as_user() {
                 );
 
                 driver
-                    .get(format!("http://localhost:{}/go/login", port))
+                    .get(format!("http://host.docker.internal:{}/go/login", port))
                     .await?;
 
                 driver
@@ -58,7 +58,7 @@ async fn as_user() {
 
                 assert_eq!(
                     driver.current_url().await?,
-                    format!("http://localhost:{}/", port)
+                    format!("http://host.docker.internal:{}/", port)
                 );
                 Ok(())
             }
@@ -84,7 +84,7 @@ async fn with_from_query_param_redirect_to_it() {
                 );
 
                 driver
-                    .get(format!("http://localhost:{}/go/login?from=/allo", port))
+                    .get(format!("http://host.docker.internal:{}/go/login?from=/allo", port))
                     .await?;
 
                 driver
@@ -116,7 +116,7 @@ async fn with_from_query_param_redirect_to_it() {
 
                 assert_eq!(
                     driver.current_url().await?,
-                    format!("http://localhost:{}/allo", port)
+                    format!("http://host.docker.internal:{}/allo", port)
                 );
                 Ok(())
             }
@@ -142,7 +142,7 @@ async fn with_wrong_credentials_show_an_error() {
                 );
 
                 driver
-                    .get(format!("http://localhost:{}/go/login?from=allo", port))
+                    .get(format!("http://host.docker.internal:{}/go/login?from=allo", port))
                     .await?;
 
                 driver

@@ -32,7 +32,7 @@ async fn link_are_shown_on_other_pages() {
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
 
-                driver.get(format!("http://localhost:{}", port)).await?;
+                driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                 assert!(driver
                     .find_element(By::Css("a [href='/go/teams']"))
@@ -43,7 +43,7 @@ async fn link_are_shown_on_other_pages() {
 
                 for endpoint in endpoints {
                     driver
-                        .get(format!("http://localhost:{}/{}", port, dbg!(endpoint)))
+                        .get(format!("http://host.docker.internal:{}/{}", port, dbg!(endpoint)))
                         .await?;
 
                     assert_eq!(
@@ -92,7 +92,7 @@ async fn with_icons() {
                 let checks = vec![true, true, true, false, false];
 
                 driver
-                    .get(format!("http://localhost:{}/go/teams", port))
+                    .get(format!("http://host.docker.internal:{}/go/teams", port))
                     .await?;
 
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
@@ -167,7 +167,7 @@ async fn user_team_then_others() {
                     .await?;
 
                 driver
-                    .get(format!("http://localhost:{}/go/teams", port))
+                    .get(format!("http://host.docker.internal:{}/go/teams", port))
                     .await?;
 
                 let user_team = driver

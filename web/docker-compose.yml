@@ -8,13 +8,12 @@ services:
       POSTGRES_PASSWORD: postgres
 
   selenium:
-    image: selenium/standalone-chrome:4.1.3-20220327
+    image: selenium/standalone-chromium:136.0
     shm_size: 2gb
-    network_mode: host
     ports:
       - "4444:4444"
       - "7900:7900"
     extra_hosts:
-      - "localhost:host-gateway"
+      - "host.docker.internal:host-gateway"
     environment:
       SE_NODE_MAX_SESSIONS: 50

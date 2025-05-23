@@ -19,7 +19,7 @@ async fn features_should_list_editable_features() {
         |driver: &WebDriver, _con: Mutex<PgConnection>, port: u16| {
             async move {
                 driver
-                    .get(format!("http://localhost:{}/go/settings", port))
+                    .get(format!("http://host.docker.internal:{}/go/settings", port))
                     .await?;
 
                 let features = driver.find_elements(By::Css("[role='article']")).await?;
@@ -40,7 +40,7 @@ async fn features_should_list_editable_features() {
                 }
 
                 driver
-                    .get(format!("http://localhost:{}/go/settings", port))
+                    .get(format!("http://host.docker.internal:{}/go/settings", port))
                     .await?;
 
                 // TODO re-use when having another feature

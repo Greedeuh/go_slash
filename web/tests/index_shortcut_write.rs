@@ -19,7 +19,7 @@ async fn as_unknow_user_is_not_allowed() {
                 let con = con.lock().await;
                 shortcut(
                     "newShortcut",
-                    &format!("http://localhost:{}/newShortcut", port),
+                    &format!("http://host.docker.internal:{}/newShortcut", port),
                     "",
                     &con,
                 );
@@ -31,7 +31,7 @@ async fn as_unknow_user_is_not_allowed() {
                     &con,
                 );
 
-                driver.get(format!("http://localhost:{}", port)).await?;
+                driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                 assert!(driver
                     .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -55,7 +55,7 @@ async fn as_user_without_capability_is_not_allowed() {
                 let con = con.lock().await;
                 shortcut(
                     "newShortcut",
-                    &format!("http://localhost:{}/newShortcut", port),
+                    &format!("http://host.docker.internal:{}/newShortcut", port),
                     "",
                     &con,
                 );
@@ -64,7 +64,7 @@ async fn as_user_without_capability_is_not_allowed() {
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
-                driver.get(format!("http://localhost:{}", port)).await?;
+                driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                 assert!(driver
                     .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -88,7 +88,7 @@ async fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
                 let con = con.lock().await;
                 shortcut(
                     "newShortcut",
-                    &format!("http://localhost:{}/newShortcut", port),
+                    &format!("http://host.docker.internal:{}/newShortcut", port),
                     "",
                     &con,
                 );
@@ -103,7 +103,7 @@ async fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
-                driver.get(format!("http://localhost:{}", port)).await?;
+                driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                 assert!(driver
                     .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -130,7 +130,7 @@ mod delete_shortcut {
                     let con = con.lock().await;
                     shortcut(
                         "jeanLuc",
-                        &format!("http://localhost:{}/aShortcut1", port),
+                        &format!("http://host.docker.internal:{}/aShortcut1", port),
                         "",
                         &con,
                     );
@@ -145,7 +145,7 @@ mod delete_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://localhost:{}", port)).await?;
+                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                     driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -183,13 +183,13 @@ mod delete_shortcut {
                     team("slug", "title", true, true, &con);
                     shortcut(
                         "first",
-                        &format!("http://localhost:{}/aShortcut1", port),
+                        &format!("http://host.docker.internal:{}/aShortcut1", port),
                         "slug",
                         &con,
                     );
                     shortcut(
                         "second",
-                        &format!("http://localhost:{}/aShortcut1", port),
+                        &format!("http://host.docker.internal:{}/aShortcut1", port),
                         "",
                         &con,
                     );
@@ -207,7 +207,7 @@ mod delete_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://localhost:{}", port)).await?;
+                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                     driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -240,7 +240,7 @@ mod delete_shortcut {
                     let con = con.lock().await;
                     shortcut(
                         "jeanLuc",
-                        &format!("http://localhost:{}/aShortcut1", port),
+                        &format!("http://host.docker.internal:{}/aShortcut1", port),
                         "",
                         &con,
                     );
@@ -249,7 +249,7 @@ mod delete_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://localhost:{}", port)).await?;
+                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                     assert!(driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -274,7 +274,7 @@ mod delete_shortcut {
                     team("team1", "Team 1", false, true, &con);
                     shortcut(
                         "jeanLuc",
-                        &format!("http://localhost:{}/aShortcut1", port),
+                        &format!("http://host.docker.internal:{}/aShortcut1", port),
                         "team1",
                         &con,
                     );
@@ -283,7 +283,7 @@ mod delete_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://localhost:{}", port)).await?;
+                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                     assert!(driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -381,7 +381,7 @@ mod create_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://localhost:{}", port)).await?;
+                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                     driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -422,7 +422,7 @@ mod create_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://localhost:{}", port)).await?;
+                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                     driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -466,7 +466,7 @@ mod create_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://localhost:{}", port)).await?;
+                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                     driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -491,7 +491,7 @@ mod create_shortcut {
     async fn assert_create_shortcut_ok(driver: &WebDriver, team: &str, port: u16) {
         let spacer = if team.is_empty() { "" } else { " " };
         driver
-            .get(format!("http://localhost:{}", port))
+            .get(format!("http://host.docker.internal:{}", port))
             .await
             .unwrap();
 
@@ -514,7 +514,7 @@ mod create_shortcut {
             .find_element(By::Css("[name='url']"))
             .await
             .unwrap()
-            .send_keys(format!("http://localhost:{}/aShortcut", port))
+            .send_keys(format!("http://host.docker.internal:{}/aShortcut", port))
             .await
             .unwrap();
 
@@ -536,12 +536,12 @@ mod create_shortcut {
             .unwrap();
         assert_eq!(
             article.text().await.unwrap(),
-            format!("jeanLuc http://localhost:{}/aShortcut {}NEW", port, team)
+            format!("jeanLuc http://host.docker.internal:{}/aShortcut {}NEW", port, team)
         );
 
         assert_eq!(
             article.get_property("href").await.unwrap(),
-            Some(format!("http://localhost:{}/jeanLuc?no_redirect", port))
+            Some(format!("http://host.docker.internal:{}/jeanLuc?no_redirect", port))
         );
 
         assert_eq!(
@@ -585,7 +585,7 @@ mod create_shortcut {
         assert_eq!(
             article.text().await.unwrap(),
             format!(
-                "jeanLuc http://localhost:{}/aShortcut{}{}",
+                "jeanLuc http://host.docker.internal:{}/aShortcut{}{}",
                 port, spacer, team
             )
         );

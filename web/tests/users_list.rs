@@ -25,7 +25,7 @@ async fn link_are_shown_on_other_pages() {
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
 
-                driver.get(format!("http://localhost:{}", port)).await?;
+                driver.get(format!("http://host.docker.internal:{}", port)).await?;
 
                 assert!(driver
                     .find_element(By::Css("a [href='/go/users']"))
@@ -36,7 +36,7 @@ async fn link_are_shown_on_other_pages() {
 
                 for endpoint in endpoints {
                     driver
-                        .get(format!("http://localhost:{}/{}", port, dbg!(endpoint)))
+                        .get(format!("http://host.docker.internal:{}/{}", port, dbg!(endpoint)))
                         .await?;
 
                     assert_eq!(
@@ -84,7 +84,7 @@ async fn as_admin_i_can_see_the_list() {
                     .await?;
 
                 driver
-                    .get(format!("http://localhost:{}/go/users", port))
+                    .get(format!("http://host.docker.internal:{}/go/users", port))
                     .await?;
 
                 assert_users(driver, vec!["another_mail@mail.com", "some_mail@mail.com"]).await;
@@ -148,7 +148,7 @@ async fn as_admin_i_can_change_users_capabilities() {
                     .await?;
 
                 driver
-                    .get(format!("http://localhost:{}/go/users", port))
+                    .get(format!("http://host.docker.internal:{}/go/users", port))
                     .await?;
 
                 assert_users(driver, vec!["another_mail@mail.com", "some_mail@mail.com"]).await;
@@ -178,7 +178,7 @@ async fn as_admin_i_can_change_users_capabilities() {
                 assert_eq!(switch.get_property("checked").await?.unwrap(), "true");
 
                 driver
-                    .get(format!("http://localhost:{}/go/users", port))
+                    .get(format!("http://host.docker.internal:{}/go/users", port))
                     .await?;
 
                 driver

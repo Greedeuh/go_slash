@@ -234,7 +234,7 @@ mod no_dead_code {
 
         let mut count = 0;
         while driver
-            .get(format!("http://localhost:{}/go/health", port))
+            .get(format!("http://host.docker.internal:{}/go/health", port))
             .await
             .is_err()
             && count < 50
