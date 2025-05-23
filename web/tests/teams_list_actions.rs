@@ -477,11 +477,11 @@ mod create {
     async fn assert_create_form_is_empty(driver: &WebDriver) {
         let slug = driver.find(By::Name("slug")).await.unwrap();
         assert!(slug.is_displayed().await.unwrap());
-        assert_eq!(None, slug.value().await.unwrap());
+        assert_eq!(Some("".to_string()), slug.value().await.unwrap());
 
         let title = driver.find(By::Name("title")).await.unwrap();
         assert!(title.is_displayed().await.unwrap());
-        assert_eq!(None, title.value().await.unwrap());
+        assert_eq!(Some("".to_string()), title.value().await.unwrap());
 
         let is_private = driver.find(By::Name("is_private")).await.unwrap();
         assert!(is_private.is_displayed().await.unwrap());

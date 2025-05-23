@@ -316,6 +316,8 @@ mod edit_team {
 }
 
 mod edit_user_team_link {
+    use thirtyfour::components::{Component, ElementResolver};
+
     use super::*;
 
     #[async_test]
@@ -410,6 +412,7 @@ mod edit_user_team_link {
         let switch_label = switchs_label.first().unwrap();
 
         switch_label.wait_until().displayed().await.unwrap();
+        switch.wait_until().displayed().await.unwrap();
         assert_eq!(
             switch_label.text().await.unwrap(),
             TeamCapability::ShortcutsWrite.to_string()
