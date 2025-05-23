@@ -181,7 +181,7 @@ pub fn put_user_capability(
             .execute(&conn)
             .map_err(AppError::from)?;
     } else {
-        warn!("User {} already has capability {}", mail, capability);
+        warn!("User {mail} already has capability {capability}");
     }
 
     Ok(Status::Ok)
@@ -216,8 +216,7 @@ pub fn delete_user_capability(
             .map_err(AppError::from)?;
     } else {
         warn!(
-            "User {} already does not have capability {}",
-            mail, capability
+            "User {mail} already does not have capability {capability}"
         );
     }
 

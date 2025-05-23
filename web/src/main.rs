@@ -13,7 +13,7 @@ use go_web::{models::users::Sessions, server, services::oidc::OidcService, AppCo
 #[launch]
 async fn rocket() -> _ {
     if let Err(err) = dotenv::dotenv() {
-        warn!("Dot env setup failed: {:?}", err)
+        warn!("Dot env setup failed: {err:?}")
     };
 
     let db_url = env::var("DATABASE_URL").expect("Missing DATABASE_URL env var");

@@ -215,7 +215,7 @@ fn parse_shortcut_path_buff(shortcut: &'_ Path) -> Result<&'_ str, AppError> {
     match shortcut.to_str() {
         Some(shortcut) => Ok(shortcut),
         None => {
-            error!("GET <shortcut..> failed parsing: {:?}", shortcut);
+            error!("GET <shortcut..> failed parsing: {shortcut:?}");
             Err(AppError::BadRequest)
         }
     }
