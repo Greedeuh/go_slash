@@ -3,6 +3,7 @@ use crate::models::{
     teams::{Team, TeamWithUsers},
     users::User,
 };
+use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct IndexContext {
