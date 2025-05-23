@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[get("/go/settings")]
-pub fn settings(user: User) -> Result<Template, (Status, Template)> {
+pub fn get_settings(user: User) -> Result<Template, (Status, Template)> {
     user.should_have_capability(Capability::Features)?;
 
     Ok(Template::render("settings", json!({})))

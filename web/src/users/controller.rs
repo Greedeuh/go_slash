@@ -20,7 +20,7 @@ use crate::errors::AppError;
 use crate::schema::users::{self, dsl};
 use crate::schema::{teams, users_teams};
 use crate::DbPool;
-use super::models::*;
+use super::*;
 
 lazy_static! {
    pub static ref MAIL_REGEX: Regex =

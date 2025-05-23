@@ -31,7 +31,7 @@ use teams::{
     create_team, delete_team, delete_user_link_capability, kick_user, list_teams, patch_team,
     put_user_link_capability, put_user_team_acceptation, show_team,
 };
-use settings::{patch_settings, settings as get_settings};
+use settings::{patch_settings, get_settings};
 use login::{google_login, login as go_login, login_redirect_google, simple_login};
 use shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut};
     use users::{
