@@ -24,6 +24,7 @@ pub struct Setting {
     pub content: String,
 }
 
+
 pub fn get_global_features(conn: &mut DbConn) -> Result<FeaturesOld, AppError> {
     let features: Setting = settings::table
         .find(FEATURES)

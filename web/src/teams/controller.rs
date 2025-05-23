@@ -1,5 +1,5 @@
 use diesel::{
-    dsl::{count, max},
+    dsl::{count},
     prelude::*,
 };
 use rocket::{http::Status, serde::json::Json, State};
@@ -14,13 +14,13 @@ use crate::{
     },
     shortcuts::Shortcut,
     teams::{
-        teams_with_shortcut_write, user_should_have_team_capability, Team, TeamCapability,
-        TeamForOptUser, TeamForUserIfSome, TeamWithUsers,
+         user_should_have_team_capability, Team, TeamCapability,
+        TeamForOptUser, TeamForUserIfSome, TeamWithUsers, PatchableTeam
     },
     users::{Capability, User, UserTeam},
     schema::{
         shortcuts,
-        teams::{self, dsl},
+        teams,
         users_teams,
     },
     views::IndexContext,
@@ -30,14 +30,8 @@ use crate::{
 #[get("/go/teams")]
 pub fn list_teams(user: User, pool: &State<DbPool>) -> Result<Template, (Status, Template)> {
     let mut conn = pool.get().map_err(AppError::from)?;
-    let mut teams: Vec<TeamForOptUser> = dsl::teams
-        .left_join(
-            users_teams::table.on(dsl::slug
-                .eq(users_teams::team_slug)
-                .and(users_teams::user_mail.eq(&user.mail))),
-        )
-        .load(&mut conn)
-        .map_err(AppError::from)?;
+
+    let mut teams =  Team::all_of_user(&user.mail, &mut conn)?;
 
     teams.sort_by(
         |TeamForOptUser { team: a, .. }, TeamForOptUser { team: b, .. }| {
@@ -60,9 +54,9 @@ pub fn list_teams(user: User, pool: &State<DbPool>) -> Result<Template, (Status,
     ))
 }
 
-#[delete("/go/teams/<team>")]
+#[delete("/go/teams/<slug>")]
 pub fn delete_team(
-    team: String,
+    slug: String,
     user: User,
 
     pool: &State<DbPool>,
@@ -70,12 +64,10 @@ pub fn delete_team(
     let mut conn = pool.get().map_err(AppError::from)?;
 
     if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &team, &mut conn, TeamCapability::TeamsWrite)?;
+        user_should_have_team_capability(&user, &slug, &mut conn, TeamCapability::TeamsWrite)?;
     }
 
-    diesel::delete(teams::table.find(team))
-        .execute(&mut conn)
-        .map_err(AppError::from)?;
+    Team::delete(&slug, &mut conn)?;
 
     Ok(Status::Ok)
 }
@@ -87,9 +79,9 @@ pub struct NewTeam {
     pub is_private: bool,
 }
 
-#[post("/go/teams", data = "<data>")]
+#[post("/go/teams", data = "<new_team>")]
 pub fn create_team(
-    data: Json<NewTeam>,
+    new_team: Json<NewTeam>,
     user: User,
 
     pool: &State<DbPool>,
@@ -100,51 +92,9 @@ pub fn create_team(
     ])?;
 
     let mut conn = pool.get().map_err(AppError::from)?;
-    conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        let NewTeam {
-            slug,
-            title,
-            is_private,
-        } = data.into_inner();
-        let team = Team {
-            slug: slug.clone(),
-            is_accepted: user.capabilities.contains(&Capability::TeamsWrite),
-            title,
-            is_private,
-        };
-        diesel::insert_into(teams::table)
-            .values(team)
-            .execute(conn)?;
-
-        let previous_rank = (users_teams::table
-            .select(max(users_teams::rank))
-            .filter(users_teams::user_mail.eq(&user.mail))
-            .first::<Option<i16>>(conn)?)
-        .unwrap_or(0);
-
-        let user_team = UserTeam {
-            user_mail: user.mail,
-            team_slug: slug,
-            capabilities: TeamCapability::all(),
-            is_accepted: true,
-            rank: previous_rank as i16 + 1,
-        };
-        diesel::insert_into(users_teams::table)
-            .values(user_team)
-            .execute(conn)?;
-        Ok(())
-    })
-    .map_err(AppError::from)?;
+    Team::create(new_team.into_inner(), &user, &mut conn)?;
 
     Ok(Status::Created)
-}
-
-#[derive(Deserialize, AsChangeset)]
-#[diesel(table_name = teams)]
-pub struct PatchableTeam {
-    pub title: Option<String>,
-    pub is_private: Option<bool>,
-    pub is_accepted: Option<bool>,
 }
 
 #[patch("/go/teams/<team>", data = "<data>")]
@@ -171,10 +121,7 @@ pub fn patch_team(
         return Err(err.into());
     }
 
-    diesel::update(teams::table.find(team))
-        .set(&data.into_inner())
-        .execute(&mut conn)
-        .map_err(AppError::from)?;
+    Team::update(data.into_inner(), &team, &mut conn)?;
 
     Ok(Status::Ok)
 }
@@ -187,12 +134,7 @@ pub fn show_team(
 ) -> Result<Template, (Status, Template)> {
     let mut conn = pool.get().map_err(AppError::from)?;
 
-    let team_with_user_if_some: Option<TeamForUserIfSome> = teams::table
-        .find(&slug)
-        .left_join(users_teams::table)
-        .first(&mut conn)
-        .optional()
-        .map_err(AppError::from)?;
+    let team_with_user_if_some: Option<TeamForUserIfSome> = Team::find(&slug, &mut conn)?;
 
     if team_with_user_if_some.is_none()
         || (!user.have_capability(Capability::TeamsWrite)
@@ -229,16 +171,16 @@ pub fn show_team(
                 shortcut: None,
                 shortcuts,
                 team: Some(team),
-                teams: teams_with_shortcut_write(&user, &mut conn)?,
+                teams: Team::all_with_shortcut_write(&user, &mut conn)?,
                 user
             }).to_string()
         }),
     ))
 }
 
-#[delete("/go/teams/<team>/users/<mail>")]
+#[delete("/go/teams/<slug>/users/<mail>")]
 pub fn kick_user(
-    team: String,
+    slug: String,
     mail: String,
     user: User,
     pool: &State<DbPool>,
@@ -247,19 +189,17 @@ pub fn kick_user(
 
     // should be admin or (part of the team but can't change is_accepted)
     if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &team, &mut conn, TeamCapability::TeamsWrite)?;
+        user_should_have_team_capability(&user, &slug, &mut conn, TeamCapability::TeamsWrite)?;
     }
 
-    diesel::delete(users_teams::table.find((mail, team)))
-        .execute(&mut conn)
-        .map_err(AppError::from)?;
+    Team::kick_user(&slug, &mail, &mut conn)?;
 
     Ok(Status::Ok)
 }
 
-#[put("/go/teams/<team>/users/<mail>/capabilities/<capability>")]
+#[put("/go/teams/<team_slug>/users/<mail>/capabilities/<capability>")]
 pub fn put_user_link_capability(
-    team: String,
+    team_slug: String,
     mail: String,
     capability: String,
     user: User,
@@ -270,34 +210,17 @@ pub fn put_user_link_capability(
     let mut conn = pool.get().map_err(AppError::from)?;
 
     if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &team, &mut conn, TeamCapability::TeamsWrite)?;
+        user_should_have_team_capability(&user, &team_slug, &mut conn, TeamCapability::TeamsWrite)?;
     }
 
-    let user_link: UserTeam = users_teams::table
-        .find((&mail, &team))
-        .first(&mut conn)
-        .map_err(AppError::from)?;
-
-    let mut capabilities = user_link.capabilities;
-    if !capabilities.contains(&capability) {
-        capabilities.push(capability);
-        diesel::update(users_teams::table.find((&mail, &team)))
-            .set(users_teams::capabilities.eq(capabilities))
-            .execute(&mut conn)
-            .map_err(AppError::from)?;
-    } else {
-        warn!(
-            "User {} already has capability {} on team {}",
-            mail, capability, team
-        );
-    }
+    Team::add_user_capability(&mail, &team_slug, capability, &mut conn)?;
 
     Ok(Status::Ok)
 }
 
-#[delete("/go/teams/<team>/users/<mail>/capabilities/<capability>")]
+#[delete("/go/teams/<team_slug>/users/<mail>/capabilities/<capability>")]
 pub fn delete_user_link_capability(
-    team: String,
+    team_slug: String,
     mail: String,
     capability: String,
     user: User,
@@ -308,49 +231,29 @@ pub fn delete_user_link_capability(
     let mut conn = pool.get().map_err(AppError::from)?;
 
     if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &team, &mut conn, TeamCapability::TeamsWrite)?;
+        user_should_have_team_capability(&user, &team_slug, &mut conn, TeamCapability::TeamsWrite)?;
     }
 
-    let user_link: UserTeam = users_teams::table
-        .find((&mail, &team))
-        .first(&mut conn)
-        .map_err(AppError::from)?;
-
-    let mut capabilities = user_link.capabilities;
-    if capabilities.contains(&capability) {
-        capabilities.retain(|&c| c != capability);
-        diesel::update(users_teams::table.find((&mail, &team)))
-            .set(users_teams::capabilities.eq(capabilities))
-            .execute(&mut conn)
-            .map_err(AppError::from)?;
-    } else {
-        warn!(
-            "User {} already has capability no {} on team {}",
-            mail, capability, team
-        );
-    }
+    Team::remove_user_capability(&mail, &team_slug, capability, &mut conn)?;
 
     Ok(Status::Ok)
 }
 
-#[put("/go/teams/<team>/users/<mail>/is_accepted/<value>")]
+#[put("/go/teams/<team_slug>/users/<mail>/is_accepted/<acceptation>")]
 pub fn put_user_team_acceptation(
-    team: String,
+    team_slug: String,
     mail: String,
-    value: bool,
+    acceptation: bool,
     user: User,
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
     let mut conn = pool.get().map_err(AppError::from)?;
 
     if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &team, &mut conn, TeamCapability::TeamsWrite)?;
+        user_should_have_team_capability(&user, &team_slug, &mut conn, TeamCapability::TeamsWrite)?;
     }
 
-    diesel::update(users_teams::table.find((&mail, &team)))
-        .set(users_teams::is_accepted.eq(value))
-        .execute(&mut conn)
-        .map_err(AppError::from)?;
+    Team::set_acceptation_user(&mail, &team_slug,&acceptation, &mut conn)?;
 
     Ok(Status::Ok)
 }

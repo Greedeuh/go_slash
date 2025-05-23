@@ -13,7 +13,7 @@ use crate::shortcuts::{
     sorted, NewShortcut, Shortcut, UpdatableShortcut, SHORTCUT_COLUMNS,
 };
 use crate::teams::{
-    teams_with_shortcut_write, user_should_have_team_capability, TeamCapability,
+     user_should_have_team_capability, Team, TeamCapability
 };
 use crate::users::User;
 use crate::errors::AppError;
@@ -32,7 +32,7 @@ lazy_static! {
 pub fn index(user: User, pool: &State<DbPool>) -> Result<Template, (Status, Template)> {
     let mut conn = pool.get().map_err(AppError::from)?;
 
-    let admin_teams = teams_with_shortcut_write(&user, &mut conn)?;
+    let admin_teams = Team::all_with_shortcut_write(&user, &mut conn)?;
 
     Ok(Template::render(
         "index",
@@ -85,7 +85,7 @@ pub fn get_shortcut(
         .optional()
         .map_err(AppError::from)?;
 
-    let admin_teams = teams_with_shortcut_write(&user, &mut conn)?;
+    let admin_teams = Team::all_with_shortcut_write(&user, &mut conn)?;
 
     Ok(match shortcut_found {
         Some(shortcut_found) => {
