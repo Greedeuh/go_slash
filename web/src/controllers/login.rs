@@ -7,7 +7,7 @@ use rocket::{
     State,
 };
 use rocket_dyn_templates::Template;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha256::digest;
 use uuid::Uuid;
