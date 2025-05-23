@@ -31,7 +31,7 @@ async fn as_unknow_user_is_not_allowed() {
                     &con,
                 );
 
-                driver.get(format!("http://host.docker.internal:{}", port)).await?;
+                driver.get(host(port, "")).await?;
 
                 assert!(driver
                     .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -64,7 +64,7 @@ async fn as_user_without_capability_is_not_allowed() {
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
-                driver.get(format!("http://host.docker.internal:{}", port)).await?;
+                driver.get(host(port, "")).await?;
 
                 assert!(driver
                     .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -103,7 +103,7 @@ async fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
                 driver
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
-                driver.get(format!("http://host.docker.internal:{}", port)).await?;
+                driver.get(host(port, "")).await?;
 
                 assert!(driver
                     .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -145,7 +145,7 @@ mod delete_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
+                    driver.get(host(port, "")).await?;
 
                     driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -207,7 +207,7 @@ mod delete_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
+                    driver.get(host(port, "")).await?;
 
                     driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -249,7 +249,7 @@ mod delete_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
+                    driver.get(host(port, "")).await?;
 
                     assert!(driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -283,7 +283,7 @@ mod delete_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
+                    driver.get(host(port, "")).await?;
 
                     assert!(driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -381,7 +381,7 @@ mod create_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
+                    driver.get(host(port, "")).await?;
 
                     driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -422,7 +422,7 @@ mod create_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
+                    driver.get(host(port, "")).await?;
 
                     driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -466,7 +466,7 @@ mod create_shortcut {
                     driver
                         .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                         .await?;
-                    driver.get(format!("http://host.docker.internal:{}", port)).await?;
+                    driver.get(host(port, "")).await?;
 
                     driver
                         .find_element(By::Css("[aria-label='Switch administration mode']"))
@@ -491,7 +491,7 @@ mod create_shortcut {
     async fn assert_create_shortcut_ok(driver: &WebDriver, team: &str, port: u16) {
         let spacer = if team.is_empty() { "" } else { " " };
         driver
-            .get(format!("http://host.docker.internal:{}", port))
+            .get(host(port, ""))
             .await
             .unwrap();
 

@@ -25,7 +25,7 @@ async fn link_are_shown_on_other_pages() {
                     .add_cookie(Cookie::new(SESSION_COOKIE, json!("some_session_id")))
                     .await?;
 
-                driver.get(format!("http://host.docker.internal:{}", port)).await?;
+                driver.get(host(port, "")).await?;
 
                 assert!(driver
                     .find_element(By::Css("a [href='/go/users']"))

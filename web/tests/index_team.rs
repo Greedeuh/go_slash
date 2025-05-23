@@ -47,7 +47,7 @@ async fn as_user() {
                 let articles = driver.find_elements(By::Css("[role='listitem']")).await?;
                 assert_eq!(
                     articles[0].text().await?,
-                    format!("newShortcut http://host.docker.internal:{}/looped slug1", port)
+                    format!("newShortcut {} slug1", host(port, "/looped"))
                 );
                 assert_eq!(articles.len(), 2);
 

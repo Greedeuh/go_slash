@@ -12,7 +12,7 @@ async fn not_logged_in_should_redirect_to_login() {
         "",
         |driver: &WebDriver, _con: Mutex<PgConnection>, port: u16| {
             async move {
-                driver.get(format!("http://host.docker.internal:{}", port)).await?;
+                driver.get(host(port, "")).await?;
 
                 assert!(driver.find_element(By::Css("[type='email']")).await.is_ok());
                 assert!(driver
