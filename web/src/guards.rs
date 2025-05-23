@@ -17,8 +17,6 @@ pub const SESSION_COOKIE: &str = "go_session_id";
 #[derive(Clone)]
 pub struct SessionId(pub String);
 
-#[derive(Clone)]
-pub struct NonceOIDC(pub String);
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for SessionId {
@@ -35,6 +33,27 @@ impl<'r> FromRequest<'r> for SessionId {
         Outcome::Error(AppError::Unauthorized.into())
     }
 }
+
+fn session_from_cookies(cookies: &CookieJar) -> Option<SessionId> {
+    let cookie = cookies
+        .iter()
+        .find(|cookie| cookie.name() == SESSION_COOKIE)?;
+
+    Some(SessionId(cookie.value().to_string()))
+}
+
+fn session_from_headers(headers: &HeaderMap) -> Option<SessionId> {
+    let cookie = headers
+        .iter()
+        .find(|header| header.name() == "Authorization")?;
+
+    Some(SessionId(cookie.value().to_string()))
+}
+
+
+#[derive(Clone)]
+pub struct NonceOIDC(pub String);
+
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for NonceOIDC {
@@ -57,20 +76,4 @@ impl<'r> FromRequest<'r> for NonceOIDC {
             Some(nonce) => Outcome::Success(NonceOIDC(nonce)),
         }
     }
-}
-
-fn session_from_cookies(cookies: &CookieJar) -> Option<SessionId> {
-    let cookie = cookies
-        .iter()
-        .find(|cookie| cookie.name() == SESSION_COOKIE)?;
-
-    Some(SessionId(cookie.value().to_string()))
-}
-
-fn session_from_headers(headers: &HeaderMap) -> Option<SessionId> {
-    let cookie = headers
-        .iter()
-        .find(|header| header.name() == "Authorization")?;
-
-    Some(SessionId(cookie.value().to_string()))
 }
