@@ -21,7 +21,6 @@ pub mod errors;
 pub mod users;
 pub mod teams;
 pub mod shortcuts;
-mod middlewares;
 pub mod schema;
 pub mod services;
 mod views;
@@ -42,7 +41,7 @@ use shortcuts::{delete_shortcut, get_shortcut, index, put_shortcut};
 
 
 use crate::{
-    middlewares::UnauthorizedAsLogin, users::Sessions, services::oidc::OidcService,
+    guards::UnauthorizedAsLogin, users::Sessions, services::oidc::OidcService,
 };
 
 
