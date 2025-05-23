@@ -15,16 +15,14 @@ pub type SafeColumns = (users::mail, users::capabilities);
 pub const SAFE_USER_COLUMNS: SafeColumns = (users::mail, users::capabilities);
 
 #[derive(Queryable, Identifiable, Serialize, Debug, PartialEq)]
-#[table_name = "users"]
-#[primary_key(mail)]
+#[diesel(table_name = users, primary_key(mail))]
 pub struct User {
     pub mail: String,
     pub capabilities: Vec<Capability>,
 }
 
 #[derive(Insertable, Queryable, Identifiable, Debug)]
-#[table_name = "users"]
-#[primary_key(mail)]
+#[diesel(table_name = users, primary_key(mail))]
 pub struct UserWithPwd {
     pub mail: String,
     pub pwd: Option<String>,
@@ -32,12 +30,7 @@ pub struct UserWithPwd {
 }
 
 #[derive(Identifiable, Queryable, Associations, Insertable, PartialEq, Debug, Serialize, Eq)]
-// #[belongs_to(Team, foreign_key = team_slug )]
-#[diesel(belongs_to(Team, foreign_key = team_slug))]
-#[diesel(belongs_to(User, foreign_key = user_mail))]
-// #[belongs_to(User, foreign_key = user_mail)]
-#[table_name = "users_teams"]
-#[primary_key(user_mail, team_slug)]
+#[diesel(table_name = users_teams, primary_key(user_mail, team_slug), belongs_to(Team, foreign_key = team_slug),belongs_to(User, foreign_key = user_mail))]
 pub struct UserTeam {
     pub user_mail: String,
     pub team_slug: String,
@@ -59,7 +52,7 @@ pub struct UserTeam {
     AsExpression,
     Display,
 )]
-#[sql_type = "diesel::sql_types::Text"]
+#[diesel(sql_type = diesel::sql_types::Text)]
 pub enum Capability {
     Features,
     TeamsWrite,

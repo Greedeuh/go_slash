@@ -140,7 +140,7 @@ pub fn create_team(
 }
 
 #[derive(Deserialize, AsChangeset)]
-#[table_name = "teams"]
+#[diesel(table_name = teams)]
 pub struct PatchableTeam {
     pub title: Option<String>,
     pub is_private: Option<bool>,

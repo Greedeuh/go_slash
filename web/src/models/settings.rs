@@ -14,8 +14,7 @@ pub const DEFAULT_CAPABILITIES: &str = "default_capabilities";
 pub const FEATURES: &str = "features";
 
 #[derive(AsChangeset, Queryable, Identifiable, Debug)]
-#[table_name = "settings"]
-#[primary_key(title)]
+#[diesel(table_name = settings, primary_key(title))]
 pub struct Setting {
     pub title: String,
     pub content: String,

@@ -18,7 +18,7 @@ pub struct Shortcut {
 }
 
 #[derive(Insertable)]
-#[table_name = "shortcuts"]
+#[diesel(table_name = shortcuts)]
 pub struct NewShortcut {
     pub shortcut: String,
     pub url: String,
@@ -26,7 +26,7 @@ pub struct NewShortcut {
 }
 
 #[derive(AsChangeset)]
-#[table_name = "shortcuts"]
+#[diesel(table_name = shortcuts)]
 pub struct UpdatableShortcut {
     pub url: String,
     pub team_slug: String,

@@ -27,8 +27,7 @@ pub const TEAM_COLUMNS: AllColumns = (
 );
 
 #[derive(Insertable, Queryable, Serialize, Identifiable, Debug, PartialEq, Eq)]
-#[table_name = "teams"]
-#[primary_key(slug)]
+#[diesel(table_name = teams, primary_key(slug))]
 pub struct Team {
     pub slug: String,
     pub title: String,
@@ -77,7 +76,7 @@ pub struct TeamForUserIfSome {
     AsExpression,
     Display,
 )]
-#[sql_type = "diesel::sql_types::Text"]
+#[diesel(sql_type = diesel::sql_types::Text)]
 pub enum TeamCapability {
     ShortcutsWrite,
     TeamsWrite,
