@@ -4,7 +4,6 @@ use diesel::{
 };
 use rocket::{http::Status, serde::json::Json, State};
 use rocket_dyn_templates::Template;
-use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{cmp::Ordering, str::FromStr};
 
@@ -15,9 +14,9 @@ use crate::{
     shortcuts::Shortcut,
     teams::{
          user_should_have_team_capability, Team, TeamCapability,
-        TeamForOptUser, TeamForUserIfSome, TeamWithUsers, PatchableTeam
+        TeamForOptUser, TeamForUserIfSome, TeamWithUsers, PatchableTeam, NewTeam
     },
-    users::{Capability, User, UserTeam},
+    users::{Capability, User, UserTeam,},
     schema::{
         shortcuts,
         teams,
@@ -63,65 +62,34 @@ pub fn delete_team(
 ) -> Result<Status, (Status, Template)> {
     let mut conn = pool.get().map_err(AppError::from)?;
 
-    if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &slug, &mut conn, TeamCapability::TeamsWrite)?;
-    }
-
-    Team::delete(&slug, &mut conn)?;
+    Team::delete(&slug, &user, &mut conn)?;
 
     Ok(Status::Ok)
-}
-
-#[derive(Deserialize)]
-pub struct NewTeam {
-    pub slug: String,
-    pub title: String,
-    pub is_private: bool,
 }
 
 #[post("/go/teams", data = "<new_team>")]
 pub fn create_team(
     new_team: Json<NewTeam>,
     user: User,
-
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
-    user.should_have_one_of_theses_capabilities(&[
-        Capability::TeamsWrite,
-        Capability::TeamsWriteWithValidation,
-    ])?;
-
     let mut conn = pool.get().map_err(AppError::from)?;
     Team::create(new_team.into_inner(), &user, &mut conn)?;
 
     Ok(Status::Created)
 }
 
-#[patch("/go/teams/<team>", data = "<data>")]
+#[patch("/go/teams/<team>", data = "<patchable_team>")]
 pub fn patch_team(
     team: String,
-    data: Json<PatchableTeam>,
+    patchable_team: Json<PatchableTeam>,
     user: User,
 
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
     let mut conn = pool.get().map_err(AppError::from)?;
 
-    // should be admin or (part of the team but can't change is_accepted)
-    let global_right = user.should_have_capability(Capability::TeamsWrite);
-    if let Err(err) = global_right
-        && (data.is_accepted.is_some() || users_teams::table
-            .find((&user.mail, &team))
-            .filter(users_teams::capabilities.contains(vec![TeamCapability::TeamsWrite]))
-            .select(count(users_teams::user_mail))
-            .first::<i64>(&mut conn)
-            .map_err(AppError::from)?
-            != 1)
-    {
-        return Err(err.into());
-    }
-
-    Team::update(data.into_inner(), &team, &mut conn)?;
+    Team::update(patchable_team.into_inner(), &team, &user, &mut conn)?;
 
     Ok(Status::Ok)
 }

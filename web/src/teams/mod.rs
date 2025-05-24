@@ -36,6 +36,80 @@ pub struct Team {
 }
 
 impl Team {
+ pub fn create( NewTeam{
+        slug,
+        title,
+        is_private,
+    }: NewTeam, user: &User, conn: &mut DbConn) -> Result<(Team, UserTeam), AppError> {
+        user.should_have_one_of_theses_capabilities(&[
+                Capability::TeamsWrite,
+                Capability::TeamsWriteWithValidation,
+            ])?;
+
+        conn.transaction::<_, diesel::result::Error, _>(|conn| {
+
+            let team = Team {
+                slug: slug.clone(),
+                is_accepted: user.capabilities.contains(&Capability::TeamsWrite),
+                title,
+                is_private,
+            };
+            let team = diesel::insert_into(teams::table)
+                .values(team)
+                .get_result(conn)?;
+    
+            let previous_rank = (users_teams::table
+                .select(max(users_teams::rank))
+                .filter(users_teams::user_mail.eq(&user.mail))
+                .first::<Option<i16>>(conn)?)
+            .unwrap_or(0);
+    
+            let user_team = UserTeam {
+                user_mail: user.mail.to_string(),
+                team_slug: slug,
+                capabilities: TeamCapability::all(),
+                is_accepted: true,
+                rank: previous_rank as i16 + 1,
+            };
+            let user_team = diesel::insert_into(users_teams::table)
+                .values(user_team)
+                .get_result(conn)?;
+            Ok((team,user_team))
+        })
+        .map_err(AppError::from)
+    }
+
+    pub fn delete(slug: &str, user:&User,conn: &mut DbConn) -> Result<(), AppError> {
+        if !user.have_capability(Capability::TeamsWrite) {
+            user_should_have_team_capability(user, slug, conn, TeamCapability::TeamsWrite)?;
+        }
+
+        diesel::delete(teams::table.find(slug))
+        .execute(conn)
+        .map_err(AppError::from).map(|_| ())
+    }
+
+    pub fn update(patchable_team: PatchableTeam, team_slug: &str, user: &User, conn: &mut DbConn) -> Result<Team, AppError> {
+        // should be admin 
+        // or
+        // part of the team but can't change is_accepted)
+        if patchable_team.is_accepted.is_some() {
+            user.should_have_all_theses_capabilities(&[
+                Capability::TeamsWrite,
+                Capability::TeamsWriteWithValidation,
+            ])?;
+        } else {
+            if !user.have_capability(Capability::TeamsWrite) {
+                user_should_have_team_capability(user, team_slug, conn, TeamCapability::TeamsWrite)?;
+            }
+        }
+
+        diesel::update(teams::table.find(team_slug))
+        .set(&patchable_team)
+        .get_result(conn)
+        .map_err(AppError::from)
+    }
+
     pub fn all_with_shortcut_write(user: &User, conn: &mut DbConn) -> Result<Vec<Team>, AppError> {
         teams::table
             .inner_join(
@@ -74,12 +148,6 @@ impl Team {
         .map_err(AppError::from)
     }
 
-    pub fn delete(slug: &str, conn: &mut DbConn) -> Result<usize, AppError> {
-        diesel::delete(teams::table.find(slug))
-        .execute(conn)
-        .map_err(AppError::from)
-    }
-
     pub fn kick_user(
         slug: &str,
         mail: &str,
@@ -90,50 +158,8 @@ impl Team {
         .map_err(AppError::from)
     }
 
-    pub fn create( NewTeam{
-        slug,
-        title,
-        is_private,
-    }: NewTeam, user: &User, conn: &mut DbConn) -> Result<(), AppError> {
-        conn.transaction::<_, diesel::result::Error, _>(|conn| {
+   
 
-            let team = Team {
-                slug: slug.clone(),
-                is_accepted: user.capabilities.contains(&Capability::TeamsWrite),
-                title,
-                is_private,
-            };
-            diesel::insert_into(teams::table)
-                .values(team)
-                .execute(conn)?;
-    
-            let previous_rank = (users_teams::table
-                .select(max(users_teams::rank))
-                .filter(users_teams::user_mail.eq(&user.mail))
-                .first::<Option<i16>>(conn)?)
-            .unwrap_or(0);
-    
-            let user_team = UserTeam {
-                user_mail: user.mail.to_string(),
-                team_slug: slug,
-                capabilities: TeamCapability::all(),
-                is_accepted: true,
-                rank: previous_rank as i16 + 1,
-            };
-            diesel::insert_into(users_teams::table)
-                .values(user_team)
-                .execute(conn)?;
-            Ok(())
-        })
-        .map_err(AppError::from)
-    }
-
-    pub fn update(patchable_team: PatchableTeam, team: &str, conn: &mut DbConn) -> Result<(), AppError> {
-        diesel::update(teams::table.find(team))
-        .set(&patchable_team)
-        .execute(conn)
-        .map_err(AppError::from).map(|_| ())
-    }
 
     pub fn add_user_capability(
         mail: &str,
@@ -202,6 +228,13 @@ impl Team {
         .execute(conn)
         .map_err(AppError::from).map(|_| ())
     }
+}
+
+#[derive(Deserialize)]
+pub struct NewTeam {
+    pub slug: String,
+    pub title: String,
+    pub is_private: bool,
 }
 
 #[derive(Deserialize, AsChangeset)]

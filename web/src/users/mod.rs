@@ -105,6 +105,24 @@ impl User {
             Err(AppError::Unauthorized)
         }
     }
+
+     pub fn should_have_all_theses_capabilities(
+        &self,
+        capabilities: &[Capability],
+    ) -> Result<(), AppError> {
+        if capabilities
+            .iter()
+            .all(|capability| self.capabilities.contains(capability))
+        {
+            Ok(())
+        } else {
+            error!(
+                "User {} miss one of theses capabilities {:?}",
+                self.mail, capabilities
+            );
+            Err(AppError::Unauthorized)
+        }
+    }
 }
 
 impl Capability {

@@ -602,7 +602,7 @@ mod controller {
         use super::*;
 
         #[test]
-        fn withouy_capabilities_is_not_authorized() {
+        fn without_capabilities_is_not_authorized() {
             let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
             team("slug1", "team1", false, true, &mut conn);
             user("some_mail@mail.com", "pwd", &[], &[], &mut conn);
@@ -700,6 +700,42 @@ mod controller {
         }
 
         #[test]
+        fn accept_as_partial_admin_is_not_authorized() {
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com
+some_other_session_id: some_other_mail@mail.com");
+            team("slug1", "team1", false, true, &mut conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[],
+                &[Capability::TeamsWrite],
+                &mut conn,
+            );
+                        user(
+                "some_other_mail@mail.com",
+                "pwd",
+                &[],
+                &[ Capability::TeamsWriteWithValidation],
+                &mut conn,
+            );
+
+            let response = client
+                .patch("/go/teams/slug1")
+                .json(&json!({ "is_accepted": true }))
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+            assert_eq!(response.status(), Status::Unauthorized);
+
+                        let response = client
+                .patch("/go/teams/slug1")
+                .json(&json!({ "is_accepted": true }))
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_other_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Unauthorized);
+        }
+
+        #[test]
         fn as_admin() {
             let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
             team("slug1", "team1", false, true, &mut conn);
@@ -707,7 +743,7 @@ mod controller {
                 "some_mail@mail.com",
                 "pwd",
                 &[],
-                &[Capability::TeamsWrite],
+                &[Capability::TeamsWrite, Capability::TeamsWriteWithValidation],
                 &mut conn,
             );
 
