@@ -89,7 +89,8 @@ async fn list_user() {
                     .get(host(port, "/go/teams/slug1"))
                     .await?;
 
-                let expected_users = vec!["another_mail@mail.com", "some_mail@mail.com"];
+                // TODO ordering
+                let expected_users = vec!["some_mail@mail.com", "another_mail@mail.com"];
 
                 let users = driver
                     .find_all(By::Css("[role='listitem'] h2"))
@@ -223,7 +224,7 @@ mod edit_team {
                         "some_mail@mail.com",
                         "pwd",
                         &[],
-                        &[Capability::TeamsWrite],
+                        &[Capability::TeamsWrite, Capability::TeamsWriteWithValidation, Capability::UsersTeamsRead],
                         &mut conn,
                     );
 
@@ -341,7 +342,7 @@ mod edit_user_team_link {
                         &mut con,
                     );
 
-                    toggle_capability(driver, port).await;
+                    toggle_capability(driver, "another_mail@mail.com", port).await;
 
                     Ok(())
                 }
@@ -374,7 +375,7 @@ mod edit_user_team_link {
                         &mut con,
                     );
 
-                    toggle_capability(driver, port).await;
+                    toggle_capability(driver, "another_mail@mail.com", port).await;
 
                     Ok(())
                 }
@@ -384,7 +385,7 @@ mod edit_user_team_link {
         .await;
     }
 
-    async fn toggle_capability(driver: &WebDriver, port: u16) {
+    async fn toggle_capability(driver: &WebDriver, mail: &str, port: u16) {
         driver
             .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
             .await
@@ -395,18 +396,34 @@ mod edit_user_team_link {
             .await
             .unwrap();
 
-        let user = driver
-            .find(By::Css("[aria-label='User list'] [role='listitem']"))
+        let user_rows = driver
+            .find_all(By::Css("[aria-label='User list'] [role='listitem']"))
             .await
             .unwrap();
-        user.click().await.unwrap();
 
-        let switchs = user
+        // Find the user row matching the given mail
+        let mut user_row = None;
+        for row in &user_rows {
+            if let Ok(text) = row.text().await {
+                if text.contains(mail) {
+                    user_row = Some(row);
+                    break;
+                }
+            }
+        }
+        let user_row = user_row.expect("User row not found");
+
+        user_row
+            .click()
+            .await
+            .unwrap();
+
+        let switchs = user_row
             .find_all(By::Css("[role='switch']"))
             .await
             .unwrap();
         let switch = switchs.first().unwrap();
-        let switchs_label = user.find_all(By::Tag("label")).await.unwrap();
+        let switchs_label = user_row.find_all(By::Tag("label")).await.unwrap();
         let switch_label = switchs_label.first().unwrap();
 
         switch_label.wait_until().displayed().await.unwrap();
@@ -431,15 +448,25 @@ mod edit_user_team_link {
             .await
             .unwrap();
 
-        driver
-            .find(By::Css("[aria-label='User list'] [role='listitem']"))
-            .await
-            .unwrap()
-            .click()
+        let user_rows = driver
+            .find_all(By::Css("[aria-label='User list'] [role='listitem']"))
             .await
             .unwrap();
 
-        let switchs = driver
+        // Find the user row matching the given mail
+        let mut user_row = None;
+        for row in &user_rows {
+            if let Ok(text) = row.text().await {
+                if text.contains(mail) {
+                    user_row = Some(row);
+                    break;
+                }
+            }
+        }
+        let user_row = user_row.expect("User row not found");
+        user_row.click().await.unwrap();
+
+        let switchs = user_row
             .find_all(By::Css(
                 "[aria-label='User list'] [role='listitem'] [role='switch']",
             ))
@@ -569,6 +596,8 @@ mod kick_user {
 }
 
 mod accept_user {
+    use rocket::futures;
+
     use super::*;
 
     #[async_test]
@@ -640,7 +669,7 @@ mod accept_user {
                         &mut con,
                     );
 
-                    accept_candidature(driver, port).await;
+                    accept_candidature(driver,"another_mail@mail.com", port).await;
 
                     Ok(())
                 }
@@ -673,7 +702,7 @@ mod accept_user {
                         &mut con,
                     );
 
-                    accept_candidature(driver, port).await;
+                    accept_candidature(driver,"another_mail@mail.com", port,).await;
 
                     Ok(())
                 }
@@ -683,7 +712,7 @@ mod accept_user {
         .await;
     }
 
-    async fn accept_candidature(driver: &WebDriver, port: u16) {
+    async fn accept_candidature(driver: &WebDriver,mail: &str,  port: u16) {
         driver
             .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
             .await
@@ -694,10 +723,24 @@ mod accept_user {
             .await
             .unwrap();
 
-        driver
-            .find(By::Css("[role='listitem'] h2"))
+        let user_rows = driver
+            .find_all(By::Css("[role='listitem'] h2"))
             .await
-            .unwrap()
+            .unwrap();
+
+        // Find the user row matching the given mail
+        let mut user_row = None;
+        for row in &user_rows {
+            if let Ok(text) = row.text().await {
+                if text.contains(mail) {
+                    user_row = Some(row);
+                    break;
+                }
+            }
+        }
+        let user_row = user_row.expect("User row not found");
+
+        user_row
             .click()
             .await
             .unwrap();

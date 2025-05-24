@@ -128,7 +128,7 @@ impl Team {
             .map_err(AppError::from)
     }
 
-    pub fn all_of_user(mail: &str, conn: &mut DbConn) -> Result<Vec<TeamForOptUser>, AppError> {
+    pub fn all_with_user_link(mail: &str, conn: &mut DbConn) -> Result<Vec<TeamForOptUser>, AppError> {
         dsl::teams
         .left_join(
             users_teams::table.on(dsl::slug
@@ -139,13 +139,33 @@ impl Team {
         .map_err(AppError::from)
     }
 
-    pub fn find(slug: &str, conn: &mut DbConn)-> Result<Option<TeamForUserIfSome>, AppError> {
-        teams::table
+    pub fn with_all_user_links(slug: &str, user: &User, conn: &mut DbConn)-> Result<Option<TeamWithUserLinks>, AppError> {
+        let team = teams::table
         .find(&slug)
-        .left_join(users_teams::table)
+
         .first( conn)
         .optional()
-        .map_err(AppError::from)
+        .map_err(AppError::from)?;
+
+        let team: Team = if let Some(team) = team {
+            team
+        } else {
+            return Ok(None);
+        };
+
+        let user_links = UserTeam::belonging_to(&team)
+        .load::<UserTeam>(conn)
+        .map_err(AppError::from)?;
+
+
+        if !user.have_capability(Capability::UsersTeamsRead) && team.is_private && user_links.iter().all(|user_link| user_link.user_mail != user.mail) {
+            return Ok(None);
+        }
+
+        Ok(Some(TeamWithUserLinks {
+            team,
+            user_links
+        }))
     }
 
     pub fn kick_user(
@@ -157,9 +177,6 @@ impl Team {
         .execute(conn)
         .map_err(AppError::from)
     }
-
-   
-
 
     pub fn add_user_capability(
         mail: &str,
@@ -245,13 +262,6 @@ pub struct PatchableTeam {
     pub is_accepted: Option<bool>,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize)]
-pub struct TeamWithUsers {
-    #[serde(flatten)]
-    pub team: Team,
-    pub user_links: Vec<UserTeam>,
-}
-
 #[derive(Queryable, Serialize)]
 pub struct TeamForOptUser {
     #[serde(flatten)]
@@ -266,11 +276,11 @@ pub struct TeamForUser {
     pub user_link: UserTeam,
 }
 
-#[derive(Queryable, Serialize)]
-pub struct TeamForUserIfSome {
+#[derive(Debug, PartialEq, Eq, Serialize)]
+pub struct TeamWithUserLinks {
     #[serde(flatten)]
     pub team: Team,
-    pub user_link: Option<UserTeam>,
+    pub user_links: Vec<UserTeam>,
 }
 
 #[derive(

@@ -26,7 +26,7 @@ async fn as_admin_accept_team() {
                     "some_mail@mail.com",
                     "pwd",
                     &[("slug1", &[], 1, true)],
-                    &[Capability::TeamsWrite],
+                    &[Capability::TeamsWrite, Capability::TeamsWriteWithValidation],
                     &mut con,
                 );
 

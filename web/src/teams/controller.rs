@@ -1,5 +1,4 @@
 use diesel::{
-    dsl::{count},
     prelude::*,
 };
 use rocket::{http::Status, serde::json::Json, State};
@@ -14,13 +13,12 @@ use crate::{
     shortcuts::Shortcut,
     teams::{
          user_should_have_team_capability, Team, TeamCapability,
-        TeamForOptUser, TeamForUserIfSome, TeamWithUsers, PatchableTeam, NewTeam
+        TeamForOptUser,  TeamWithUserLinks, PatchableTeam, NewTeam
     },
-    users::{Capability, User, UserTeam,},
+    users::{Capability, User, },
     schema::{
         shortcuts,
-        teams,
-        users_teams,
+
     },
     views::IndexContext,
     DbPool,
@@ -30,7 +28,7 @@ use crate::{
 pub fn list_teams(user: User, pool: &State<DbPool>) -> Result<Template, (Status, Template)> {
     let mut conn = pool.get().map_err(AppError::from)?;
 
-    let mut teams =  Team::all_of_user(&user.mail, &mut conn)?;
+    let mut teams =  Team::all_with_user_link(&user.mail, &mut conn)?;
 
     teams.sort_by(
         |TeamForOptUser { team: a, .. }, TeamForOptUser { team: b, .. }| {
@@ -49,6 +47,43 @@ pub fn list_teams(user: User, pool: &State<DbPool>) -> Result<Template, (Status,
         json!({ "teams": json!(teams).to_string(),
             "capabilities": json!(user.capabilities).to_string(),
             "mail": user.mail
+        }),
+    ))
+}
+
+
+#[get("/go/teams/<slug>")]
+pub fn show_team(
+    slug: String,
+    user: User,
+    pool: &State<DbPool>,
+) -> Result<Template, (Status, Template)> {
+    let mut conn = pool.get().map_err(AppError::from)?;
+
+    let team_with_user_links: Option<TeamWithUserLinks> = Team::with_all_user_links(&slug, &user, &mut conn)?;
+
+    if team_with_user_links.is_none(){
+        return Err(AppError::NotFound.into());
+    }
+
+    let shortcuts = shortcuts::table
+        .filter(shortcuts::team_slug.eq(&slug))
+        .order(shortcuts::shortcut.asc())
+        .load::<Shortcut>(&mut conn)
+        .map_err(AppError::from)?;
+
+
+    Ok(Template::render(
+        "index",
+        json!({
+            "mail": &user.mail,
+            "context": json!(IndexContext {
+                shortcut: None,
+                shortcuts,
+                team: team_with_user_links,
+                teams: Team::all_with_shortcut_write(&user, &mut conn)?,
+                user
+            }).to_string()
         }),
     ))
 }
@@ -84,7 +119,6 @@ pub fn patch_team(
     team: String,
     patchable_team: Json<PatchableTeam>,
     user: User,
-
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Template)> {
     let mut conn = pool.get().map_err(AppError::from)?;
@@ -92,58 +126,6 @@ pub fn patch_team(
     Team::update(patchable_team.into_inner(), &team, &user, &mut conn)?;
 
     Ok(Status::Ok)
-}
-
-#[get("/go/teams/<slug>")]
-pub fn show_team(
-    slug: String,
-    user: User,
-    pool: &State<DbPool>,
-) -> Result<Template, (Status, Template)> {
-    let mut conn = pool.get().map_err(AppError::from)?;
-
-    let team_with_user_if_some: Option<TeamForUserIfSome> = Team::find(&slug, &mut conn)?;
-
-    if team_with_user_if_some.is_none()
-        || (!user.have_capability(Capability::TeamsWrite)
-            && team_with_user_if_some.as_ref().unwrap().team.is_private
-            && team_with_user_if_some.as_ref().unwrap().user_link.is_none())
-    {
-        return Err(AppError::NotFound.into());
-    }
-
-    let shortcuts = shortcuts::table
-        .filter(shortcuts::team_slug.eq(&slug))
-        .order(shortcuts::shortcut.asc())
-        .load::<Shortcut>(&mut conn)
-        .map_err(AppError::from)?;
-
-    let team: Team = teams::table
-        .find(&slug)
-        .first(&mut conn)
-        .map_err(AppError::from)?;
-
-    let user_links: Vec<UserTeam> = users_teams::table
-        .filter(users_teams::team_slug.eq(slug))
-        .order(users_teams::user_mail)
-        .load(&mut conn)
-        .map_err(AppError::from)?;
-
-    let team = TeamWithUsers { team, user_links };
-
-    Ok(Template::render(
-        "index",
-        json!({
-            "mail": &user.mail,
-            "context": json!(IndexContext {
-                shortcut: None,
-                shortcuts,
-                team: Some(team),
-                teams: Team::all_with_shortcut_write(&user, &mut conn)?,
-                user
-            }).to_string()
-        }),
-    ))
 }
 
 #[delete("/go/teams/<slug>/users/<mail>")]
