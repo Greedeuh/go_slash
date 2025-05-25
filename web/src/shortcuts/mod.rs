@@ -6,10 +6,11 @@ use diesel::{prelude::*, Insertable};
 use serde::Serialize;
 
 use crate::errors::AppError;
-use crate::schema::shortcuts;
+use crate::schema::{shortcuts, users_teams};
 use crate::teams::Team;
 use crate::users::User;
 use crate::DbConn;
+use crate::schema::shortcuts::dsl::*;
 
 pub type AllColumns = (shortcuts::shortcut, shortcuts::team_slug, shortcuts::url);
 
@@ -37,6 +38,21 @@ impl Shortcut {
         .load::<Shortcut>(conn)
         .map_err(AppError::from)
     }
+
+    pub fn sorted(user: &User, conn: &mut DbConn) -> Result<Vec<Shortcut>, AppError> {
+        shortcuts
+        .inner_join(
+            users_teams::table.on(team_slug
+                .eq(users_teams::team_slug)
+                .and(users_teams::user_mail.eq(&user.mail))
+                .and(users_teams::is_accepted)),
+        )
+        .select(SHORTCUT_COLUMNS)
+        .order_by((shortcut.asc(), users_teams::rank.asc()))
+        .get_results(conn)
+        .map_err(AppError::from)
+    }
+    
 }
 
 #[derive(Insertable)]
@@ -54,8 +70,4 @@ pub struct UpdatableShortcut {
     pub team_slug: String,
 }
 
-pub fn sorted(conn: &mut DbConn) -> Result<Vec<Shortcut>, AppError> {
-    use crate::schema::shortcuts::dsl::*;
 
-    Ok(shortcuts.order(shortcut.asc()).load::<Shortcut>(conn)?)
-}

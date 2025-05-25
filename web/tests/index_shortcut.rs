@@ -31,7 +31,7 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
                 user(
                     "some_mail@mail.com",
                     "pwd",
-                    &[("team", &[TeamCapability::ShortcutsWrite], 0, true)],
+                    &[("team", &[TeamCapability::ShortcutsWrite], 0, true),("", &[], 0, true)],
                     &[],
                     &mut con,
                 );

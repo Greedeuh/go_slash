@@ -10,7 +10,7 @@ use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
 use crate::shortcuts::{
-    sorted, NewShortcut, Shortcut, UpdatableShortcut, SHORTCUT_COLUMNS,
+    NewShortcut, Shortcut, UpdatableShortcut, SHORTCUT_COLUMNS,
 };
 use crate::teams::{
      user_should_have_team_capability, Team, TeamCapability
@@ -32,7 +32,8 @@ lazy_static! {
 pub fn index(user: User, pool: &State<DbPool>) -> Result<Template, (Status, Template)> {
     let mut conn = pool.get().map_err(AppError::from)?;
 
-    let admin_teams = Team::all_with_shortcut_write(&user, &mut conn)?;
+    let teams = Team::all_with_shortcut_write(&user, &mut conn)?;
+    let shortcuts = Shortcut::sorted(&user, &mut conn)?;
 
     Ok(Template::render(
         "index",
@@ -40,10 +41,10 @@ pub fn index(user: User, pool: &State<DbPool>) -> Result<Template, (Status, Temp
             "mail": &user.mail,
             "context": json!(IndexContext {
                 shortcut: None,
-                shortcuts:  sorted(&mut conn)?,
+                shortcuts: shortcuts,
                  user,
                 team: None,
-                teams: admin_teams,
+                teams: teams,
             }).to_string()
         }),
     ))
@@ -96,7 +97,7 @@ pub fn get_shortcut(
                         "mail": &user.mail,
                         "context": json!(IndexContext {
                             shortcut: Some(shortcut_found),
-                            shortcuts:  sorted(&mut conn)?,
+                            shortcuts:  Shortcut::sorted(&user, &mut conn)?,
                             user,
                             team: None,
                             teams: admin_teams,
@@ -118,7 +119,7 @@ pub fn get_shortcut(
                         team_slug:"".to_string(),
                         url:"".to_string()
                     }),
-                    shortcuts:  sorted(&mut conn)?,
+                    shortcuts: Shortcut::sorted(&user, &mut conn)?,
                     user,
                     team: None,
                     teams: admin_teams,
