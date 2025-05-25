@@ -1,5 +1,3 @@
-use diesel::dsl::count;
-use diesel::prelude::*;
 use lazy_static::lazy_static;
 use log::error;
 use regex::Regex;
@@ -13,14 +11,12 @@ use crate::shortcuts::{
     NewShortcut, Shortcut
 };
 use crate::teams::{
-     user_should_have_team_capability, Team, TeamCapability
+      Team,
 };
 use crate::users::User;
 use crate::errors::AppError;
-use crate::schema::shortcuts::dsl;
-use crate::schema::{shortcuts, teams};
 use crate::views::IndexContext;
-use crate::{DbConn, DbPool};
+use crate::{DbPool};
 
 lazy_static! {
     static ref URL_REGEX: Regex =
@@ -137,7 +133,7 @@ pub fn put_shortcut(
         return Err((Status::BadRequest, json!({"error": "Wrong URL format."})));
     }
 
-    let team_slug = if let Some(team) = team {
+    let team_slug_name = if let Some(team) = team {
         team
     } else {
         "".to_string()
@@ -146,7 +142,7 @@ pub fn put_shortcut(
     let mut conn = pool.get().map_err(AppError::from)?;
 
    Shortcut::upsert(
-        NewShortcut { shortcut: shortcut.to_string(), url: url, team_slug },
+        NewShortcut { shortcut: shortcut.to_string(), url: url, team_slug: team_slug_name },
         &user,
         &mut conn,
     )?;
@@ -164,7 +160,7 @@ pub fn delete_shortcut(
 ) -> Result<Template, (Status, Value)> {
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
 
-    let team_slug = if let Some(team) = team {
+    let team_slug_name = if let Some(team) = team {
         team
     } else {
         "".to_string()
@@ -172,13 +168,7 @@ pub fn delete_shortcut(
 
     let mut conn = pool.get().map_err(AppError::from)?;
 
-    team_should_be_accepted(&team_slug, &mut conn)?;
-    user_should_have_team_capability(&user, &team_slug, &mut conn, TeamCapability::ShortcutsWrite)?;
-
-    diesel::delete(shortcuts::table)
-        .filter(dsl::shortcut.eq(shortcut).and(dsl::team_slug.eq(team_slug)))
-        .execute(&mut conn)
-        .map_err(AppError::from)?;
+    Shortcut::delete(shortcut, &team_slug_name, &user, &mut conn)?;
 
     Ok(Template::render(
         "index",
@@ -197,18 +187,4 @@ fn parse_shortcut_path_buff(shortcut: &'_ Path) -> Result<&'_ str, AppError> {
             Err(AppError::BadRequest)
         }
     }
-}
-
-fn team_should_be_accepted(team_slug: &str, conn: &mut DbConn) -> Result<(), AppError> {
-    if teams::table
-        .find(&team_slug)
-        .filter(teams::is_accepted)
-        .select(count(teams::slug))
-        .first::<i64>(conn)
-        .map_err(AppError::from)?
-        == 0
-    {
-        return Err(AppError::Unauthorized);
-    }
-    Ok(())
 }

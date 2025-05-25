@@ -97,6 +97,31 @@ impl Shortcut {
             .get_result(conn)
             .map_err(AppError::from)
     }
+
+    pub fn delete(
+        shortcut_name: &str,
+        team_slug_name: &str,
+        user: &User,
+        conn: &mut DbConn,
+    ) -> Result<(), AppError> {
+        let team = Team::find(team_slug_name, user, conn)
+            .map_err(AppError::from)?;
+
+        let team = if let Some(team) = team {
+            team
+        } else {
+            return Err(AppError::NotFound);
+        };
+
+        user.can_write_team_shortcuts(&team, conn)?;
+
+        diesel::delete(shortcuts::table)
+            .filter(shortcut.eq(shortcut_name).and(team_slug.eq(team_slug_name)))
+            .execute(conn)
+            .map_err(AppError::from)?;
+
+        return Ok(());
+    }
     
 }
 
