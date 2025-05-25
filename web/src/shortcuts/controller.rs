@@ -10,7 +10,7 @@ use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
 use crate::shortcuts::{
-    NewShortcut, Shortcut, UpdatableShortcut, SHORTCUT_COLUMNS,
+    NewShortcut, Shortcut
 };
 use crate::teams::{
      user_should_have_team_capability, Team, TeamCapability
@@ -18,7 +18,6 @@ use crate::teams::{
 use crate::users::User;
 use crate::errors::AppError;
 use crate::schema::shortcuts::dsl;
-use crate::schema::users_teams;
 use crate::schema::{shortcuts, teams};
 use crate::views::IndexContext;
 use crate::{DbConn, DbPool};
@@ -72,19 +71,7 @@ pub fn get_shortcut(
 
     let mut conn = pool.get().map_err(AppError::from)?;
 
-    let shortcut_found = dsl::shortcuts
-        .inner_join(
-            users_teams::table.on(dsl::team_slug
-                .eq(users_teams::team_slug)
-                .and(users_teams::user_mail.eq(&user.mail))
-                .and(users_teams::is_accepted)),
-        )
-        .filter(dsl::shortcut.eq(shortcut))
-        .select(SHORTCUT_COLUMNS)
-        .order_by(users_teams::rank.asc())
-        .first::<Shortcut>(&mut conn)
-        .optional()
-        .map_err(AppError::from)?;
+    let shortcut_found = Shortcut::first(shortcut, &mut conn, &user)?;
 
     let admin_teams = Team::all_with_shortcut_write(&user, &mut conn)?;
 
@@ -140,7 +127,6 @@ pub fn put_shortcut(
     team: Option<String>,
     data: Json<Url>,
     user: User,
-
     pool: &State<DbPool>,
 ) -> Result<Status, (Status, Value)> {
     let shortcut = parse_shortcut_path_buff(&shortcut)?;
@@ -159,20 +145,11 @@ pub fn put_shortcut(
 
     let mut conn = pool.get().map_err(AppError::from)?;
 
-    team_should_be_accepted(&team_slug, &mut conn)?;
-    user_should_have_team_capability(&user, &team_slug, &mut conn, TeamCapability::ShortcutsWrite)?;
-
-    diesel::insert_into(shortcuts::table)
-        .values(NewShortcut {
-            shortcut: shortcut.to_string(),
-            url: url.to_string(),
-            team_slug: team_slug.to_string(),
-        })
-        .on_conflict((shortcuts::shortcut, shortcuts::team_slug))
-        .do_update()
-        .set(UpdatableShortcut { url, team_slug })
-        .execute(&mut conn)
-        .map_err(AppError::from)?;
+   Shortcut::upsert(
+        NewShortcut { shortcut: shortcut.to_string(), url: url, team_slug },
+        &user,
+        &mut conn,
+    )?;
 
     Ok(Status::Ok)
 }

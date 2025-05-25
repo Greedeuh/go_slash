@@ -96,6 +96,24 @@ impl Team {
         .map_err(AppError::from)
     }
 
+    pub fn find(slug: &str, user: &User, conn: &mut DbConn) -> Result<Option<Team>, AppError> {
+       let team = teams::table.find(slug)
+    
+            .first::<Team>(conn)
+            .optional()
+            .map_err(AppError::from)?;
+        
+        let team = if let Some(team) = team {
+            team
+        } else{
+            return Ok(None);
+        };
+
+        user.can_read_team_shortcuts(&team, conn)?;
+        
+        Ok(Some(team))
+    }
+
     pub fn all_with_shortcut_write(user: &User, conn: &mut DbConn) -> Result<Vec<Team>, AppError> {
         teams::table
             .inner_join(

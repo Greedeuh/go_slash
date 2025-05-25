@@ -112,6 +112,13 @@ impl User {
         self.user_should_have_team(&team.slug, conn)
     }
 
+    pub fn can_write_team_shortcuts(&self, team: &Team, conn: &mut DbConn) -> Result<(), AppError> {
+        if !team.is_accepted {
+            return Err(AppError::Unauthorized);
+        }
+        self.user_should_have_team_capability(&team.slug, conn, TeamCapability::ShortcutsWrite)
+    }
+
     pub fn user_should_have_team_capability(
         &self,
         team_slug: &str,

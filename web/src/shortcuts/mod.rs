@@ -52,10 +52,55 @@ impl Shortcut {
         .get_results(conn)
         .map_err(AppError::from)
     }
+
+    pub fn first(
+        name: &str,
+        conn: &mut DbConn,
+        user: &User,
+    ) -> Result<Option<Shortcut>, AppError> {
+        shortcuts
+            .inner_join(
+                users_teams::table.on(team_slug
+                    .eq(users_teams::team_slug)
+                    .and(users_teams::user_mail.eq(&user.mail))
+                    .and(users_teams::is_accepted)),
+            )
+            .filter(shortcut.eq(name))
+            .select(SHORTCUT_COLUMNS)
+            .order_by(users_teams::rank.asc())
+            .first::<Shortcut>(conn)
+            .optional()
+            .map_err(AppError::from)
+    }
+
+    pub fn upsert(
+        new_shortcut: NewShortcut,
+        user: &User,
+        conn: &mut DbConn,
+    ) -> Result<Shortcut, AppError> {
+        let team = Team::find(&new_shortcut.team_slug,& user, conn)
+            .map_err(AppError::from)?;
+
+        let team = if let Some(team) = team {
+            team
+        } else {
+            return Err(AppError::NotFound);
+        };
+
+        user.can_write_team_shortcuts(&team, conn)?;
+        
+        diesel::insert_into(shortcuts::table)
+            .values(new_shortcut.clone())
+            .on_conflict((shortcuts::shortcut, shortcuts::team_slug))
+            .do_update()
+            .set(UpdatableShortcut { url: new_shortcut.url, team_slug: new_shortcut.team_slug })
+            .get_result(conn)
+            .map_err(AppError::from)
+    }
     
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Clone)]
 #[diesel(table_name = shortcuts)]
 pub struct NewShortcut {
     pub shortcut: String,
