@@ -154,11 +154,7 @@ pub fn put_user_link_capability(
 
     let mut conn = pool.get().map_err(AppError::from)?;
 
-    if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &team_slug, &mut conn, TeamCapability::TeamsWrite)?;
-    }
-
-    Team::add_user_capability(&mail, &team_slug, capability, &mut conn)?;
+    Team::add_user_capability(&mail, &team_slug, capability,&user, &mut conn)?;
 
     Ok(Status::Ok)
 }
@@ -194,11 +190,7 @@ pub fn put_user_team_acceptation(
 ) -> Result<Status, (Status, Value)> {
     let mut conn = pool.get().map_err(AppError::from)?;
 
-    if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &team_slug, &mut conn, TeamCapability::TeamsWrite)?;
-    }
-
-    Team::set_acceptation_user(&mail, &team_slug,&acceptation, &mut conn)?;
+    Team::set_acceptation_user(&mail, &team_slug,&acceptation, &user, &mut conn)?;
 
     Ok(Status::Ok)
 }

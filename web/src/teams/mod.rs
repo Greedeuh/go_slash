@@ -177,8 +177,11 @@ impl Team {
         mail: &str,
         team_slug: &str,
         capability: TeamCapability,
+        user: &User,
         conn: &mut DbConn,
     ) -> Result<(), AppError> {
+        user.can_write_team(team_slug, conn)?;
+
         let user_link: UserTeam = users_teams::table
         .find((mail, team_slug))
         .first(conn)
@@ -233,8 +236,11 @@ impl Team {
         mail: &str,
         team_slug: &str,
         acceptation: &bool,
+        user: &User,
         conn: &mut DbConn,
     ) -> Result<(), AppError> {
+        user.can_write_team(team_slug, conn)?;
+        
         diesel::update(users_teams::table.find((mail, team_slug)))
         .set(users_teams::is_accepted.eq(acceptation))
         .execute(conn)
