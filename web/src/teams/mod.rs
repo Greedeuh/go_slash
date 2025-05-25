@@ -161,8 +161,13 @@ impl Team {
     pub fn kick_user(
         slug: &str,
         mail: &str,
+        user: &User,
         conn: &mut DbConn,
     ) -> Result<usize, AppError> {
+        if user.mail != mail {
+            user.can_write_team(slug, conn)?;
+        }
+
         diesel::delete(users_teams::table.find((mail, slug)))
         .execute(conn)
         .map_err(AppError::from)

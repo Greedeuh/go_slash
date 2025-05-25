@@ -137,12 +137,7 @@ pub fn kick_user(
 ) -> Result<Status, (Status, Template)> {
     let mut conn = pool.get().map_err(AppError::from)?;
 
-    // should be admin or (part of the team but can't change is_accepted)
-    if !user.have_capability(Capability::TeamsWrite) {
-        user_should_have_team_capability(&user, &slug, &mut conn, TeamCapability::TeamsWrite)?;
-    }
-
-    Team::kick_user(&slug, &mail, &mut conn)?;
+    Team::kick_user(&slug, &mail,&user, &mut conn)?;
 
     Ok(Status::Ok)
 }

@@ -834,22 +834,24 @@ mod controller {
                 &[],
                 &mut conn,
             );
+            user("other_mail@mail.com", "pwd", &[("slug1", &[], 0, true)], &[], &mut conn);
+
 
             let response = client
-                .delete("/go/teams/slug1/users/some_mail@mail.com")
+                .delete("/go/teams/slug1/users/other_mail@mail.com")
                 .dispatch();
 
             assert_eq!(response.status(), Status::Unauthorized);
 
             let response = client
-                .delete("/go/teams/slug1/users/some_mail@mail.com")
+                .delete("/go/teams/slug1/users/other_mail@mail.com")
                 .cookie(http::Cookie::new(SESSION_COOKIE, "other_session_id"))
                 .dispatch();
 
             assert_eq!(response.status(), Status::Unauthorized);
 
             let response = client
-                .delete("/go/teams/slug1/users/some_mail@mail.com")
+                .delete("/go/teams/slug1/users/other_mail@mail.com")
                 .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
                 .dispatch();
 
@@ -867,7 +869,7 @@ mod controller {
                 &[Capability::TeamsWrite],
                 &mut conn,
             );
-            user("other_mail@mail.com", "pwd", &[], &[], &mut conn);
+            user("other_mail@mail.com", "pwd", &[("slug1", &[], 0, true)], &[], &mut conn);
 
             let response = client
                 .delete("/go/teams/slug1/users/other_mail@mail.com")
@@ -890,7 +892,7 @@ mod controller {
                 &[],
                 &mut conn,
             );
-            user("other_mail@mail.com", "pwd", &[], &[], &mut conn);
+            user("other_mail@mail.com", "pwd",                 &[("slug1", &[], 0, true)], &[], &mut conn);
 
             let response = client
                 .delete("/go/teams/slug1/users/other_mail@mail.com")
@@ -900,6 +902,28 @@ mod controller {
             assert_eq!(response.status(), Status::Ok);
 
             assert!(get_user_team_links("other_mail@mail.com", &mut conn).is_empty());
+        }
+
+        #[test]
+        fn as_self() {
+            let (client, mut conn) = launch_with("some_session_id: some_mail@mail.com");
+            team("slug1", "team1", true, true, &mut conn);
+            user(
+                "some_mail@mail.com",
+                "pwd",
+                &[("slug1", &[], 0, true)],
+                &[],
+                &mut conn,
+            );
+
+            let response = client
+                .delete("/go/teams/slug1/users/some_mail@mail.com")
+                .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
+                .dispatch();
+
+            assert_eq!(response.status(), Status::Ok);
+
+            assert!(get_user_team_links("some_mail@mail.com", &mut conn).is_empty());
         }
     }
 
