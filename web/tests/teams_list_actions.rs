@@ -26,7 +26,7 @@ async fn as_admin_accept_team() {
                     "some_mail@mail.com",
                     "pwd",
                     &[("slug1", &[], 1, true)],
-                    &[Capability::TeamsWrite, Capability::TeamsWriteWithValidation],
+                    &[Capability::TeamsWrite, Capability::TeamsCreateWithValidation],
                     &mut con,
                 );
 
@@ -359,7 +359,7 @@ mod create {
                         "some_mail@mail.com",
                         "pwd",
                         &[],
-                        &[Capability::TeamsWriteWithValidation],
+                        &[Capability::TeamsCreateWithValidation],
                         &mut con,
                     );
 
@@ -708,14 +708,7 @@ some_other_session_id: some_other_mail@mail.com");
                 "some_mail@mail.com",
                 "pwd",
                 &[],
-                &[Capability::TeamsWrite],
-                &mut conn,
-            );
-                        user(
-                "some_other_mail@mail.com",
-                "pwd",
-                &[],
-                &[ Capability::TeamsWriteWithValidation],
+                &[Capability::TeamsCreateWithValidation],
                 &mut conn,
             );
 
@@ -724,14 +717,6 @@ some_other_session_id: some_other_mail@mail.com");
                 .json(&json!({ "is_accepted": true }))
                 .cookie(http::Cookie::new(SESSION_COOKIE, "some_session_id"))
                 .dispatch();
-            assert_eq!(response.status(), Status::Unauthorized);
-
-                        let response = client
-                .patch("/go/teams/slug1")
-                .json(&json!({ "is_accepted": true }))
-                .cookie(http::Cookie::new(SESSION_COOKIE, "some_other_session_id"))
-                .dispatch();
-
             assert_eq!(response.status(), Status::Unauthorized);
         }
 
@@ -743,7 +728,7 @@ some_other_session_id: some_other_mail@mail.com");
                 "some_mail@mail.com",
                 "pwd",
                 &[],
-                &[Capability::TeamsWrite, Capability::TeamsWriteWithValidation],
+                &[Capability::TeamsWrite],
                 &mut conn,
             );
 
@@ -877,7 +862,7 @@ some_other_session_id: some_other_mail@mail.com");
                 "some_mail@mail.com",
                 "pwd",
                 &[],
-                &[Capability::TeamsWriteWithValidation],
+                &[Capability::TeamsCreateWithValidation],
                 &mut conn,
             );
 

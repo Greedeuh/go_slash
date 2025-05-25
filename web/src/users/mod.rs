@@ -2,13 +2,14 @@ mod controller;
 mod sessions;
 
 pub use controller::*;
+use diesel::{dsl::{count}, prelude::*};
 pub use sessions::*;
 
-use crate::teams::{Team, TeamCapability};
+use crate::teams::{ Team, TeamCapability};
 use crate::errors::AppError;
 use crate::schema::users;
-use crate::schema::*;
-use diesel::{deserialize, serialize, Associations, Identifiable, Insertable};
+use crate::{schema::*, DbConn};
+use diesel::{deserialize, serialize, Associations, Identifiable, Insertable, PgArrayExpressionMethods};
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::str::FromStr;
@@ -61,19 +62,105 @@ pub struct UserTeam {
 pub enum Capability {
     Features,
     TeamsWrite,
-    TeamsWriteWithValidation,
+    TeamsCreateWithValidation,
     UsersTeamsRead,
     UsersTeamsWrite,
     UsersAdmin,
 }
 
+type RequireValidation = bool;
 impl User {
+    pub fn can_create_teams(&self) ->  Result<RequireValidation, AppError>  {
+        self.should_have_one_of_theses_capabilities(&[
+            Capability::TeamsWrite,
+            Capability::TeamsCreateWithValidation,
+        ])?;
+
+        Ok(!self.have_capability(Capability::TeamsWrite))
+    }
+
+    pub fn can_write_team(&self, team_slug: &str, conn: &mut DbConn) -> Result<(), AppError> {
+        if self.have_capability(Capability::TeamsWrite) {
+            return Ok(());
+        } 
+        
+        self.user_should_have_team_capability(team_slug, conn, TeamCapability::TeamsWrite)
+    }
+
+    pub fn can_accept_teams(&self) -> Result<(), AppError> {
+         self.should_have_capability(Capability::TeamsWrite) 
+    }
+
+    pub fn can_read_users_teams(&self, team: &Team, conn: &mut DbConn) -> Result<(), AppError> {
+        if !team.is_private {
+            return Ok(());
+        }
+
+        if self.have_capability(Capability::UsersTeamsRead) {
+            return Ok(());
+        }
+
+        self.user_should_have_team(&team.slug, conn)
+    }
+
+    pub fn user_should_have_team_capability(
+        &self,
+        team_slug: &str,
+        conn: &mut DbConn,
+        capability: TeamCapability,
+    ) -> Result<(), AppError> {
+        if users_teams::table
+            .find((&self.mail, &team_slug))
+            .filter(users_teams::capabilities.contains(vec![capability]))
+            .filter(users_teams::is_accepted)
+            .select(count(users_teams::user_mail))
+            .first::<i64>(conn)
+            .map_err(AppError::from)?
+            == 0
+        {
+            error!(
+                "User {} miss capability or team capability {} on team {}",
+                self.mail,capability, team_slug
+            );
+            Err(AppError::Unauthorized)
+        } else {
+            Ok(())
+        }
+    }
+
+   pub fn user_should_have_team(
+        &self,
+        team_slug: &str,
+        conn: &mut DbConn,
+    ) -> Result<(), AppError> {
+        if users_teams::table
+            .find((&self.mail, &team_slug))
+            .filter(users_teams::is_accepted)
+            .select(count(users_teams::user_mail))
+            .first::<i64>(conn)
+            .map_err(AppError::from)?
+            == 0
+        {
+            error!(
+                "User {} miss team {}",
+                self.mail, team_slug
+            );
+            Err(AppError::Unauthorized)
+        } else {
+            Ok(())
+        }
+    }
+
+
     pub fn fake_admin() -> Self {
         Self {
             mail: "fake_admin".to_string(),
             capabilities: Capability::all(),
         }
     }
+
+   
+
 
     pub fn have_capability(&self, capability: Capability) -> bool {
         self.capabilities.contains(&capability)
@@ -130,7 +217,7 @@ impl Capability {
         vec![
             Capability::Features,
             Capability::TeamsWrite,
-            Capability::TeamsWriteWithValidation,
+            Capability::TeamsCreateWithValidation,
             Capability::UsersTeamsRead,
             Capability::UsersTeamsWrite,
             Capability::UsersAdmin,

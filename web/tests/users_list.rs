@@ -96,8 +96,8 @@ async fn as_admin_i_can_see_the_list() {
                     .clone();
 
                 let expeted_capabilities = [("false", Capability::Features),
+                    ("false", Capability::TeamsCreateWithValidation),
                     ("true", Capability::TeamsWrite),
-                    ("false", Capability::TeamsWriteWithValidation),
                     ("false", Capability::UsersAdmin),
                     ("false", Capability::UsersTeamsRead),
                     ("false", Capability::UsersTeamsWrite)];

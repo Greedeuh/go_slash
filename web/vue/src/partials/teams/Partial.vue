@@ -8,7 +8,7 @@
         <button
           v-if="
             capabilities.includes('TeamsWrite') ||
-            capabilities.includes('TeamsWriteWithValidation')
+            capabilities.includes('TeamsCreateWithValidation')
           "
           @click="start_create"
           class="btn btn-lg btn-primary ms-2"

@@ -224,7 +224,7 @@ mod edit_team {
                         "some_mail@mail.com",
                         "pwd",
                         &[],
-                        &[Capability::TeamsWrite, Capability::TeamsWriteWithValidation, Capability::UsersTeamsRead],
+                        &[Capability::TeamsWrite, Capability::TeamsCreateWithValidation, Capability::UsersTeamsRead],
                         &mut conn,
                     );
 
@@ -596,8 +596,6 @@ mod kick_user {
 }
 
 mod accept_user {
-    use rocket::futures;
-
     use super::*;
 
     #[async_test]
@@ -658,7 +656,7 @@ mod accept_user {
                         "some_mail@mail.com",
                         "pwd",
                         &[],
-                        &[Capability::TeamsWrite],
+                        &[Capability::TeamsWrite, Capability::UsersTeamsRead],
                         &mut con,
                     );
                     user(

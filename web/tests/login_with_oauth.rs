@@ -140,7 +140,7 @@ mod after_google_redirect {
 
         let (client, mut conn) = launch_with_sessions_and_mock("some_session_id: nonce", oidc_service);
 
-        default_capabilities(&[ Capability::TeamsWriteWithValidation],&mut conn);
+        default_capabilities(&[ Capability::TeamsCreateWithValidation],&mut conn);
         
 
         let response = client        
@@ -155,7 +155,7 @@ mod after_google_redirect {
         assert_eq!(url, "/");
         assert!(     location.next().is_none()); 
 
-        assert_eq!(get_user("some_mail@mail.com", &mut conn), Some(User {mail: "some_mail@mail.com".to_string(), capabilities: vec![ Capability::TeamsWriteWithValidation]}));
+        assert_eq!(get_user("some_mail@mail.com", &mut conn), Some(User {mail: "some_mail@mail.com".to_string(), capabilities: vec![ Capability::TeamsCreateWithValidation]}));
 
     }
 }

@@ -2,7 +2,7 @@
   <div aria-label="Create team result">
     <div class="modal-body">
       Success !
-      <span v-if="capabilities.includes('TeamsWriteWithValidation')"
+      <span v-if="capabilities.includes('TeamsCreateWithValidation')"
         >Your Admins will now have to validate your team.</span
       >
     </div>

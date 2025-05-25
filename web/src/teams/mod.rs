@@ -9,7 +9,7 @@ use strum_macros::{Display, EnumString};
 
 use crate::{
     errors::AppError, schema::{        teams::{self, dsl}
-    , users_teams}, users::{Capability, User, UserTeam}, DbConn
+    , users_teams}, users::{ User, UserTeam}, DbConn
 };
 
 pub type AllColumns = (
@@ -41,16 +41,12 @@ impl Team {
         title,
         is_private,
     }: NewTeam, user: &User, conn: &mut DbConn) -> Result<(Team, UserTeam), AppError> {
-        user.should_have_one_of_theses_capabilities(&[
-                Capability::TeamsWrite,
-                Capability::TeamsWriteWithValidation,
-            ])?;
+        let require_validation = user.can_create_teams()?;
 
         conn.transaction::<_, diesel::result::Error, _>(|conn| {
-
             let team = Team {
                 slug: slug.clone(),
-                is_accepted: user.capabilities.contains(&Capability::TeamsWrite),
+                is_accepted: !require_validation,
                 title,
                 is_private,
             };
@@ -80,31 +76,21 @@ impl Team {
     }
 
     pub fn delete(slug: &str, user:&User,conn: &mut DbConn) -> Result<(), AppError> {
-        if !user.have_capability(Capability::TeamsWrite) {
-            user_should_have_team_capability(user, slug, conn, TeamCapability::TeamsWrite)?;
-        }
+        user.can_write_team(slug, conn)?;
 
         diesel::delete(teams::table.find(slug))
         .execute(conn)
         .map_err(AppError::from).map(|_| ())
     }
 
-    pub fn update(patchable_team: PatchableTeam, team_slug: &str, user: &User, conn: &mut DbConn) -> Result<Team, AppError> {
-        // should be admin 
-        // or
-        // part of the team but can't change is_accepted)
+    pub fn update(patchable_team: PatchableTeam, slug: &str, user: &User, conn: &mut DbConn) -> Result<Team, AppError> {
+        user.can_write_team(slug, conn)?;
+        
         if patchable_team.is_accepted.is_some() {
-            user.should_have_all_theses_capabilities(&[
-                Capability::TeamsWrite,
-                Capability::TeamsWriteWithValidation,
-            ])?;
-        } else {
-            if !user.have_capability(Capability::TeamsWrite) {
-                user_should_have_team_capability(user, team_slug, conn, TeamCapability::TeamsWrite)?;
-            }
+           user.can_accept_teams()?;
         }
 
-        diesel::update(teams::table.find(team_slug))
+        diesel::update(teams::table.find(slug))
         .set(&patchable_team)
         .get_result(conn)
         .map_err(AppError::from)
@@ -142,7 +128,6 @@ impl Team {
     pub fn with_all_user_links(slug: &str, user: &User, conn: &mut DbConn)-> Result<Option<TeamWithUserLinks>, AppError> {
         let team = teams::table
         .find(&slug)
-
         .first( conn)
         .optional()
         .map_err(AppError::from)?;
@@ -158,8 +143,13 @@ impl Team {
         .map_err(AppError::from)?;
 
 
-        if !user.have_capability(Capability::UsersTeamsRead) && team.is_private && user_links.iter().all(|user_link| user_link.user_mail != user.mail) {
-            return Ok(None);
+        match user.can_read_users_teams(&team, conn) {
+            Ok(_) => (),
+            Err(AppError::Unauthorized) => {
+                // don't say it exists but you can't see it, just say it doesn't exist for the user
+                return Ok(None);
+            },
+            Err(e) => return Err(e),
         }
 
         Ok(Some(TeamWithUserLinks {
