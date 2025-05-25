@@ -1,6 +1,3 @@
-use diesel::{
-    prelude::*,
-};
 use rocket::{http::Status, serde::json::Json, State};
 use rocket_dyn_templates::Template;
 use serde_json::{json, Value};
@@ -16,10 +13,6 @@ use crate::{
         TeamForOptUser,  TeamWithUserLinks, PatchableTeam, NewTeam
     },
     users::{ User, },
-    schema::{
-        shortcuts,
-
-    },
     views::IndexContext,
     DbPool,
 };
@@ -66,11 +59,13 @@ pub fn show_team(
         return Err(AppError::NotFound.into());
     }
 
-    let shortcuts = shortcuts::table
-        .filter(shortcuts::team_slug.eq(&slug))
-        .order(shortcuts::shortcut.asc())
-        .load::<Shortcut>(&mut conn)
-        .map_err(AppError::from)?;
+    let team_with_user_links = if let Some(team_with_user_links) = team_with_user_links{
+        team_with_user_links
+    } else {
+        return Err(AppError::NotFound.into());
+    };
+
+    let shortcuts = Shortcut::of_team(&team_with_user_links.team, &user, &mut conn)?;
 
 
     Ok(Template::render(
@@ -80,7 +75,7 @@ pub fn show_team(
             "context": json!(IndexContext {
                 shortcut: None,
                 shortcuts,
-                team: team_with_user_links,
+                team: Some(team_with_user_links),
                 teams: Team::all_with_shortcut_write(&user, &mut conn)?,
                 user
             }).to_string()

@@ -103,6 +103,15 @@ impl User {
         self.user_should_have_team(&team.slug, conn)
     }
 
+
+    pub fn can_read_team_shortcuts(&self, team: &Team, conn: &mut DbConn) -> Result<(), AppError> {
+        if !team.is_private {
+            return Ok(());
+        }
+
+        self.user_should_have_team(&team.slug, conn)
+    }
+
     pub fn user_should_have_team_capability(
         &self,
         team_slug: &str,
