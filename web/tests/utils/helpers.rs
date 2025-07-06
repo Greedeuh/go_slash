@@ -195,7 +195,7 @@ mod no_dead_code {
         };
 
         let headless = !match env::var("HEADLESS") {
-            Ok(var) => do_not_close_browser || var == "false" || !headless,
+            Ok(var) => do_not_close_browser || var.to_lowercase() == "false"|| !headless,
             _ => do_not_close_browser || !headless,
         };
 
