@@ -32,11 +32,7 @@ impl Shortcut {
         Err(e) => return Err(e),  
       }
 
-      shortcuts::table
-        .filter(shortcuts::team_slug.eq(&team.slug))
-        .order(shortcuts::shortcut.asc())
-        .load::<Shortcut>(conn)
-        .map_err(AppError::from)
+      db::of_team(team, conn).map_err(AppError::from)
     }
 
     pub fn sorted(user: &User, conn: &mut DbConn) -> Result<Vec<Shortcut>, AppError> {
@@ -123,6 +119,17 @@ impl Shortcut {
         return Ok(());
     }
     
+}
+
+mod db {
+    use super::*;
+
+    pub fn of_team(team: &Team, conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>) -> Result<Vec<Shortcut>, diesel::result::Error> {
+        shortcuts::table
+            .filter(shortcuts::team_slug.eq(&team.slug))
+            .order(shortcuts::shortcut.asc())
+            .load::<Shortcut>(conn)
+    }
 }
 
 #[derive(Insertable, Clone)]
