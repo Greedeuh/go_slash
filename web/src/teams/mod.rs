@@ -36,7 +36,7 @@ pub struct Team {
 }
 
 impl Team {
- pub fn create( NewTeam{
+    pub fn create(NewTeam{
         slug,
         title,
         is_private,
@@ -50,14 +50,9 @@ impl Team {
                 title,
                 is_private,
             };
-            let team = diesel::insert_into(teams::table)
-                .values(team)
-                .get_result(conn)?;
+            let team = db::insert(conn, team)?;
     
-            let previous_rank = (users_teams::table
-                .select(max(users_teams::rank))
-                .filter(users_teams::user_mail.eq(&user.mail))
-                .first::<Option<i16>>(conn)?)
+            let previous_rank = (db::next_user_team_rank(&user.mail, conn)?)
             .unwrap_or(0);
     
             let user_team = UserTeam {
@@ -67,20 +62,15 @@ impl Team {
                 is_accepted: true,
                 rank: previous_rank as i16 + 1,
             };
-            let user_team = diesel::insert_into(users_teams::table)
-                .values(user_team)
-                .get_result(conn)?;
+            let user_team = db::add_user(conn, user_team)?;
             Ok((team,user_team))
         })
         .map_err(AppError::from)
     }
 
-    pub fn delete(slug: &str, user:&User,conn: &mut DbConn) -> Result<(), AppError> {
+    pub fn delete(slug: &str, user: &User, conn: &mut DbConn) -> Result<(), AppError> {
         user.can_write_team(slug, conn)?;
-
-        diesel::delete(teams::table.find(slug))
-        .execute(conn)
-        .map_err(AppError::from).map(|_| ())
+        db::delete(slug, conn).map_err(AppError::from).map(|_| ())
     }
 
     pub fn update(patchable_team: PatchableTeam, slug: &str, user: &User, conn: &mut DbConn) -> Result<Team, AppError> {
@@ -90,22 +80,15 @@ impl Team {
            user.can_accept_teams()?;
         }
 
-        diesel::update(teams::table.find(slug))
-        .set(&patchable_team)
-        .get_result(conn)
-        .map_err(AppError::from)
+        db::update(patchable_team, slug, conn).map_err(AppError::from)
     }
 
     pub fn find(slug: &str, user: &User, conn: &mut DbConn) -> Result<Option<Team>, AppError> {
-       let team = teams::table.find(slug)
-    
-            .first::<Team>(conn)
-            .optional()
-            .map_err(AppError::from)?;
+        let team = db::find_by_slug(slug, conn).map_err(AppError::from)?;
         
         let team = if let Some(team) = team {
             team
-        } else{
+        } else {
             return Ok(None);
         };
 
@@ -115,40 +98,15 @@ impl Team {
     }
 
     pub fn all_with_shortcut_write(user: &User, conn: &mut DbConn) -> Result<Vec<Team>, AppError> {
-        teams::table
-            .inner_join(
-                users_teams::table.on(teams::slug
-                    .eq(users_teams::team_slug)
-                    .and(users_teams::user_mail.eq(&user.mail))
-                    .and(
-                        users_teams::capabilities
-                            .contains(vec![TeamCapability::ShortcutsWrite.to_string()]),
-                    )
-                    .and(users_teams::is_accepted)),
-            )
-            .filter(teams::is_accepted)
-            .select(TEAM_COLUMNS)
-            .load::<Team>(conn)
-            .map_err(AppError::from)
+        db::find_all_with_shortcut_write(&user.mail, conn).map_err(AppError::from)
     }
 
     pub fn all_with_user_link(mail: &str, conn: &mut DbConn) -> Result<Vec<TeamForOptUser>, AppError> {
-        dsl::teams
-        .left_join(
-            users_teams::table.on(dsl::slug
-                .eq(users_teams::team_slug)
-                .and(users_teams::user_mail.eq(mail))),
-        )
-        .load(conn)
-        .map_err(AppError::from)
+        db::find_all_with_user_link(mail, conn).map_err(AppError::from)
     }
 
-    pub fn with_all_user_links(slug: &str, user: &User, conn: &mut DbConn)-> Result<Option<TeamWithUserLinks>, AppError> {
-        let team = teams::table
-        .find(&slug)
-        .first( conn)
-        .optional()
-        .map_err(AppError::from)?;
+    pub fn with_all_user_links(slug: &str, user: &User, conn: &mut DbConn) -> Result<Option<TeamWithUserLinks>, AppError> {
+        let team = db::find_by_slug(slug, conn).map_err(AppError::from)?;
 
         let team: Team = if let Some(team) = team {
             team
@@ -156,10 +114,7 @@ impl Team {
             return Ok(None);
         };
 
-        let user_links = UserTeam::belonging_to(&team)
-        .load::<UserTeam>(conn)
-        .map_err(AppError::from)?;
-
+        let user_links = db::find_user_links_for_team(&team.slug, conn).map_err(AppError::from)?;
 
         match user.can_read_users_teams(&team, conn) {
             Ok(_) => (),
@@ -182,13 +137,12 @@ impl Team {
         user: &User,
         conn: &mut DbConn,
     ) -> Result<usize, AppError> {
-        if user.mail != mail {
+        let is_self_kick = user.mail == mail;
+        if !is_self_kick {
             user.can_write_team(slug, conn)?;
         }
 
-        diesel::delete(users_teams::table.find((mail, slug)))
-        .execute(conn)
-        .map_err(AppError::from)
+        db::remove_user_from_team(mail, slug, conn).map_err(AppError::from)
     }
 
     pub fn add_user_capability(
@@ -200,19 +154,13 @@ impl Team {
     ) -> Result<(), AppError> {
         user.can_write_team(team_slug, conn)?;
 
-        let user_link: UserTeam = users_teams::table
-        .find((mail, team_slug))
-        .first(conn)
-        .map_err(AppError::from)?;
+        let user_link: UserTeam = db::find_user_team_link(mail, team_slug, conn).map_err(AppError::from)?;
 
         let mut capabilities = user_link.capabilities;
         if !capabilities.contains(&capability) {
             capabilities.push(capability);
-            diesel::update(users_teams::table.find((mail, team_slug)))
-                .set(users_teams::capabilities.eq(capabilities))
-                .execute(conn)
-                .map_err(AppError::from)?;
-        }else {
+            db::update_user_capabilities(mail, team_slug, capabilities, conn).map_err(AppError::from)?;
+        } else {
             warn!(
                 "User {} already has capability {} on team {}",
                 mail, capability, team_slug
@@ -231,18 +179,12 @@ impl Team {
     ) -> Result<(), AppError> {
         user.can_write_team(team_slug, conn)?;
 
-        let user_link: UserTeam = users_teams::table
-        .find((mail, team_slug))
-        .first(conn)
-        .map_err(AppError::from)?;
+        let user_link: UserTeam = db::find_user_team_link(mail, team_slug, conn).map_err(AppError::from)?;
 
         let mut capabilities = user_link.capabilities;
         if capabilities.contains(&capability) {
-            capabilities.retain(|&c| c != capability);
-            diesel::update(users_teams::table.find((mail, team_slug)))
-                .set(users_teams::capabilities.eq(capabilities))
-                .execute(conn)
-                .map_err(AppError::from)?;
+            capabilities.retain(|c| *c != capability);
+            db::update_user_capabilities(mail, team_slug, capabilities, conn).map_err(AppError::from)?;
         } else {
             warn!(
                 "User {} already has capability no {} on team {}",
@@ -262,10 +204,103 @@ impl Team {
     ) -> Result<(), AppError> {
         user.can_write_team(team_slug, conn)?;
 
-        diesel::update(users_teams::table.find((mail, team_slug)))
-        .set(users_teams::is_accepted.eq(acceptation))
+        db::update_user_acceptance(mail, team_slug, *acceptation, conn).map_err(AppError::from).map(|_| ())
+    }
+}
+
+mod db {
+    use super::*;
+
+    pub fn insert(conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>, team: Team) -> Result<Team, diesel::result::Error> {
+        diesel::insert_into(teams::table)
+            .values(team)
+            .get_result(conn)
+    }
+
+    pub fn next_user_team_rank(user_mail: &str, conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>) -> Result<Option<i16>, diesel::result::Error> {
+        users_teams::table
+            .select(max(users_teams::rank))
+            .filter(users_teams::user_mail.eq(&user_mail))
+            .first::<Option<i16>>(conn)
+    }
+
+    pub fn delete(slug: &str, conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>) -> Result<usize, diesel::result::Error> {
+        diesel::delete(teams::table.find(slug))
         .execute(conn)
-        .map_err(AppError::from).map(|_| ())
+    }
+
+    pub fn update(patchable_team: PatchableTeam, slug: &str, conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>) -> Result<Team, diesel::result::Error> {
+        diesel::update(teams::table.find(slug))
+        .set(&patchable_team)
+        .get_result(conn)
+    }
+
+    pub fn add_user(conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>, user_team: UserTeam) -> Result<UserTeam, diesel::result::Error> {
+        diesel::insert_into(users_teams::table)
+            .values(user_team)
+            .get_result(conn)
+    }
+
+    pub fn find_by_slug(slug: &str, conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>) -> Result<Option<Team>, diesel::result::Error> {
+        teams::table.find(slug)
+            .first::<Team>(conn)
+            .optional()
+    }
+
+    pub fn find_all_with_shortcut_write(user_mail: &str, conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>) -> Result<Vec<Team>, diesel::result::Error> {
+        teams::table
+            .inner_join(
+                users_teams::table.on(teams::slug
+                    .eq(users_teams::team_slug)
+                    .and(users_teams::user_mail.eq(user_mail))
+                    .and(
+                        users_teams::capabilities
+                            .contains(vec![TeamCapability::ShortcutsWrite.to_string()]),
+                    )
+                    .and(users_teams::is_accepted)),
+            )
+            .filter(teams::is_accepted)
+            .select(TEAM_COLUMNS)
+            .load::<Team>(conn)
+    }
+
+    pub fn find_all_with_user_link(mail: &str, conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>) -> Result<Vec<TeamForOptUser>, diesel::result::Error> {
+        dsl::teams
+            .left_join(
+                users_teams::table.on(dsl::slug
+                    .eq(users_teams::team_slug)
+                    .and(users_teams::user_mail.eq(mail))),
+            )
+            .load(conn)
+    }
+
+    pub fn find_user_links_for_team(team_slug: &str, conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>) -> Result<Vec<UserTeam>, diesel::result::Error> {
+        users_teams::table
+            .filter(users_teams::team_slug.eq(team_slug))
+            .load::<UserTeam>(conn)
+    }
+
+    pub fn remove_user_from_team(mail: &str, slug: &str, conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>) -> Result<usize, diesel::result::Error> {
+        diesel::delete(users_teams::table.find((mail, slug)))
+            .execute(conn)
+    }
+
+    pub fn find_user_team_link(mail: &str, team_slug: &str, conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>) -> Result<UserTeam, diesel::result::Error> {
+        users_teams::table
+            .find((mail, team_slug))
+            .first(conn)
+    }
+
+    pub fn update_user_capabilities(mail: &str, team_slug: &str, capabilities: Vec<TeamCapability>, conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>) -> Result<usize, diesel::result::Error> {
+        diesel::update(users_teams::table.find((mail, team_slug)))
+            .set(users_teams::capabilities.eq(capabilities))
+            .execute(conn)
+    }
+
+    pub fn update_user_acceptance(mail: &str, team_slug: &str, acceptation: bool, conn: &mut r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConnection>>) -> Result<usize, diesel::result::Error> {
+        diesel::update(users_teams::table.find((mail, team_slug)))
+            .set(users_teams::is_accepted.eq(acceptation))
+            .execute(conn)
     }
 }
 
