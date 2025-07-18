@@ -1,5 +1,5 @@
 use diesel::PgConnection;
-use go_web::{guards::SESSION_COOKIE, schema::shortcuts};
+use go_web::{guards::SESSION_COOKIE};
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
@@ -9,7 +9,7 @@ use utils::*;
 use thirtyfour_testing_library_ext::{Screen, By as ByExt, TextMatch};
 
 #[async_test]
-async fn list_shortcuts() {
+async fn should_list_shortcuts() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -75,7 +75,7 @@ async fn list_shortcuts() {
 }
 
 #[async_test]
-async fn sugest_when_typing() {
+async fn should_sugest_when_typing() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -155,7 +155,7 @@ async fn sugest_when_typing() {
 }
 
 #[async_test]
-async fn with_click() {
+async fn should_redirect_when_using_shortcut_with_click() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -217,7 +217,7 @@ async fn with_click() {
 }
 
 #[async_test]
-async fn with_keyboard() {
+async fn should_redirect_when_using_shortcut_with_keyboard() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
