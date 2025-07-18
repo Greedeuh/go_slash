@@ -1,11 +1,12 @@
 use diesel::PgConnection;
-use go_web::guards::SESSION_COOKIE;
+use go_web::{guards::SESSION_COOKIE, schema::shortcuts};
 use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
 mod utils;
 use thirtyfour::prelude::*;
 use utils::*;
+use thirtyfour_testing_library_ext::{Screen, By as ByExt, TextMatch};
 
 #[async_test]
 async fn list_shortcuts() {
@@ -53,12 +54,15 @@ async fn list_shortcuts() {
                     .await?;
                 driver.get(host(port, "")).await?;
 
-                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let shortcut_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/Shortcut list/".to_string()))).await?;
+                let shortcuts = screen.within(shortcut_list).find_all(ByExt::role("listitem")).await?;
 
                 for i in 0..texts_sorted.len() {
-                    assert_eq!(articles[i].text().await?, texts_sorted[i]);
+
+                    assert_eq!(shortcuts[i].text().await?, texts_sorted[i]);
                     assert_eq!(
-                        articles[i].attr("href").await?,
+                        shortcuts[i].attr("href").await?,
                         Some(href_sorted[i].to_owned())
                     );
                 }
@@ -109,14 +113,17 @@ async fn sugest_when_typing() {
                     .await?;
                 driver.get(host(port, "")).await?;
 
-                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let shortcut_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/Shortcut list/".to_string()))).await?;
+                let scoped_screen = screen.within(shortcut_list);
+                let articles = scoped_screen.find_all(ByExt::role("listitem")).await?;
                 // initial state
                 assert_eq!(3, articles.len());
 
-                let search_bar = driver.find(By::Css("input[type='search']")).await?;
+                let search_bar = screen.get(ByExt::role("searchbox")).await?;
                 search_bar.send_keys("t").await?;
 
-                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
+                let articles = scoped_screen.find_all(ByExt::role("listitem")).await?;
 
                 // type in t should suggest tadadam first
                 assert_eq!(
@@ -127,7 +134,7 @@ async fn sugest_when_typing() {
 
                 search_bar.send_keys("uc").await?;
 
-                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
+                let articles = scoped_screen.find_all(ByExt::role("listitem")).await?;
 
                 // type in tuc should suggest jeanLuc and newShortcut but not tadam
                 assert_eq!(
@@ -185,11 +192,12 @@ async fn with_click() {
                     .await?;
                 driver.get(host(port, "")).await?;
 
-                let search_bar = driver.find(By::Css("input[type='search']")).await?;
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let search_bar = screen.get(ByExt::role("searchbox")).await?;
                 search_bar.send_keys("jeanLuc").await?;
 
-                driver
-                    .find(By::Css("[type='submit']"))
+                screen
+                    .get(ByExt::role("button"))
                     .await?
                     .click()
                     .await?;
@@ -246,10 +254,13 @@ async fn with_keyboard() {
                     .await?;
                 driver.get(host(port, "")).await?;
 
-                let search_bar = driver.find(By::Css("input[type='search']")).await?;
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let search_bar = screen.get(ByExt::role("searchbox")).await?;
                 search_bar.send_keys(Key::Down).await?;
 
-                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
+                let shortcut_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/Shortcut list/".to_string()))).await?;
+                let scoped_screen = screen.within(shortcut_list);
+                let articles = scoped_screen.find_all(ByExt::role("listitem")).await?;
 
                 // down arrow select first
                 assert_eq!(
@@ -260,9 +271,8 @@ async fn with_keyboard() {
 
                 search_bar.send_keys(Key::Down).await?;
 
-                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
-
                 // down arrow again select snd & unselect first
+                let articles = scoped_screen.find_all(ByExt::role("listitem")).await?;
                 assert_eq!(
                     articles[0].text().await?,
                     format!("jeanLuc {}", host(port, "/aShortcut1"))
@@ -277,6 +287,7 @@ async fn with_keyboard() {
                 search_bar.send_keys(Key::Up).await?;
 
                 // up arrow select first & unselect first
+                let articles = scoped_screen.find_all(ByExt::role("listitem")).await?;
                 assert_eq!(
                     articles[0].text().await?,
                     format!("jeanLuc {}", host(port, "/aShortcut1"))
@@ -308,7 +319,8 @@ async fn with_keyboard() {
                 driver.get(host(port, "")).await?;
                 // arow down then enter go to the first line shortcut
 
-                let search_bar = driver.find(By::Css("input[type='search']")).await?;
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let search_bar = screen.get(ByExt::role("searchbox")).await?;
                 search_bar.send_keys(Key::Down).await?;
                 search_bar.send_keys(Key::Enter).await?;
 

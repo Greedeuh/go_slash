@@ -33,4 +33,5 @@ openidconnect = "2.3.1"
 faux = "0.1"
 
 [dev-dependencies]
-thirtyfour = "0.35"
+thirtyfour = "0.36.1"
+thirtyfour-testing-library-ext = "0.1.1"
