@@ -1,5 +1,5 @@
 <template>
-  <div role="list" class="accordion">
+  <div role="list" class="accordion" aria-label="User list">
     <div
       v-for="(user, index) in users"
       :key="user.mail"

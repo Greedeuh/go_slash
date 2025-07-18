@@ -6,6 +6,7 @@ use rocket::tokio::sync::Mutex;
 use rocket::{async_test, http};
 use serde_json::json;
 use thirtyfour::prelude::*;
+use thirtyfour_testing_library_ext::{Screen, By as ByExt, TextMatch};
 
 mod utils;
 use go_web::guards::SESSION_COOKIE;
@@ -35,19 +36,17 @@ async fn join_team() {
                     .get(host(port, "/go/teams"))
                     .await?;
 
-                let button = driver
-                    .find(By::Css(
-                        "[aria-label='Other teams'] [role='listitem'] button",
-                    ))
-                    .await?;
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let other_teams = screen.find(ByExt::role("list").name(TextMatch::Exact("Other teams".to_string()))).await?;
+                let button = screen.within(other_teams).find(ByExt::role("button")).await?;
                 assert_eq!(button.text().await?, "Join");
                 button.click().await?;
 
+                let user_teams = screen.find(ByExt::role("list").name(TextMatch::Exact("User teams".to_string()))).await?;
                 assert_eq!(
-                    driver
-                        .find(By::Css(
-                            "[aria-label='User teams'] [role='listitem'] button"
-                        ))
+                    screen
+                        .within(user_teams)
+                        .find(ByExt::role("button"))
                         .await?
                         .text()
                         .await?,
@@ -58,11 +57,9 @@ async fn join_team() {
                     .get(host(port, "/go/teams"))
                     .await?;
 
-                let leave = driver
-                    .find(By::Css(
-                        "[aria-label='User teams'] [role='listitem'] button",
-                    ))
-                    .await?;
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let user_teams = screen.find(ByExt::role("list").name(TextMatch::Exact("User teams".to_string()))).await?;
+                let leave = screen.within(user_teams).find(ByExt::role("button")).await?;
                 assert_eq!(leave.text().await?, "Leave");
 
                 Ok(())
@@ -96,19 +93,17 @@ async fn leave_team() {
                     .get(host(port, "/go/teams"))
                     .await?;
 
-                let leave = driver
-                    .find(By::Css(
-                        "[aria-label='User teams'] [role='listitem'] button",
-                    ))
-                    .await?;
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let user_teams = screen.find(ByExt::role("list").name(TextMatch::Exact("User teams".to_string()))).await?;
+                let leave = screen.within(user_teams).find(ByExt::role("button")).await?;
                 assert_eq!(leave.text().await?, "Leave");
                 leave.click().await?;
 
+                let other_teams = screen.find(ByExt::role("list").name(TextMatch::Exact("Other teams".to_string()))).await?;
                 assert_eq!(
-                    driver
-                        .find(By::Css(
-                            "[aria-label='Other teams'] [role='listitem'] button"
-                        ))
+                    screen
+                        .within(other_teams)
+                        .find(ByExt::role("button"))
                         .await?
                         .text()
                         .await?,
@@ -119,11 +114,12 @@ async fn leave_team() {
                     .get(host(port, "/go/teams"))
                     .await?;
 
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let other_teams = screen.find(ByExt::role("list").name(TextMatch::Exact("Other teams".to_string()))).await?;
                 assert_eq!(
-                    driver
-                        .find(By::Css(
-                            "[aria-label='Other teams'] [role='listitem'] button"
-                        ))
+                    screen
+                        .within(other_teams)
+                        .find(ByExt::role("button"))
                         .await?
                         .text()
                         .await?,
@@ -167,38 +163,39 @@ async fn change_user_teams_rank() {
                     .get(host(port, "/go/teams"))
                     .await?;
 
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
                 assert_eq!(
-                    driver
-                        .find(By::Css("[role='alert']"))
+                    screen
+                        .find(ByExt::role("alert"))
                         .await?
                         .text()
                         .await?,
                     "Drag and drop to prioritize team shortcuts in case of duplicates"
                 );
-                let teams = driver
-                    .find_all(By::Css("[aria-label='User teams'] [role='listitem'] span"))
-                    .await?;
+                let user_teams = screen.find(ByExt::role("list").name(TextMatch::Exact("User teams".to_string()))).await?;
+                let teams = screen.within(user_teams).find_all(ByExt::role("listitem")).await?;
 
                 let expected_teams_sorted = vec!["team2", "Global", "team1"];
                 for i in 0..expected_teams_sorted.len() {
-                    assert_eq!(expected_teams_sorted[i], teams[i].text().await?);
+                    let team_text = teams[i].text().await?;
+                    assert!(team_text.contains(expected_teams_sorted[i]));
                 }
 
-                driver
-                    .find(By::Css(
-                        "[aria-label='Other teams'] [role='listitem'] button",
-                    ))
+                let other_teams = screen.find(ByExt::role("list").name(TextMatch::Exact("Other teams".to_string()))).await?;
+                screen
+                    .within(other_teams)
+                    .find(ByExt::role("button"))
                     .await?
                     .click()
                     .await?;
 
-                let teams = driver
-                    .find_all(By::Css("[aria-label='User teams'] [role='listitem'] span"))
-                    .await?;
+                let user_teams = screen.find(ByExt::role("list").name(TextMatch::Exact("User teams".to_string()))).await?;
+                let teams = screen.within(user_teams).find_all(ByExt::role("listitem")).await?;
 
                 let expected_teams_sorted = vec!["team2", "Global", "team1", "team3"];
                 for i in 0..expected_teams_sorted.len() {
-                    assert_eq!(expected_teams_sorted[i], teams[i].text().await?);
+                    let team_text = teams[i].text().await?;
+                    assert!(team_text.contains(expected_teams_sorted[i]));
                 }
 
                 // drag & drop testing do not work

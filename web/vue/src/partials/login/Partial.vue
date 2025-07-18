@@ -9,12 +9,12 @@
     <form v-if="simple_salt" @submit.prevent="submit_simple_login" action="/">
       <div id="simple">
         <div class="input-group mb-3">
-          <span class="input-group-text" id="basic-addon1">Mail</span>
-          <input v-model="mail" type="email" class="form-control" required />
+          <label class="input-group-text" for="email">Mail</label>
+          <input v-model="mail" type="email" class="form-control" id="email" required />
         </div>
         <div class="input-group mb-3">
-          <span class="input-group-text" id="basic-addon1">Password</span>
-          <input ref="pwd" type="password" class="form-control" required />
+          <label class="input-group-text" for="password">Password</label>
+          <input ref="pwd" type="password" class="form-control" id="password" required />
         </div>
         <input type="submit" class="btn btn-primary" value="Login" />
       </div>

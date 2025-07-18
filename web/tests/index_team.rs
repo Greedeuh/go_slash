@@ -7,6 +7,7 @@ use rocket::tokio::sync::Mutex;
 use rocket::{async_test, http};
 use thirtyfour::error::WebDriverError;
 use thirtyfour::prelude::*;
+use thirtyfour_testing_library_ext::{Screen, By as ByExt, TextMatch};
 
 mod utils;
 use go_web::guards::SESSION_COOKIE;
@@ -43,7 +44,10 @@ async fn as_user() {
                     .get(host(port, "/go/teams/slug1"))
                     .await?;
 
-                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let shortcut_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/Shortcut list/".to_string()))).await?;
+                let scoped_screen = screen.within(shortcut_list);
+                let articles = scoped_screen.find_all(ByExt::role("listitem")).await?;
                 assert_eq!(
                     articles[0].text().await?,
                     format!("newShortcut {} slug1", host(port, "/looped"))
@@ -92,10 +96,8 @@ async fn list_user() {
                 // TODO ordering
                 let expected_users = vec!["some_mail@mail.com", "another_mail@mail.com"];
 
-                let users = driver
-                    .find_all(By::Css("[role='listitem'] h2"))
-                    .await
-                    .unwrap();
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let users = screen.find_all(ByExt::role("heading")).await?;
                 for i in 0..expected_users.len() {
                     assert_eq!(users[i].text().await.unwrap(), expected_users[i]);
                 }
@@ -147,10 +149,11 @@ mod edit_team {
                         .get(host(port, "/go/teams/slug1"))
                         .await?;
 
-                    assert!(driver
-                        .find(By::Css("[aria-label='Team editor']"))
-                        .await
-                        .is_err());
+                    let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                    assert!(screen
+                        .query(ByExt::role("region").name(TextMatch::Exact("Team editor".to_string())))
+                        .await?
+                        .is_none());
 
                     Ok(())
                 }
@@ -250,14 +253,15 @@ mod edit_team {
             .get(host(port, "/go/teams/slug1"))
             .await?;
 
-        let title = driver.find(By::Css("[name='title']")).await?;
+        let screen = Screen::build_with_testing_library(driver.clone()).await?;
+        let title = screen.find(ByExt::label_text("Title")).await?;
         assert_eq!(
             title.prop("value").await?,
             Some("team1".to_string())
         );
         title.send_keys("2").await?;
 
-        let is_private = driver.find(By::Css("[name='is_private']")).await?;
+        let is_private = screen.find(ByExt::label_text("Private")).await?;
         assert_eq!(
             is_private.prop("checked").await?,
             Some("false".to_string())
@@ -265,7 +269,7 @@ mod edit_team {
         is_private.click().await?;
 
         if admin {
-            let is_accepted = driver.find(By::Css("[name='is_accepted']")).await?;
+            let is_accepted = screen.find(ByExt::label_text("Enable")).await?;
             assert_eq!(
                 is_accepted.prop("checked").await?,
                 Some("true".to_string())
@@ -273,8 +277,8 @@ mod edit_team {
             is_accepted.click().await?;
         }
 
-        driver
-            .find(By::Css("[type='submit']"))
+        screen
+            .find(ByExt::text("Save"))
             .await?
             .click()
             .await?;
@@ -283,9 +287,10 @@ mod edit_team {
             .get(host(port, "/go/teams/slug1"))
             .await?;
 
+        let screen = Screen::build_with_testing_library(driver.clone()).await?;
         assert_eq!(
-            driver
-                .find(By::Css("[name='title']"))
+            screen
+                .find(ByExt::label_text("Title"))
                 .await?
                 .prop("value")
                 .await?,
@@ -293,8 +298,8 @@ mod edit_team {
         );
 
         assert_eq!(
-            driver
-                .find(By::Css("[name='is_private']"))
+            screen
+                .find(ByExt::label_text("Private"))
                 .await?
                 .prop("checked")
                 .await?,
@@ -303,8 +308,8 @@ mod edit_team {
 
         if admin {
             assert_eq!(
-                driver
-                    .find(By::Css("[name='is_accepted']"))
+                screen
+                    .find(ByExt::label_text("Enable"))
                     .await?
                     .prop("checked")
                     .await?,
@@ -396,10 +401,9 @@ mod edit_user_team_link {
             .await
             .unwrap();
 
-        let user_rows = driver
-            .find_all(By::Css("[aria-label='User list'] [role='listitem']"))
-            .await
-            .unwrap();
+        let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+        let user_list = screen.find(ByExt::role("list").name(TextMatch::Exact("User list".to_string()))).await.unwrap();
+        let user_rows = screen.within(user_list).find_all(ByExt::role("listitem")).await.unwrap();
 
         // Find the user row matching the given mail
         let mut user_row = None;
@@ -418,28 +422,16 @@ mod edit_user_team_link {
             .await
             .unwrap();
 
-        let switchs = user_row
-            .find_all(By::Css("[role='switch']"))
-            .await
-            .unwrap();
-        let switch = switchs.first().unwrap();
-        let switchs_label = user_row.find_all(By::Tag("label")).await.unwrap();
-        let switch_label = switchs_label.first().unwrap();
+        let shortcuts_write_switch = screen.within(user_row.clone()).find(ByExt::label_text(&TeamCapability::ShortcutsWrite.to_string())).await.unwrap();
 
-        switch_label.wait_until().displayed().await.unwrap();
-        switch.wait_until().displayed().await.unwrap();
         assert_eq!(
-            switch_label.text().await.unwrap(),
-            TeamCapability::ShortcutsWrite.to_string()
-        );
-        assert_eq!(
-            switch.prop("checked").await.unwrap().unwrap(),
+            shortcuts_write_switch.prop("checked").await.unwrap().unwrap(),
             "false"
         );
 
-        switch.click().await.unwrap();
+        shortcuts_write_switch.click().await.unwrap();
         assert_eq!(
-            switch.prop("checked").await.unwrap().unwrap(),
+            shortcuts_write_switch.prop("checked").await.unwrap().unwrap(),
             "true"
         );
 
@@ -448,10 +440,8 @@ mod edit_user_team_link {
             .await
             .unwrap();
 
-        let user_rows = driver
-            .find_all(By::Css("[aria-label='User list'] [role='listitem']"))
-            .await
-            .unwrap();
+        let user_list = screen.find(ByExt::role("list").name(TextMatch::Exact("User list".to_string()))).await.unwrap();
+        let user_rows = screen.within(user_list).find_all(ByExt::role("listitem")).await.unwrap();
 
         // Find the user row matching the given mail
         let mut user_row = None;
@@ -464,25 +454,23 @@ mod edit_user_team_link {
             }
         }
         let user_row = user_row.expect("User row not found");
-        user_row.click().await.unwrap();
 
-        let switchs = user_row
-            .find_all(By::Css(
-                "[aria-label='User list'] [role='listitem'] [role='switch']",
-            ))
+        user_row
+            .click()
             .await
             .unwrap();
-        let switch = &switchs[0];
 
-        switch.wait_until().displayed().await.unwrap();
+        let shortcuts_write_switch = screen.within(user_row.clone()).find(ByExt::label_text(&TeamCapability::ShortcutsWrite.to_string())).await.unwrap();
+
         assert_eq!(
-            switch.prop("checked").await.unwrap().unwrap(),
+            shortcuts_write_switch.prop("checked").await.unwrap().unwrap(),
             "true"
         );
 
-        switch.click().await.unwrap();
+        shortcuts_write_switch.scroll_into_view().await.unwrap();
+        shortcuts_write_switch.click().await.unwrap();
         assert_eq!(
-            switch.prop("checked").await.unwrap().unwrap(),
+            shortcuts_write_switch.prop("checked").await.unwrap().unwrap(),
             "false"
         );
     }
@@ -514,7 +502,11 @@ mod kick_user {
                         &mut con,
                     );
 
-                    kick(driver, port).await;
+                    kick(driver, "another_mail@mail.com", port).await;
+
+                    let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+                    let user = screen.query(ByExt::text("another_mail@mail.com")).await.unwrap();
+                    assert!(user.is_none());
 
                     Ok(())
                 }
@@ -539,9 +531,19 @@ mod kick_user {
                         &[],
                         &mut con,
                     );
+                    user(
+                        "another_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[], 0, true)],
+                        &[],
+                        &mut con,
+                    );
 
-                    kick(driver, port).await;
+                    kick(driver, "another_mail@mail.com", port).await;
 
+                    let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+                    let user = screen.query(ByExt::text("another_mail@mail.com")).await.unwrap();
+                    assert!(user.is_none());
                     Ok(())
                 }
                 .boxed()
@@ -550,7 +552,37 @@ mod kick_user {
         .await;
     }
 
-    async fn kick(driver: &WebDriver, port: u16) {
+    #[async_test]
+    async fn as_self() {
+        in_browser(
+            "some_session_id: some_mail@mail.com",
+            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
+                async move {
+                    let mut con = con.lock().await;
+                    team("slug1", "team1", false, true, &mut con);
+                    user(
+                        "some_mail@mail.com",
+                        "pwd",
+                        &[("slug1", &[TeamCapability::TeamsWrite], 0, true)],
+                        &[],
+                        &mut con,
+                    );
+
+                    kick(driver, "some_mail@mail.com", port).await;
+
+                    let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+                    let team_editor = screen.query(ByExt::display_value("team1")).await.unwrap();
+                    assert!(team_editor.is_none());
+                    Ok(())
+                }
+                .boxed()
+            },
+        )
+        .await;
+    
+    }
+
+    async fn kick(driver: &WebDriver, mail: &str, port: u16) {
         driver
             .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
             .await
@@ -561,38 +593,32 @@ mod kick_user {
             .await
             .unwrap();
 
-        driver
-            .find(By::Css("[role='listitem'] h2"))
-            .await
-            .unwrap()
-            .click()
-            .await
-            .unwrap();
+        let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+        let user_list = screen.find(ByExt::role("list").name(TextMatch::Exact("User list".to_string()))).await.unwrap();
+        let user_rows = screen.within(user_list).find_all(ByExt::role("listitem")).await.unwrap();
+        // Find the user row matching the given mail
+        let mut user_row = None;
+        for row in &user_rows {
+            if let Ok(text) = row.text().await {
+                if text.contains(mail) {
+                    user_row = Some(row);
+                    break;
+                }
+            }
+        }
+        let user_row = user_row.expect("User row not found");        user_row.click().await.unwrap();
 
-        let kick_button = driver
-            .find(By::Css("[aria-label='Kick user']"))
+        let kick_button = screen
+            .find(ByExt::role("button").name(TextMatch::Exact("Kick user".to_string())))
             .await
             .unwrap();
 
         kick_button.wait_until().displayed().await.unwrap();
 
         assert_eq!("Kick", kick_button.text().await.unwrap());
-        kick_button.click().await.unwrap();
-
-        assert!(driver
-            .find(By::Css("[role='listitem'] h2"))
-            .await
-            .is_err());
-
-        driver
-            .get(host(port, "/go/teams/slug1"))
-            .await
-            .unwrap();
-        assert!(driver
-            .find(By::Css("[role='listitem'] h2"))
-            .await
-            .is_err());
+        kick_button.click().await.unwrap();       
     }
+
 }
 
 mod accept_user {
@@ -631,10 +657,11 @@ mod accept_user {
                         .await
                         .unwrap();
 
-                    assert!(driver
-                        .find(By::Css("[aria-label='Accept candidature']"))
-                        .await
-                        .is_err());
+                    let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+                    assert!(screen
+                        .query(ByExt::role("button").name(TextMatch::Exact("Accept candidature".to_string())))
+                        .await.unwrap()
+                        .is_none());
 
                     Ok(())
                 }
@@ -721,10 +748,9 @@ mod accept_user {
             .await
             .unwrap();
 
-        let user_rows = driver
-            .find_all(By::Css("[role='listitem'] h2"))
-            .await
-            .unwrap();
+        let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+        let user_list = screen.find(ByExt::role("list").name(TextMatch::Exact("User list".to_string()))).await.unwrap();
+        let user_rows = screen.within(user_list).find_all(ByExt::role("listitem")).await.unwrap();
 
         // Find the user row matching the given mail
         let mut user_row = None;
@@ -743,8 +769,8 @@ mod accept_user {
             .await
             .unwrap();
 
-        let accept_button = driver
-            .find(By::Css("[aria-label='Accept candidature']"))
+        let accept_button = screen
+            .find(ByExt::role("button").name(TextMatch::Exact("Accept candidature".to_string())))
             .await
             .unwrap();
 
@@ -753,19 +779,20 @@ mod accept_user {
         assert_eq!("Accept candidature", accept_button.text().await.unwrap());
         accept_button.click().await.unwrap();
 
-        assert!(driver
-            .find(By::Css("[aria-label='Accept candidature']"))
-            .await
-            .is_err());
+        assert!(screen
+            .query(ByExt::role("button").name(TextMatch::Exact("Accept candidature".to_string())))
+            .await.unwrap()
+            .is_none());
 
         driver
             .get(host(port, "/go/teams/slug1"))
             .await
             .unwrap();
-        assert!(driver
-            .find(By::Css("[aria-label='Accept candidature']"))
-            .await
-            .is_err());
+        let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+        assert!(screen
+            .query(ByExt::role("button").name(TextMatch::Exact("Accept candidature".to_string())))
+            .await.unwrap()
+            .is_none());
     }
 }
 

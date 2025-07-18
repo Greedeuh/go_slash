@@ -37,6 +37,7 @@
             Accept candidature
           </button>
           <Capabilities
+            :user_mail="user_link.user_mail"
             :user_capabilities="user_link.capabilities"
             type="team"
             @toggle="(capability) => toggle(user_link, capability)"

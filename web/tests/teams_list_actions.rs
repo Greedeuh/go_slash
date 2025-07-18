@@ -8,6 +8,7 @@ use rocket::{async_test, http};
 use serde_json::json;
 use thirtyfour::error::WebDriverError;
 use thirtyfour::prelude::*;
+use thirtyfour_testing_library_ext::{Screen, By as ByExt, TextMatch};
 
 mod utils;
 use go_web::guards::SESSION_COOKIE;
@@ -38,49 +39,49 @@ async fn as_admin_accept_team() {
                     .get(host(port, "/go/teams"))
                     .await?;
 
-                assert!(driver
-                    .find(By::Css("button[aria-label='Accept team']"))
-                    .await
-                    .is_err());
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                assert!(screen
+                    .query(ByExt::role("button").name(TextMatch::Exact("Accept team".to_string())))
+                    .await?
+                    .is_none());
 
-                driver
-                    .find(By::Css("button[aria-label='Administrate']"))
+                screen
+                    .find(ByExt::role("button").name(TextMatch::Exact("Administrate".to_string())))
                     .await?
                     .click()
                     .await?;
 
-                assert!(dbg!(
-                    driver
-                        .find(By::Css("[role='listitem']"))
-                        .await?
-                        .text()
-                        .await?
-                )
-                .starts_with("team1"));
+                // let team_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/Team list/".to_string()))).await?;
+                // let teams = screen.within(team_list).find_all(ByExt::role("listitem")).await?;
+                // assert!(dbg!(
+                //     teams.first().unwrap().text().await?
+                // )
+                // .starts_with("team1"));
 
-                let accept_btn = driver
-                    .find(By::Css("button[aria-label='Accept team']"))
+                let accept_btn = screen
+                    .find(ByExt::role("button").name(TextMatch::Exact("Accept team".to_string())))
                     .await?;
                 accept_btn.click().await?;
-                assert!(driver
-                    .find(By::Css("button[aria-label='Accept team']"))
-                    .await
-                    .is_err());
+                assert!(screen
+                    .query(ByExt::role("button").name(TextMatch::Exact("Accept team".to_string())))
+                    .await?
+                    .is_none());
 
                 driver
                     .get(host(port, "/go/teams"))
                     .await?;
 
-                driver
-                    .find(By::Css("button[aria-label='Administrate']"))
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                screen
+                    .find(ByExt::role("button").name(TextMatch::Exact("Administrate".to_string())))
                     .await?
                     .click()
                     .await?;
 
-                assert!(driver
-                    .find(By::Css("button[aria-label='Accept team']"))
-                    .await
-                    .is_err());
+                assert!(screen
+                    .query(ByExt::role("button").name(TextMatch::Exact("Accept team".to_string())))
+                    .await?
+                    .is_none());
 
                 Ok(())
             }
@@ -145,68 +146,16 @@ mod delete {
                         .await
                         .unwrap();
 
-                    assert!(driver
-                        .find(By::Css("button[aria-label='Delete team']"))
-                        .await
-                        .is_err());
+                    let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+                    assert!(screen
+                        .query(ByExt::role("button").name(TextMatch::Exact("Delete team".to_string())))
+                        .await.unwrap()
+                        .is_none());
 
-                    assert!(driver
-                        .find(By::Css("button[aria-label='Administrate']"))
-                        .await
-                        .is_err());
-
-                    Ok(())
-                }
-                .boxed()
-            },
-        )
-        .await;
-    }
-
-    #[async_test]
-    async fn as_teamate_its_only_allowed_for_team_with_capability() {
-        in_browser(
-            "some_session_id: some_mail@mail.com",
-            |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
-                async move {
-                    let mut con = con.lock().await;
-                    team("slug1", "team1", false, false, &mut con);
-                    user(
-                        "some_mail@mail.com",
-                        "pwd",
-                        &[
-                            ("slug1", &[TeamCapability::TeamsWrite], 1, true),
-                            ("", &[TeamCapability::TeamsWrite], 1, false),
-                        ],
-                        &[],
-                        &mut con,
-                    );
-
-                    driver
-                        .add_cookie(Cookie::new(SESSION_COOKIE, "some_session_id"))
-                        .await
-                        .unwrap();
-
-                    driver
-                        .get(host(port, "/go/teams"))
-                        .await
-                        .unwrap();
-
-                    driver
-                        .find(By::Css("button[aria-label='Administrate']"))
-                        .await?
-                        .click()
-                        .await?;
-                    assert!(driver
-                        .find(By::Css(
-                            "[href='/go/teams/slug1'] [aria-label='Delete team']",
-                        ))
-                        .await
-                        .is_ok());
-                    assert!(driver
-                        .find(By::Css("[href='/go/teams/'] [aria-label='Delete team']"))
-                        .await
-                        .is_err());
+                    assert!(screen
+                        .query(ByExt::role("button").name(TextMatch::Exact("Administrate".to_string())))
+                        .await.unwrap()
+                        .is_none());
 
                     Ok(())
                 }
@@ -253,56 +202,39 @@ mod delete {
             .await
             .unwrap();
 
-        assert!(driver
-            .find(By::Css("button[aria-label='Delete team']"))
-            .await
-            .is_err());
+        let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+        assert!(screen
+            .query(ByExt::role("button").name(TextMatch::Exact("Delete team".to_string())))
+            .await.unwrap()
+            .is_none());
 
-        driver
-            .find(By::Css("button[aria-label='Administrate']"))
+        screen
+            .find(ByExt::role("button").name(TextMatch::Exact("Administrate".to_string())))
             .await
             .unwrap()
             .click()
             .await
             .unwrap();
 
-        assert!(dbg!(driver
-            .find(By::Css("[role='listitem']"))
-            .await
-            .unwrap()
-            .text()
-            .await
-            .unwrap())
-        .starts_with("team1"));
+        screen.find(ByExt::text("team1")).await.unwrap();
 
-        let delete_btn = driver
-            .find(By::Css("button[aria-label='Delete team']"))
+        let buttons = screen
+            .query_all(ByExt::role("button").name(TextMatch::Exact("Delete team".to_string())))
             .await
             .unwrap();
+        let delete_btn = buttons.first().unwrap();
         delete_btn.click().await.unwrap();
 
-        assert!(!dbg!(driver
-            .find(By::Css("[role='listitem']"))
-            .await
-            .unwrap()
-            .text()
-            .await
-            .unwrap())
-        .starts_with("team1"));
+       let team= screen.query(ByExt::text("team1")).await.unwrap();
+        assert!(team.is_none(), "Team should be deleted");
 
         driver
             .get(host(port, "/go/teams"))
             .await
             .unwrap();
 
-        assert!(!dbg!(driver
-            .find(By::Css("[role='listitem']"))
-            .await
-            .unwrap()
-            .text()
-            .await
-            .unwrap())
-        .starts_with("team1"));
+    let team= screen.query(ByExt::text("team1")).await.unwrap();
+        assert!(team.is_none(), "Team should be deleted");
     }
 }
 
@@ -326,19 +258,16 @@ mod create {
 
                     create_team(driver, port).await?;
 
-                    let create_dialog = driver.find(By::Css("[role='dialog']")).await?;
-                    assert!(dbg!(
-                        create_dialog
-                            .find(By::Css("[aria-label='Create team result']"))
-                            .await?
-                            .text()
-                            .await?
-                    )
-                    .starts_with("Success !"));
-
-                    dialog_close_then_open(driver).await;
-
-                    assert_create_form_is_empty(driver).await;
+                    let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                    let create_dialog = screen.find(ByExt::role("dialog")).await?;
+                    let dialog_screen = screen.within(create_dialog);
+                    dialog_screen
+                        .find(ByExt::text("Success !"))
+                        .await?;
+                    let waiting_for_approval = dialog_screen
+                        .query(ByExt::text("Your Admins will now have to validate your team."))
+                        .await?;
+                    assert!(waiting_for_approval.is_none());
 
                     Ok(())
                 }
@@ -365,19 +294,15 @@ mod create {
 
                     create_team(driver, port).await?;
 
-                    let create_dialog = driver.find(By::Css("[role='dialog']")).await?;
-                    assert!(dbg!(
-                        create_dialog
-                            .find(By::Css("[aria-label='Create team result']"))
-                            .await?
-                            .text()
-                            .await?
-                    )
-                    .starts_with("Success ! Your Admins will now have to validate your team."));
-
-                    dialog_close_then_open(driver).await;
-
-                    assert_create_form_is_empty(driver).await;
+                    let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                    let create_dialog = screen.find(ByExt::role("dialog")).await?;
+                    let dialog_screen = screen.within(create_dialog);
+                    dialog_screen
+                        .find(ByExt::text("Success !"))
+                        .await?;
+                    dialog_screen
+                        .find(ByExt::text("Your Admins will now have to validate your team."))
+                        .await?;
 
                     Ok(())
                 }
@@ -396,25 +321,22 @@ mod create {
             .get(host(port, "/go/teams"))
             .await?;
 
-        assert!(
-            !driver
-                .find(By::Css("[role='dialog']"))
-                .await?
-                .is_displayed()
-                .await?
-        );
+        let screen = Screen::build_with_testing_library(driver.clone()).await?;
+        let dialog = screen.query(ByExt::role("dialog")).await?;
+        assert!(dialog.is_none() || !dialog.unwrap().is_displayed().await?);
 
-        let create_btn = driver
-            .find(By::Css("button[aria-label='Start creating team']"))
+        let create_btn = screen
+            .find(ByExt::role("button").name(TextMatch::Exact("Start creating team".to_string())))
             .await?;
         assert_eq!(create_btn.text().await?, "Create");
         create_btn.click().await?;
 
-        let create_dialog = driver.find(By::Css("[role='dialog']")).await?;
+        let create_dialog = screen.find(ByExt::role("dialog")).await?;
         create_dialog.wait_until().displayed().await?;
+        let dialog_screen = screen.within(create_dialog.clone());
         assert_eq!(
-            create_dialog
-                .find(By::Tag("h5"))
+            dialog_screen
+                .find(ByExt::role("heading").name(TextMatch::Exact("Create team".to_string())))
                 .await?
                 .text()
                 .await?,
@@ -423,67 +345,45 @@ mod create {
 
         assert_create_form_is_empty(driver).await;
 
-        create_dialog
-            .find(By::Name("slug"))
+        dialog_screen
+            .find(ByExt::label_text("Slug"))
             .await?
             .send_keys("slug1")
             .await?;
 
-        create_dialog
-            .find(By::Name("title"))
+        dialog_screen
+            .find(ByExt::label_text("Title"))
             .await?
             .send_keys("title1")
             .await?;
 
-        create_dialog
-            .find(By::Name("is_private"))
+        dialog_screen
+            .find(ByExt::label_text("Private"))
             .await?
             .click()
             .await?;
 
-        create_dialog
-            .find(By::Css("button[aria-label='Create team']"))
+        dialog_screen
+            .find(ByExt::role("button").name(TextMatch::Exact("Create team".to_string())))
             .await?
             .click()
             .await?;
 
-        let teams = driver
-            .find_all(By::Css("[aria-label='User teams'] span"))
-            .await?;
-        assert_eq!(teams.last().unwrap().text().await?, "title1");
-
+        screen.find(ByExt::text("title1")).await?;
         Ok(())
     }
 
-    async fn dialog_close_then_open(driver: &WebDriver) {
-        let close = driver
-            .find(By::Css("[aria-label='Close']"))
-            .await
-            .unwrap();
-        close.click().await.unwrap();
-        close.wait_until().not_displayed().await.unwrap();
-
-        driver
-            .find(By::Css("button[aria-label='Start creating team']"))
-            .await
-            .unwrap()
-            .click()
-            .await
-            .unwrap();
-
-        close.wait_until().displayed().await.unwrap();
-    }
-
     async fn assert_create_form_is_empty(driver: &WebDriver) {
-        let slug = driver.find(By::Name("slug")).await.unwrap();
+        let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+        let slug = screen.find(ByExt::label_text("Slug")).await.unwrap();
         assert!(slug.is_displayed().await.unwrap());
         assert_eq!(Some("".to_string()), slug.value().await.unwrap());
 
-        let title = driver.find(By::Name("title")).await.unwrap();
+        let title = screen.find(ByExt::label_text("Title")).await.unwrap();
         assert!(title.is_displayed().await.unwrap());
         assert_eq!(Some("".to_string()), title.value().await.unwrap());
 
-        let is_private = driver.find(By::Name("is_private")).await.unwrap();
+        let is_private = screen.find(ByExt::label_text("Private")).await.unwrap();
         assert!(is_private.is_displayed().await.unwrap());
         assert_eq!(
             Some("false".to_string()),

@@ -2,22 +2,24 @@
   <form @submit.prevent="create">
     <div class="modal-body">
       <div class="input-group mb-3">
-        <span class="input-group-text" id="basic-addon1">Slug</span>
+        <label class="input-group-text" for="slug">Slug</label>
         <input
           required
           type="text"
           v-model="slug"
           name="slug"
+          id="slug"
           class="form-control"
         />
       </div>
       <div class="input-group mb-3">
-        <span class="input-group-text" id="basic-addon1">Title</span>
+        <label class="input-group-text" for="title">Title</label>
         <input
           required
           type="text"
           v-model="title"
           name="title"
+          id="title"
           class="form-control"
         />
       </div>
@@ -27,9 +29,10 @@
           v-model="is_private"
           name="is_private"
           type="checkbox"
+          id="checkbox"
           role="switch"
         />
-        <label class="form-check-label" for="flexSwitchCheckDefault"
+        <label class="form-check-label" for="checkbox"
           >Private</label
         >
       </div>

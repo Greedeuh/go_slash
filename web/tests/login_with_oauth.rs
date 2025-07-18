@@ -7,8 +7,8 @@ use rocket::http::Status;
 mod utils;
 use go_web::guards::SESSION_COOKIE;
 use rocket::tokio::sync::Mutex;
-use thirtyfour::By;
 use thirtyfour::WebDriver;
+use thirtyfour_testing_library_ext::{Screen, By as ByExt, TextMatch};
 use utils::*;
 
 mod with_google{
@@ -173,9 +173,10 @@ async fn login_page_has_oauth_links() {
                     .await?;
                 
 
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
                 assert_eq!(
-                    driver
-                        .find(By::Css("a[aria-label='Login with google']"))
+                    screen
+                        .find(ByExt::role("link").name(TextMatch::Exact("Login with google".to_string())))
                         .await?
                         .text()
                         .await?,

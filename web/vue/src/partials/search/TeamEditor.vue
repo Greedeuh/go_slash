@@ -2,11 +2,12 @@
   <div aria-label="Team editor">
     <form @submit.prevent="save" class="bg-light border rounded mb-4 p-4">
       <div class="input-group mb-2">
-        <span class="input-group-text" id="basic-addon1">Title</span>
+        <label class="input-group-text" for="title">Title</label>
         <input
           type="text"
           class="form-control"
           name="title"
+          id="title"
           v-model="inner_team.title"
         />
       </div>
@@ -16,9 +17,10 @@
           type="checkbox"
           role="switch"
           name="is_private"
+          id="is_private"
           v-model="inner_team.is_private"
         />
-        <label class="form-check-label" for="flexSwitchCheckDefault"
+        <label class="form-check-label" for="is_private"
           >Private</label
         >
       </div>
@@ -28,9 +30,10 @@
           type="checkbox"
           role="switch"
           name="is_accepted"
+          id="is_accepted"
           v-model="inner_team.is_accepted"
         />
-        <label class="form-check-label" for="flexSwitchCheckDefault"
+        <label class="form-check-label" for="is_accepted"
           >Enable</label
         >
       </div>

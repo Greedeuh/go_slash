@@ -264,10 +264,11 @@ mod delete_shortcut {
                         .await?;
                     driver.get(host(port, "")).await?;
 
-                    assert!(driver
-                        .find(By::Css("[aria-label='Switch administration mode']"))
-                        .await
-                        .is_err());
+                    let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+                    assert!(screen
+                        .query(ByExt::role("button").name(TextMatch::Exact("Switch administration mode".to_string())))
+                        .await.unwrap()
+                        .is_none());
 
                     Ok(())
                 }
@@ -298,10 +299,11 @@ mod delete_shortcut {
                         .await?;
                     driver.get(host(port, "")).await?;
 
-                    assert!(driver
-                        .find(By::Css("[aria-label='Switch administration mode']"))
-                        .await
-                        .is_err());
+                    let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+                    assert!(screen
+                        .query(ByExt::role("button").name(TextMatch::Exact("Switch administration mode".to_string())))
+                        .await.unwrap()
+                        .is_none());
 
                     Ok(())
                 }

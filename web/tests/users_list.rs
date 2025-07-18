@@ -5,6 +5,7 @@ use rocket::http::Status;
 use rocket::tokio::sync::Mutex;
 use rocket::{async_test, http};
 use thirtyfour::prelude::*;
+use thirtyfour_testing_library_ext::{Screen, By as ByExt, TextMatch};
 
 mod utils;
 use go_web::guards::SESSION_COOKIE;
@@ -26,10 +27,10 @@ async fn link_are_shown_on_other_pages() {
 
                 driver.get(host(port, "")).await?;
 
-                assert!(driver
-                    .find(By::Css("a [href='/go/users']"))
-                    .await
-                    .is_err());
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                screen
+                    .find(ByExt::role("link").name(TextMatch::Exact("users".to_string())))
+                    .await?;
 
                 let endpoints = vec!["", "go/teams", "go/features", "azdaz"];
 
@@ -38,14 +39,13 @@ async fn link_are_shown_on_other_pages() {
                         .get(format!("http://host.docker.internal:{}/{}", port, dbg!(endpoint)))
                         .await?;
 
-                    assert_eq!(
-                        driver
-                            .find(By::Css("[href='/go/users']"))
-                            .await?
-                            .text()
-                            .await?,
-                        "users"
-                    );
+                    let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                    let nav = screen.find(ByExt::role("navigation")).await?;
+                    let nav_screen = screen.within(nav);
+                    let link = nav_screen
+                        .find(ByExt::text("users"))
+                        .await?;
+                    assert!(link.attr("href").await?.unwrap().ends_with("/go/users"));
                 }
 
                 Ok(())
@@ -88,33 +88,33 @@ async fn as_admin_i_can_see_the_list() {
 
                 assert_users(driver, vec!["another_mail@mail.com", "some_mail@mail.com"]).await;
 
-                let user = driver
-                    .find_all(By::Css("[role='listitem']"))
-                    .await?
-                    .first()
-                    .unwrap()
-                    .clone();
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let user_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/User list/".to_string()))).await?;
+                let users = screen.within(user_list).find_all(ByExt::role("listitem")).await?;
+                let user = users.first().unwrap().clone();
 
-                let expeted_capabilities = [("false", Capability::Features),
-                    ("false", Capability::TeamsCreateWithValidation),
-                    ("true", Capability::TeamsWrite),
-                    ("false", Capability::UsersAdmin),
-                    ("false", Capability::UsersTeamsRead),
-                    ("false", Capability::UsersTeamsWrite)];
 
                 user.click().await?;
 
-                let switchs = user.find_all(By::Css("[role='switch']")).await?;
-                let switchs_label = user.find_all(By::Tag("label")).await?;
-                for i in 0..expeted_capabilities.len() {
-                    let (checked, label) = expeted_capabilities[i];
-                    switchs_label[i].wait_until().displayed().await?;
-                    assert_eq!(switchs_label[i].text().await.unwrap(), label.to_string());
-                    assert_eq!(
-                        switchs[i].prop("checked").await?.unwrap(),
-                        checked.to_string()
-                    );
-                }
+                let user_screen = screen.within(user.clone());
+                
+                let features_switch = user_screen.find(ByExt::label_text(&Capability::Features.to_string())).await?;
+                assert_eq!(features_switch.prop("checked").await?.unwrap(), "false");
+
+                let teams_create_switch = user_screen.find(ByExt::label_text(&Capability::TeamsCreateWithValidation.to_string())).await?;
+                assert_eq!(teams_create_switch.prop("checked").await?.unwrap(), "false");
+
+                let teams_write_switch = user_screen.find(ByExt::label_text(&Capability::TeamsWrite.to_string())).await?;
+                assert_eq!(teams_write_switch.prop("checked").await?.unwrap(), "true");
+
+                let users_admin_switch = user_screen.find(ByExt::label_text(&Capability::UsersAdmin.to_string())).await?;
+                assert_eq!(users_admin_switch.prop("checked").await?.unwrap(), "false");
+
+                let users_teams_read_switch = user_screen.find(ByExt::label_text(&Capability::UsersTeamsRead.to_string())).await?;
+                assert_eq!(users_teams_read_switch.prop("checked").await?.unwrap(), "false");
+
+                let users_teams_write_switch = user_screen.find(ByExt::label_text(&Capability::UsersTeamsWrite.to_string())).await?;
+                assert_eq!(users_teams_write_switch.prop("checked").await?.unwrap(), "false");
 
                 Ok(())
             }
@@ -150,50 +150,36 @@ async fn as_admin_i_can_change_users_capabilities() {
 
                 assert_users(driver, vec!["another_mail@mail.com", "some_mail@mail.com"]).await;
 
-                let user = driver
-                    .find_all(By::Css("[role='listitem']"))
-                    .await?
-                    .first()
-                    .unwrap()
-                    .clone();
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let user_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/User list/".to_string()))).await?;
+                let users = screen.within(user_list).find_all(ByExt::role("listitem")).await?;
+                let user = users.first().unwrap().clone();
 
                 user.click().await?;
 
-                let switchs = user.find_all(By::Css("[role='switch']")).await?;
-                let switch = switchs.first().unwrap();
-                let switchs_label = user.find_all(By::Tag("label")).await?;
-                let switch_label = switchs_label.first().unwrap();
+                let user_screen = screen.within(user.clone());
+                let features_switch = user_screen.find(ByExt::label_text(&Capability::Features.to_string())).await?;
+                assert_eq!(features_switch.prop("checked").await?.unwrap(), "false");
 
-                switch_label.wait_until().displayed().await?;
-                assert_eq!(
-                    switch_label.text().await.unwrap(),
-                    Capability::Features.to_string()
-                );
-                assert_eq!(switch.prop("checked").await?.unwrap(), "false");
-
-                switch.click().await?;
-                assert_eq!(switch.prop("checked").await?.unwrap(), "true");
+                features_switch.click().await?;
+                assert_eq!(features_switch.prop("checked").await?.unwrap(), "true");
 
                 driver
                     .get(host(port, "/go/users"))
                     .await?;
 
-                driver
-                    .find_all(By::Css("[role='listitem']"))
-                    .await?
-                    .first()
-                    .unwrap()
-                    .click()
-                    .await?;
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let user_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/User list/".to_string()))).await?;
+                let users = screen.within(user_list).find_all(ByExt::role("listitem")).await?;
+                let user = users.first().unwrap();
+                user.click().await?;
 
-                let switchs = driver.find_all(By::Css("[role='switch']")).await?;
-                let switch = &switchs[0];
+                let user_screen = screen.within(user.clone());
+                let features_switch = user_screen.find(ByExt::label_text(&Capability::Features.to_string())).await?;
+                assert_eq!(features_switch.prop("checked").await?.unwrap(), "true");
 
-                switch.wait_until().displayed().await?;
-                assert_eq!(switch.prop("checked").await?.unwrap(), "true");
-
-                switch.click().await?;
-                assert_eq!(switch.prop("checked").await?.unwrap(), "false");
+                features_switch.click().await?;
+                assert_eq!(features_switch.prop("checked").await?.unwrap(), "false");
 
                 Ok(())
             }
@@ -204,10 +190,8 @@ async fn as_admin_i_can_change_users_capabilities() {
 }
 
 async fn assert_users(driver: &WebDriver, expected_users: Vec<&str>) {
-    let users = driver
-        .find_all(By::Css("[role='listitem'] h2"))
-        .await
-        .unwrap();
+    let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+    let users = screen.find_all(ByExt::role("heading")).await.unwrap();
     for i in 0..expected_users.len() {
         assert_eq!(users[i].text().await.unwrap(), expected_users[i]);
     }

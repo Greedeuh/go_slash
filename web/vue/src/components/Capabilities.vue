@@ -9,12 +9,13 @@
       <input
         class="form-check-input"
         :name="capability"
+        :id="capability + '_' + user_mail"
         type="checkbox"
         role="switch"
         :checked="user_capabilities.includes(capability)"
         @click="toggle(capability, !user_capabilities.includes(capability))"
       />
-      <label class="form-check-label">
+      <label class="form-check-label" :for="capability + '_' + user_mail">
         {{ capability }}
       </label>
     </div>
@@ -28,6 +29,7 @@ import { ALL_CAPABILITIES, ALL_TEAM_CAPABILITIES } from "../models";
 export default defineComponent({
   name: "Capabilities",
   props: {
+    user_mail: String,
     user_capabilities: Array,
     type: String,
   },

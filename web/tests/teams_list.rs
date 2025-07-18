@@ -5,6 +5,7 @@ use rocket::async_test;
 use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
 use thirtyfour::prelude::*;
+use thirtyfour_testing_library_ext::{Screen, By as ByExt, TextMatch};
 
 mod utils;
 use go_web::guards::SESSION_COOKIE;
@@ -33,10 +34,13 @@ async fn link_are_shown_on_other_pages() {
 
                 driver.get(host(port, "")).await?;
 
-                assert!(driver
-                    .find(By::Css("a [href='/go/teams']"))
-                    .await
-                    .is_err());
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let nav = screen.find(ByExt::role("navigation")).await?;
+                let nav_screen = screen.within(nav);
+                let link = nav_screen
+                    .find(ByExt::text("teams"))
+                    .await?;
+                assert!(link.attr("href").await?.unwrap().ends_with("/go/teams"));
 
                 let endpoints = vec!["", "go/teams", "go/features", "azdaz"];
 
@@ -45,14 +49,14 @@ async fn link_are_shown_on_other_pages() {
                         .get(format!("http://host.docker.internal:{}/{}", port, dbg!(endpoint)))
                         .await?;
 
-                    assert_eq!(
-                        driver
-                            .find(By::Css("[href='/go/teams']"))
-                            .await?
-                            .text()
-                            .await?,
-                        "teams"
-                    );
+                    let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                    let nav = screen.find(ByExt::role("navigation")).await?;
+                    let nav_screen = screen.within(nav);
+                    let link = nav_screen
+                        .find(ByExt::text("teams"))
+                        .await?;
+                    assert!(link.attr("href").await?.unwrap().ends_with("/go/teams"));
+
                 }
 
                 Ok(())
@@ -92,7 +96,9 @@ async fn with_icons() {
                     .get(host(port, "/go/teams"))
                     .await?;
 
-                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let team_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/Other team/".to_string()))).await?;
+                let articles = screen.within(team_list).find_all(ByExt::role("listitem")).await?;
 
                 for i in 0..texts_sorted.len() {
                     let article = &articles[i];
@@ -103,7 +109,6 @@ async fn with_icons() {
                         Some(href_sorted[i].to_owned())
                     );
 
-                    println!("{i}");
                     if locks[i] {
                         article.find(By::Css(".icon-lock")).await?;
                     } else {
@@ -167,14 +172,13 @@ async fn user_team_then_others() {
                     .get(host(port, "/go/teams"))
                     .await?;
 
-                let user_team = driver
-                    .find(By::Css("[aria-label='User teams'] [role='listitem']"))
-                    .await?;
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let user_teams = screen.find(ByExt::role("list").name(TextMatch::Exact("User teams".to_string()))).await?;
+                let user_team = screen.within(user_teams).find(ByExt::role("listitem")).await?;
                 assert!(dbg!(user_team.text().await?).starts_with("team1"));
 
-                let other_teams = driver
-                    .find_all(By::Css("[aria-label='Other teams'] [role='listitem']"))
-                    .await?;
+                let other_teams_list = screen.find(ByExt::role("list").name(TextMatch::Exact("Other teams".to_string()))).await?;
+                let other_teams = screen.within(other_teams_list).find_all(ByExt::role("listitem")).await?;
 
                 let texts_sorted = ["Global", "team2", "team3", "team4"];
                 for i in 0..texts_sorted.len() {

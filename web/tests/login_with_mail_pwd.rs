@@ -7,6 +7,7 @@ mod utils;
 use rocket::http::Status;
 use serde_json::json;
 use thirtyfour::prelude::*;
+use thirtyfour_testing_library_ext::{Screen, By as ByExt};
 use utils::*;
 use uuid::Uuid;
 
@@ -29,25 +30,23 @@ async fn as_user() {
                     .get(host(port, "/go/login"))
                     .await?;
 
-                driver
-                    .find(By::Css("[type='email']"))
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                screen
+                    .find(ByExt::role("textbox"))
                     .await?
                     .send_keys("some_mail@mail.go")
                     .await?;
-                driver
-                    .find(By::Css("[type='password']"))
-                    .await?
-                    .send_keys("some_pwd")
-                    .await?;
-                driver
-                    .find(By::Css("[type='submit']"))
+                let password_input = driver.find_all(By::Css("input[type='password']")).await?;
+                password_input[0].send_keys("some_pwd").await?;
+                screen
+                    .find(ByExt::role("button"))
                     .await?
                     .click()
                     .await?;
 
                 assert_eq!(
-                    driver
-                        .find(By::Css("[role='alert']"))
+                    screen
+                        .find(ByExt::role("alert"))
                         .await?
                         .text()
                         .await?,
@@ -87,25 +86,23 @@ async fn with_from_query_param_redirect_to_it() {
                     .get(host(port, "/go/login?from=/allo"))
                     .await?;
 
-                driver
-                    .find(By::Css("[type='email']"))
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                screen
+                    .find(ByExt::role("textbox"))
                     .await?
                     .send_keys("some_mail@mail.go")
                     .await?;
-                driver
-                    .find(By::Css("[type='password']"))
-                    .await?
-                    .send_keys("some_pwd")
-                    .await?;
-                driver
-                    .find(By::Css("[type='submit']"))
+                let password_input = driver.find_all(By::Css("input[type='password']")).await?;
+                password_input[0].send_keys("some_pwd").await?;
+                screen
+                    .find(ByExt::role("button"))
                     .await?
                     .click()
                     .await?;
 
                 assert_eq!(
-                    driver
-                        .find(By::Css("[role='alert']"))
+                    screen
+                        .find(ByExt::role("alert"))
                         .await?
                         .text()
                         .await?,
@@ -145,25 +142,23 @@ async fn with_wrong_credentials_show_an_error() {
                     .get(host(port, "/go/login?from=allo"))
                     .await?;
 
-                driver
-                    .find(By::Css("[type='email']"))
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                screen
+                    .find(ByExt::role("textbox"))
                     .await?
                     .send_keys("some_mail@mail.go")
                     .await?;
-                driver
-                    .find(By::Css("[type='password']"))
-                    .await?
-                    .send_keys("wrong_pwd")
-                    .await?;
-                driver
-                    .find(By::Css("[type='submit']"))
+                let password_input = driver.find_all(By::Css("input[type='password']")).await?;
+                password_input[0].send_keys("wrong_pwd").await?;
+                screen
+                    .find(ByExt::role("button"))
                     .await?
                     .click()
                     .await?;
 
                 assert_eq!(
-                    driver
-                        .find(By::Css("[role='alert']"))
+                    screen
+                        .find(ByExt::role("alert"))
                         .await?
                         .text()
                         .await?,

@@ -2812,9 +2812,9 @@ dependencies = [
 
 [[package]]
 name = "thirtyfour-testing-library-ext"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20bdf1a3f8df499c6a915a1fa97970e3279de4ee48c1d8cc9da55ef7e03bb280"
+checksum = "2e1eb4eafb2b2d1d84d94f22cc239c20d2f836f9dc0b9ad445bc5b67a1f8b3ba"
 dependencies = [
  "regex",
  "serde",
