@@ -6,6 +6,7 @@ use rocket::futures::FutureExt;
 use rocket::tokio::sync::Mutex;
 mod utils;
 use thirtyfour::prelude::*;
+use thirtyfour_testing_library_ext::{Screen, By as ByExt, TextMatch};
 use utils::*;
 
 #[async_test]
@@ -43,13 +44,16 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
                     .get(&format!("{}?no_redirect=true", host(port, "/newShortcut")))
                     .await?;
 
-                let search_bar = driver.find(By::Css("input[type='search']")).await?;
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                let search_bar = screen.get(ByExt::role("searchbox")).await?;
                 assert_eq!(
                     search_bar.prop("value").await?,
                     Some("newShortcut".to_owned())
                 );
 
-                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
+                let shortcut_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/Shortcut list/".to_string()))).await?;
+                let scoped_screen = screen.within(shortcut_list);
+                let articles = scoped_screen.find_all(ByExt::role("listitem")).await?;
                 assert_eq!(
                     articles[0].text().await?,
                     format!("newShortcut {} team", host(port, "/looped"))
@@ -57,8 +61,8 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
                 assert_eq!(articles.len(), 2);
 
                 assert_eq!(
-                    driver
-                        .find(By::Css("input[name='shortcut']"))
+                    screen
+                        .get(ByExt::placeholder_text("shortcut"))
                         .await?
                         .prop("value")
                         .await?,
@@ -66,8 +70,8 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
                 );
 
                 assert_eq!(
-                    driver
-                        .find(By::Css("input[name='url']"))
+                    screen
+                        .get(ByExt::placeholder_text("https://my-favorite-tool"))
                         .await?
                         .prop("value")
                         .await?,
@@ -75,8 +79,8 @@ async fn with_no_redirect_return_search_and_edit_form_filled() {
                 );
 
                 assert_eq!(
-                    driver
-                        .find(By::Css("[name='team']"))
+                    screen
+                        .find(ByExt::role("combobox"))
                         .await?
                         .prop("value")
                         .await?
@@ -127,22 +131,25 @@ async fn with_not_existing_shortcut_return_search_and_edit_form_filled() {
                     .get(host(port, "/newShortcut"))
                     .await?;
 
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
                 assert_eq!(
-                    driver
-                        .find(By::Css("[role='alert']"))
+                    screen
+                        .get(ByExt::role("alert"))
                         .await?
                         .text()
                         .await?,
                     "Shortcut \"newShortcut\" does not exist yet."
                 );
 
-                let search_bar = driver.find(By::Css("input[type='search']")).await?;
+                let search_bar = screen.get(ByExt::role("searchbox")).await?;
                 assert_eq!(
                     search_bar.prop("value").await?,
                     Some("newShortcut".to_owned())
                 );
 
-                let articles = driver.find_all(By::Css("[role='listitem']")).await?;
+                let shortcut_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/Shortcut list/".to_string()))).await?;
+                let scoped_screen = screen.within(shortcut_list);
+                let articles = scoped_screen.find_all(ByExt::role("listitem")).await?;
                 assert_eq!(
                     articles[0].text().await?,
                     format!("newShortcut1 {}", host(port, "/looped"))
@@ -150,8 +157,8 @@ async fn with_not_existing_shortcut_return_search_and_edit_form_filled() {
                 assert_eq!(articles.len(), 2);
 
                 assert_eq!(
-                    driver
-                        .find(By::Css("input[name='shortcut']"))
+                    screen
+                        .get(ByExt::placeholder_text("shortcut"))
                         .await?
                         .prop("value")
                         .await?,

@@ -7,10 +7,11 @@ use rocket::tokio::sync::Mutex;
 mod utils;
 use thirtyfour::components::SelectElement;
 use thirtyfour::prelude::*;
+use thirtyfour_testing_library_ext::{Screen, By as ByExt, TextMatch};
 use utils::*;
 
 #[async_test]
-async fn as_unknow_user_is_not_allowed() {
+async fn as_unknow_user_should_not_be_allowed_to_write_shortcuts() {
     in_browser(
         "",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -32,10 +33,11 @@ async fn as_unknow_user_is_not_allowed() {
 
                 driver.get(host(port, "")).await?;
 
-                assert!(driver
-                    .find(By::Css("[aria-label='Switch administration mode']"))
-                    .await
-                    .is_err());
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                assert!(screen
+                    .query(ByExt::role("button").name(TextMatch::Exact("Switch administration mode".to_string())))
+                    .await?
+                    .is_none());
 
                 Ok(())
             }
@@ -46,7 +48,7 @@ async fn as_unknow_user_is_not_allowed() {
 }
 
 #[async_test]
-async fn as_user_without_capability_is_not_allowed() {
+async fn as_user_without_capability_should_not_be_allowed_to_write_shortcuts() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -65,10 +67,11 @@ async fn as_user_without_capability_is_not_allowed() {
                     .await?;
                 driver.get(host(port, "")).await?;
 
-                assert!(driver
-                    .find(By::Css("[aria-label='Switch administration mode']"))
-                    .await
-                    .is_err());
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                assert!(screen
+                    .query(ByExt::role("button").name(TextMatch::Exact("Switch administration mode".to_string())))
+                    .await?
+                    .is_none());
 
                 Ok(())
             }
@@ -79,7 +82,7 @@ async fn as_user_without_capability_is_not_allowed() {
 }
 
 #[async_test]
-async fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
+async fn as_user_with_team_candidature_not_yet_accepted_should_not_be_allowed_to_write_shortcuts() {
     in_browser(
         "some_session_id: some_mail@mail.com",
         |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -104,10 +107,11 @@ async fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
                     .await?;
                 driver.get(host(port, "")).await?;
 
-                assert!(driver
-                    .find(By::Css("[aria-label='Switch administration mode']"))
-                    .await
-                    .is_err());
+                let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                assert!(screen
+                    .query(ByExt::role("button").name(TextMatch::Exact("Switch administration mode".to_string())))
+                    .await?
+                    .is_none());
 
                 Ok(())
             }
@@ -121,7 +125,7 @@ mod delete_shortcut {
     use super::*;
 
     #[async_test]
-    async fn as_user_with_team_capability() {
+    async fn as_user_with_team_capability_should_be_able_to_delete_shortcuts() {
         in_browser(
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -146,23 +150,29 @@ mod delete_shortcut {
                         .await?;
                     driver.get(host(port, "")).await?;
 
-                    driver
-                        .find(By::Css("[aria-label='Switch administration mode']"))
+                    let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                    screen
+                        .find(ByExt::role("button").name(TextMatch::Exact("Switch administration mode".to_string())))
                         .await?
                         .click()
                         .await?;
 
-                    driver
-                        .find(By::Css("[aria-label='Delete shortcut']"))
+                    screen
+                        .find(ByExt::role("button").name(TextMatch::Exact("Delete shortcut".to_string())))
                         .await?
                         .click()
                         .await?;
 
-                    let articles = driver.find_all(By::Css("[role='listitem']")).await?;
+                    let shortcut_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/Shortcut list/".to_string()))).await?;
+                    let scoped_screen = screen.within(shortcut_list);
+                    let articles = scoped_screen.query_all(ByExt::role("listitem")).await?;
                     assert_eq!(articles.len(), 0);
 
                     driver.refresh().await?;
-                    let articles = driver.find_all(By::Css("[role='listitem']")).await?;
+                    let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                    let shortcut_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/Shortcut list/".to_string()))).await?;
+                    let scoped_screen = screen.within(shortcut_list);
+                    let articles = scoped_screen.query_all(ByExt::role("listitem")).await?;
                     assert_eq!(articles.len(), 0);
                     Ok(())
                 }
@@ -173,7 +183,7 @@ mod delete_shortcut {
     }
 
     #[async_test]
-    async fn as_user_with_wrong_team_capabilities_is_not_allowed() {
+    async fn as_user_with_wrong_team_capabilities_should_not_be_allowed_to_delete_shortcuts() {
         in_browser(
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -208,19 +218,23 @@ mod delete_shortcut {
                         .await?;
                     driver.get(host(port, "")).await?;
 
-                    driver
-                        .find(By::Css("[aria-label='Switch administration mode']"))
+                    let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                    screen
+                        .find(ByExt::role("button").name(TextMatch::Exact("Switch administration mode".to_string())))
                         .await?
                         .click()
                         .await?;
 
-                    let articles = driver.find_all(By::Css("[role='listitem']")).await?;
+                    let shortcut_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/Shortcut list/".to_string()))).await?;
+                    let scoped_screen = screen.within(shortcut_list);
+                    let articles = scoped_screen.query_all(ByExt::role("listitem")).await?;
                     let first = articles.first().unwrap();
+                    let first_screen = screen.within(first.clone());
 
-                    assert!(first
-                        .find(By::Css("[aria-label='Delete shortcut']"))
-                        .await
-                        .is_err());
+                    assert!(first_screen
+                        .query(ByExt::role("button").name(TextMatch::Exact("Delete shortcut".to_string())))
+                        .await?
+                        .is_none());
 
                     Ok(())
                 }
@@ -231,7 +245,7 @@ mod delete_shortcut {
     }
 
     #[async_test]
-    async fn as_user_without_team_capability_is_not_allowed() {
+    async fn as_user_without_team_capability_should_not_be_allowed_to_delete_shortcuts() {
         in_browser(
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -264,7 +278,7 @@ mod delete_shortcut {
     }
 
     #[async_test]
-    async fn with_a_team() {
+    async fn with_a_team_should_not_be_allowed_to_delete_shortcuts() {
         in_browser(
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -302,7 +316,7 @@ mod create_shortcut {
     use super::*;
 
     #[async_test]
-    async fn as_user_with_team_capability() {
+    async fn as_user_with_team_capability_should_be_able_to_create_shortcuts() {
         in_browser(
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -330,7 +344,7 @@ mod create_shortcut {
     }
 
     #[async_test]
-    async fn with_specific_team() {
+    async fn with_specific_team_should_be_able_to_create_shortcuts() {
         in_browser(
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -359,7 +373,7 @@ mod create_shortcut {
     }
 
     #[async_test]
-    async fn as_user_with_team_candidature_not_yet_accepted_is_not_allowed() {
+    async fn as_user_with_team_candidature_not_yet_accepted_should_not_be_allowed_to_create_shortcuts() {
         in_browser(
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -382,13 +396,14 @@ mod create_shortcut {
                         .await?;
                     driver.get(host(port, "")).await?;
 
-                    driver
-                        .find(By::Css("[aria-label='Switch administration mode']"))
+                    let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                    screen
+                        .find(ByExt::role("button").name(TextMatch::Exact("Switch administration mode".to_string())))
                         .await?
                         .click()
                         .await?;
 
-                    let input = driver.find(By::Css("[name='team']")).await.unwrap();
+                    let input = screen.find(ByExt::role("combobox")).await?;
                     let select = SelectElement::new(&input).await.unwrap();
                     for opt in select.options().await?.iter() {
                         assert_ne!(opt.text().await?, "team")
@@ -403,7 +418,7 @@ mod create_shortcut {
     }
 
     #[async_test]
-    async fn with_team_not_yet_accepted_is_not_allowed() {
+    async fn with_team_not_yet_accepted_should_not_be_allowed_to_create_shortcuts() {
         in_browser(
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -423,13 +438,14 @@ mod create_shortcut {
                         .await?;
                     driver.get(host(port, "")).await?;
 
-                    driver
-                        .find(By::Css("[aria-label='Switch administration mode']"))
+                    let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                    screen
+                        .find(ByExt::role("button").name(TextMatch::Exact("Switch administration mode".to_string())))
                         .await?
                         .click()
                         .await?;
 
-                    let input = driver.find(By::Css("[name='team']")).await.unwrap();
+                    let input = screen.find(ByExt::role("combobox")).await?;
                     let select = SelectElement::new(&input).await.unwrap();
                     for opt in select.options().await?.iter() {
                         assert_ne!(opt.text().await?, "team")
@@ -444,7 +460,7 @@ mod create_shortcut {
     }
 
     #[async_test]
-    async fn as_user_with_team_capabilities_but_team_not_yet_accepted_is_not_allowed() {
+    async fn as_user_with_team_capabilities_but_team_not_yet_accepted_should_not_be_allowed_to_create_shortcuts() {
         in_browser(
             "some_session_id: some_mail@mail.com",
             |driver: &WebDriver, con: Mutex<PgConnection>, port: u16| {
@@ -467,13 +483,14 @@ mod create_shortcut {
                         .await?;
                     driver.get(host(port, "")).await?;
 
-                    driver
-                        .find(By::Css("[aria-label='Switch administration mode']"))
+                    let screen = Screen::build_with_testing_library(driver.clone()).await?;
+                    screen
+                        .find(ByExt::role("button").name(TextMatch::Exact("Switch administration mode".to_string())))
                         .await?
                         .click()
                         .await?;
 
-                    let input = driver.find(By::Css("[name='team']")).await.unwrap();
+                    let input = screen.find(ByExt::role("combobox")).await?;
                     let select = SelectElement::new(&input).await.unwrap();
                     for opt in select.options().await?.iter() {
                         assert_ne!(opt.text().await?, "team")
@@ -494,43 +511,46 @@ mod create_shortcut {
             .await
             .unwrap();
 
-        driver
-            .find(By::Css("[aria-label='Switch administration mode']"))
+        let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+        screen
+            .find(ByExt::role("button").name(TextMatch::Exact("Switch administration mode".to_string())))
             .await
             .unwrap()
             .click()
             .await
             .unwrap();
 
-        driver
-            .find(By::Css("[name='shortcut']"))
+        screen
+            .get(ByExt::placeholder_text("shortcut"))
             .await
             .unwrap()
             .send_keys("jeanLuc")
             .await
             .unwrap();
-        driver
-            .find(By::Css("[name='url']"))
+        screen
+            .get(ByExt::placeholder_text("https://my-favorite-tool"))
             .await
             .unwrap()
             .send_keys(host(port, "/aShortcut"))
             .await
             .unwrap();
 
-        let input = driver.find(By::Css("[name='team']")).await.unwrap();
+        let input = screen.find(ByExt::role("combobox")).await.unwrap();
         let select = SelectElement::new(&input).await.unwrap();
         select.select_by_value(team).await.unwrap();
 
-        driver
-            .find(By::Css("[aria-label='Add shortcut']"))
+        screen
+            .find(ByExt::role("button").name(TextMatch::Exact("Add shortcut".to_string())))
             .await
             .unwrap()
             .click()
             .await
             .unwrap();
 
-        let article = driver
-            .find(By::Css("[role='listitem']"))
+        let shortcut_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/Shortcut list/".to_string()))).await.unwrap();
+        let scoped_screen = screen.within(shortcut_list);
+        let article = scoped_screen
+            .find(ByExt::role("listitem"))
             .await
             .unwrap();
         assert_eq!(
@@ -544,8 +564,8 @@ mod create_shortcut {
         );
 
         assert_eq!(
-            driver
-                .find(By::Css("[name='shortcut']"))
+            screen
+                .get(ByExt::placeholder_text("shortcut"))
                 .await
                 .unwrap()
                 .prop("value")
@@ -554,8 +574,8 @@ mod create_shortcut {
             Some("".to_owned())
         );
         assert_eq!(
-            driver
-                .find(By::Css("[name='url']"))
+            screen
+                .get(ByExt::placeholder_text("https://my-favorite-tool"))
                 .await
                 .unwrap()
                 .prop("value")
@@ -565,8 +585,8 @@ mod create_shortcut {
         );
 
         assert_eq!(
-            driver
-                .find(By::Css("[name='team']"))
+            screen
+                .find(ByExt::role("combobox"))
                 .await
                 .unwrap()
                 .prop("value")
@@ -577,8 +597,11 @@ mod create_shortcut {
 
         driver.refresh().await.unwrap();
 
-        let article = driver
-            .find(By::Css("[role='listitem']"))
+        let screen = Screen::build_with_testing_library(driver.clone()).await.unwrap();
+        let shortcut_list = screen.find(ByExt::role("list").name(TextMatch::Regex("/Shortcut list/".to_string()))).await.unwrap();
+        let scoped_screen = screen.within(shortcut_list);
+        let article = scoped_screen
+            .find(ByExt::role("listitem"))
             .await
             .unwrap();
         assert_eq!(
